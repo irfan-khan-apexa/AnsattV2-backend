@@ -12,8 +12,8 @@ const PORT = process.env.PORT || 5000;
 
 // ✅ CORS Configuration — Add this before routes!
 const allowedOrigins = [
-  "http://localhost:8081", // Local frontend (dev)
-  "https://ansatt-v2-backend.onrender.com/", // Replace with real deployed frontend URL
+  "http://localhost:8081",
+  "https://ansattv2-backend.onrender.com/",
 ];
 
 app.use(
