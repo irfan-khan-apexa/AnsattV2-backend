@@ -12,8 +12,8 @@ const PORT = process.env.PORT || 5000;
 
 // ✅ CORS Configuration — Add this before routes!
 const allowedOrigins = [
-  "http://localhost:8081",
-  "https://ansattv2-backend.onrender.com/",
+  "http://localhost:8081", // Local frontend (dev)
+  "https://your-frontend.netlify.app",
 ];
 
 app.use(
@@ -29,9 +29,7 @@ app.use(
   })
 );
 // Middleware
-app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Connect to Database
 connectDB();
