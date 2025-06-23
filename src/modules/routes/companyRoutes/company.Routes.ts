@@ -16,6 +16,8 @@ companyRouter.post("/create-company", authenticateSuperMaster, createCompany);
 
 companyRouter.post("/login-company", loginCompany);
 
+// companyRouter.get("/dashboard", authenticateCompanyMaster, getCompanyDashboard);
+// Route (e.g. /api/company/dashboard)
 companyRouter.get("/dashboard", authenticateCompanyMaster, getCompanyDashboard);
 // For either role:
 
