@@ -3,11 +3,19 @@ import { Router, Request, Response } from "express";
 import { superMasterRouter } from "./superMasterRoutes/superMaster.Routes";
 import { companyRouter } from "./companyRoutes/company.Routes";
 import { employeeRouter } from "./employeeRoutes/employee.Routes";
+import { onboardingRouter } from "./onboardingRoutes/onboarding.Routes";
+import { roleRouter } from "./rolePermissionRoutes/role.Routes";
+import { moduleRouter } from "./rolePermissionRoutes/module.Routes";
+import { permissionRouter } from "./rolePermissionRoutes/roleModulePermission.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
 router.use(companyRouter);
 router.use(employeeRouter);
+router.use(onboardingRouter);
+router.use(roleRouter);
+router.use(moduleRouter);
+router.use(permissionRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({

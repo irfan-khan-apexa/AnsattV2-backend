@@ -8,7 +8,9 @@ export interface EmployeeAttributes {
   contact: string;
   role: string;
   company_code: string; //  foreign key to Company
+  password: string;
   created_at?: Date;
+  deleted_at?: Date;
 }
 
 interface EmployeeCreationAttributes
@@ -24,6 +26,7 @@ export class Employee
   public contact!: string;
   public role!: string;
   public company_code!: string;
+  public password!: string;
   public readonly created_at!: Date;
 }
 
@@ -39,7 +42,12 @@ Employee.init(
     contact: { type: DataTypes.STRING, allowNull: true },
     role: { type: DataTypes.STRING, allowNull: false },
     company_code: { type: DataTypes.STRING, allowNull: false },
+    password: { type: DataTypes.STRING, allowNull: false },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,

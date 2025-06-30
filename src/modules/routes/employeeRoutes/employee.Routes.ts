@@ -4,8 +4,13 @@ import {
   getEmployees,
   updateEmployee,
   deleteEmployee,
+  loginEmployee,
+  getEmployeeModules,
 } from "../../controllers/index";
-import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
+import {
+  authenticateCompanyMaster,
+  authenticateEmployee,
+} from "../../../middlewares/authMiddleware";
 
 const employeeRouter = Router();
 
@@ -26,6 +31,13 @@ employeeRouter.delete(
   "/delete-employee/:id",
   authenticateCompanyMaster,
   deleteEmployee
+);
+employeeRouter.post("/login-employee", loginEmployee);
+
+employeeRouter.get(
+  "/employee/modules",
+  authenticateEmployee,
+  getEmployeeModules
 );
 
 export { employeeRouter };

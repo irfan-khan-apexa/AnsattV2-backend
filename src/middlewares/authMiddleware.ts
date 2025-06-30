@@ -73,6 +73,39 @@ export const authenticateCompanyMaster = (
   }
 };
 
+export const authenticateEmployee = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    return Promise.resolve(res.status(401).json({ message: "Token missing" }));
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "your-secret-key"
+    ) as any;
+
+    // ✅ Allow all roles EXCEPT super_master and company_master
+    if (decoded.role === "super_master" || decoded.role === "company_master") {
+      return Promise.resolve(
+        res.status(403).json({ message: "Forbidden: Not an employee user" })
+      );
+    }
+
+    req.user = decoded;
+    next();
+    return Promise.resolve();
+  } catch (err) {
+    console.error(err);
+    return Promise.resolve(res.status(401).json({ message: "Invalid token" }));
+  }
+};
+
 // export const authenticateRole = (allowedRoles: string[]) => {
 //   return (
 //     req: AuthenticatedRequest,

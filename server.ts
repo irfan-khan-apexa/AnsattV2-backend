@@ -12,8 +12,9 @@ const PORT = process.env.PORT || 5000;
 
 // ✅ CORS Configuration — Add this before routes!
 const allowedOrigins = [
-  "http://localhost:8081", // Local frontend (dev)
+  "http://localhost:8081",
   "https://your-frontend.netlify.app",
+  "https://ansatt--d1k0v36vat.expo.app",
 ];
 
 app.use(

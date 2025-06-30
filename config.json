@@ -1,0 +1,10 @@
+{
+  "development": {
+    "username": "root",
+    "password": "Star143*",
+    "database": "ansattV2_db",
+    "host": "localhost",
+    "port": 3306,
+    "dialect": "mysql"
+  }
+}
