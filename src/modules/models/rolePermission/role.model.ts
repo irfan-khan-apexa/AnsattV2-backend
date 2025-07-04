@@ -4,6 +4,7 @@ import sequelize from "../../../config/sequelize";
 interface RoleAttributes {
   id: number;
   name: string;
+  description: string;
 }
 
 interface RoleCreationAttributes extends Optional<RoleAttributes, "id"> {}
@@ -14,6 +15,7 @@ export class Role
 {
   public id!: number;
   public name!: string;
+  public description!: string;
 }
 
 Role.init(
@@ -24,6 +26,7 @@ Role.init(
       primaryKey: true,
     },
     name: { type: DataTypes.STRING, allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: true },
   },
   {
     sequelize,
@@ -32,5 +35,6 @@ Role.init(
   }
 );
 
-Role.sync();
+// Role.sync();
+Role.sync({ alter: true }); // when change value auatomatic add new columns in table in existing table data
 export default Role;

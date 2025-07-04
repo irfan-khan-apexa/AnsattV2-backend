@@ -5,6 +5,8 @@ import { OfferLetter } from "./onboardingModel/offerLetter.Model";
 import { Module } from "./rolePermission/module.model";
 import { Role } from "./rolePermission/role.model";
 import { RoleModulePermission } from "./rolePermission/roleModulePermission.model";
+import { Policy } from "./policyModel/policyModel";
+import { Leave } from "./leaveModel/leaveModel";
 
 export {
   SuperMaster,
@@ -14,4 +16,6 @@ export {
   Module,
   Role,
   RoleModulePermission,
+  Policy,
+  Leave,
 };
