@@ -1,5 +1,6 @@
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../../../config/sequelize";
+import RoleModulePermission from "./roleModulePermission.model";
 
 interface RoleAttributes {
   id: number;
@@ -16,6 +17,7 @@ export class Role
   public id!: number;
   public name!: string;
   public description!: string;
+  public RoleModulePermissions?: RoleModulePermission[];
 }
 
 Role.init(

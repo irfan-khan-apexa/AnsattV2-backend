@@ -9,9 +9,9 @@ import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
 
 const roleRouter = Router();
 
-roleRouter.post("/roles", authenticateCompanyMaster, createRole);
-roleRouter.get("/roles", authenticateCompanyMaster, getAllRoles);
-roleRouter.put("/roles/:id", authenticateCompanyMaster, updateRole);
-roleRouter.delete("/roles/:id", authenticateCompanyMaster, deleteRole);
+roleRouter.post("/roles", createRole);
+roleRouter.get("/roles", getAllRoles);
+roleRouter.put("/roles/:id", updateRole);
+roleRouter.delete("/roles/:id", deleteRole);
 
 export { roleRouter };
