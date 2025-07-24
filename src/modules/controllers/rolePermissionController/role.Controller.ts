@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
-import { Module, Role, RoleModulePermission } from "../../models/index";
+import {
+  Module,
+  Role,
+  RoleModulePermission,
+  Permission,
+} from "../../models/index";
 
 // const createRole = async (req: Request, res: Response): Promise<any> => {
 //   try {
@@ -68,63 +73,114 @@ import { Module, Role, RoleModulePermission } from "../../models/index";
 //   }
 // };
 
+// const createRole = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const { name, description, permissions = [] } = req.body;
+
+//     if (!name || typeof name !== "string") {
+//       return res
+//         .status(400)
+//         .json({ message: "Role name (string) is required" });
+//     }
+
+//     const existing = await Role.findOne({ where: { name } });
+//     if (existing) {
+//       return res.status(409).json({ message: "Role name already exists" });
+//     }
+
+//     // ✅ Step 1: Create Role
+//     const role = await Role.create({ name, description });
+
+//     // ✅ Step 2: Validate and Insert Permissions
+//     for (const perm of permissions) {
+//       if (!perm.moduleId) continue;
+
+//       // 🔍 Check if module exists
+//       const module = await Module.findByPk(perm.moduleId);
+//       if (!module) {
+//         return res.status(404).json({
+//           message: `Module with ID ${perm.moduleId} does not exist`,
+//         });
+//       }
+
+//       await RoleModulePermission.create({
+//         role_id: role.id,
+//         module_id: perm.moduleId,
+//         can_create: perm.canCreate || false,
+//         can_read: perm.canRead || false,
+//         can_update: perm.canUpdate || false,
+//         can_delete: perm.canDelete || false,
+//       });
+//     }
+
+//     // ✅ Step 3: Re-fetch Role with its Permissions and Modules
+//     const roleWithPermissions = await Role.findByPk(role.id, {
+//       include: [
+//         {
+//           model: RoleModulePermission,
+//           include: [Module],
+//         },
+//       ],
+//     });
+
+//     res.status(201).json({
+//       message: "Role created with permissions",
+//       role: roleWithPermissions,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error while creating role" });
+//   }
+// };
 const createRole = async (req: Request, res: Response): Promise<any> => {
   try {
     const { name, description, permissions = [] } = req.body;
 
-    if (!name || typeof name !== "string") {
-      return res
-        .status(400)
-        .json({ message: "Role name (string) is required" });
-    }
+    if (!name) return res.status(400).json({ message: "Role name required" });
 
     const existing = await Role.findOne({ where: { name } });
-    if (existing) {
-      return res.status(409).json({ message: "Role name already exists" });
-    }
+    if (existing)
+      return res.status(409).json({ message: "Role already exists" });
 
-    // ✅ Step 1: Create Role
     const role = await Role.create({ name, description });
 
-    // ✅ Step 2: Validate and Insert Permissions
-    for (const perm of permissions) {
-      if (!perm.moduleId) continue;
+    // ✅ Fetch all master permission fields
+    const availablePermissions = await Permission.findAll();
+    const allFields = availablePermissions.map((p) => p.field);
 
-      // 🔍 Check if module exists
-      const module = await Module.findByPk(perm.moduleId);
-      if (!module) {
-        return res.status(404).json({
-          message: `Module with ID ${perm.moduleId} does not exist`,
-        });
+    // ✅ Save each module's permissions
+    for (const permObj of permissions) {
+      const { moduleId, ...fields } = permObj;
+
+      const module = await Module.findByPk(moduleId);
+      if (!module)
+        return res
+          .status(400)
+          .json({ message: `Module ${moduleId} not found` });
+
+      const permissionData: any = {
+        role_id: role.id,
+        module_id: moduleId,
+      };
+
+      for (const field of allFields) {
+        permissionData[field] = fields[field] ?? false;
       }
 
-      await RoleModulePermission.create({
-        role_id: role.id,
-        module_id: perm.moduleId,
-        can_create: perm.canCreate || false,
-        can_read: perm.canRead || false,
-        can_update: perm.canUpdate || false,
-        can_delete: perm.canDelete || false,
-      });
+      await RoleModulePermission.create(permissionData);
     }
 
-    // ✅ Step 3: Re-fetch Role with its Permissions and Modules
     const roleWithPermissions = await Role.findByPk(role.id, {
-      include: [
-        {
-          model: RoleModulePermission,
-          include: [Module],
-        },
-      ],
+      include: [{ model: RoleModulePermission, include: [Module] }],
     });
 
     res.status(201).json({
-      message: "Role created with permissions",
+      message: "Role created with dynamic permissions",
       role: roleWithPermissions,
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error while creating role" });
+    res.status(500).json({ message: "Error creating role" });
   }
 };
 

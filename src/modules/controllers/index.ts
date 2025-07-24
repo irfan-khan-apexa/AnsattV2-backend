@@ -30,12 +30,17 @@ import {
   updateModule,
   deleteModule,
 } from "./rolePermissionController/module.Controller";
+// import {
+//   createRoleModulePermission,
+//   getRolePermissions,
+//   updateRoleModulePermission,
+//   deleteRoleModulePermission,
+// } from "./rolePermissionController/roleModulePermission.Controller";
 import {
-  createRoleModulePermission,
-  getRolePermissions,
-  updateRoleModulePermission,
-  deleteRoleModulePermission,
-} from "./rolePermissionController/roleModulePermission.Controller";
+  createPermission,
+  getAllPermissions,
+} from "./rolePermissionController/permission.Controller";
+
 import {
   createPolicy,
   getAllPolicies,
@@ -51,6 +56,13 @@ import {
   rejectLeave,
 } from "./leaveController/leaveController";
 import { createOfferLetter } from "./onboardingController/offerLetter.Controller";
+import {
+  createOnboarding,
+  getAllOnboardings,
+  getOnboardingById,
+  updateOnboarding,
+  deleteOnboarding,
+} from "./onboardingController/onBoarding.Controller";
 
 // All controllers exported as single object
 export {
@@ -74,10 +86,12 @@ export {
   getAllModules,
   updateModule,
   deleteModule,
-  createRoleModulePermission,
-  getRolePermissions,
-  updateRoleModulePermission,
-  deleteRoleModulePermission,
+  // createRoleModulePermission,
+  // getRolePermissions,
+  // updateRoleModulePermission,
+  // deleteRoleModulePermission,
+  createPermission,
+  getAllPermissions,
   createPolicy,
   getAllPolicies,
   getPolicyById,
@@ -89,4 +103,9 @@ export {
   approveLeave,
   rejectLeave,
   createOfferLetter,
+  createOnboarding,
+  getAllOnboardings,
+  getOnboardingById,
+  updateOnboarding,
+  deleteOnboarding,
 };
