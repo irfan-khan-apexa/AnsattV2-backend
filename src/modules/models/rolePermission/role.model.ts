@@ -38,5 +38,5 @@ Role.init(
 );
 
 // Role.sync();
-Role.sync({ alter: true }); // when change value auatomatic add new columns in table in existing table data
+// Role.sync({ alter: true });
 export default Role;

@@ -36,6 +36,6 @@ Module.init(
 );
 
 // Module.sync();
-Module.sync({ alter: true }); // when change value auatomatic add new columns in table in existing table data
+// Module.sync({ alter: true });
 
 export default Module;
