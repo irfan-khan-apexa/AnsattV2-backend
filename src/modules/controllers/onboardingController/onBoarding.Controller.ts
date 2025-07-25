@@ -210,7 +210,6 @@ const createOnboarding = async (
   try {
     const file = req.files as any;
 
-    const passport_photo = file?.passport_photo?.[0]?.location || null;
     const aadhar_photo = file?.aadhar_photo?.[0]?.location || null;
     const pan_photo = file?.pan_photo?.[0]?.location || null;
     const resume = file?.resume?.[0]?.location || null;
@@ -380,5 +379,4 @@ export {
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
-  //test
 };

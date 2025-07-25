@@ -6,7 +6,7 @@ import { employeeRouter } from "./employeeRoutes/employee.Routes";
 import { onboardingRouter } from "./onboardingRoutes/onboarding.Routes";
 import { roleRouter } from "./rolePermissionRoutes/role.Routes";
 import { moduleRouter } from "./rolePermissionRoutes/module.Routes";
-import { permissionRouter } from "./rolePermissionRoutes/roleModulePermission.Routes";
+import { permissionRouter } from "./rolePermissionRoutes/permission.routes";
 import { policyRouter } from "./policyRoutes/policyRoutes";
 import { leaveRouter } from "./leaveRoutes/leaveRoutes";
 const router = Router();
