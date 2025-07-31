@@ -3,10 +3,10 @@ import dotenv from "dotenv";
 import connectDB from "./src/loaders/database";
 import cors from "cors";
 dotenv.config();
-console.log("ENV LOADED:", {
-  WASABI_ACCESS_KEY: process.env.WASABI_ACCESS_KEY,
-  WASABI_SECRET_KEY: process.env.WASABI_SECRET_KEY,
-});
+// console.log("ENV LOADED:", {
+//   WASABI_ACCESS_KEY: process.env.WASABI_ACCESS_KEY,
+//   WASABI_SECRET_KEY: process.env.WASABI_SECRET_KEY,
+// });
 
 import { router } from "./src/modules/routes/index";
 import wasabiS3 from "./src/config/wasabi";

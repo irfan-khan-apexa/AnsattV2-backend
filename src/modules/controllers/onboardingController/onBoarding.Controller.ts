@@ -5,199 +5,10 @@ import {
   AuthenticatedRequest,
   CompanyRequest,
 } from "../../../middlewares/authMiddleware";
+import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { RoleModuleAccess } from "../../../config/roleModuleAccess";
-
-// Create Onboarding
-// const createOnboarding = async (
-//   req: CompanyRequest,
-//   res: Response
-// ): Promise<any> => {
-//   try {
-//     const {
-//       name,
-//       email,
-//       contact,
-//       role,
-//       designation,
-//       department,
-//       reporting_manager,
-//       joining_date,
-//       probation_period,
-//     } = req.body;
-
-//     const company_code = req.user.company_code;
-
-//     if (
-//       !name ||
-//       !email ||
-//       !role ||
-//       !designation ||
-//       !department ||
-//       !reporting_manager ||
-//       !joining_date ||
-//       !probation_period
-//     ) {
-//       return res.status(400).json({ message: "Missing required fields" });
-//     }
-
-//     const plainPassword = `${name.toLowerCase().split(" ")[0]}@123`; // e.g., rahul@123
-//     const hashedPassword = await bcrypt.hash(plainPassword, 10);
-
-//     const onboarding = await Onboarding.create({
-//       name,
-//       email,
-//       contact,
-//       role,
-//       password: hashedPassword,
-//       company_code,
-//       designation,
-//       department,
-//       reporting_manager,
-//       joining_date,
-//       probation_period,
-//       status: "pending",
-//     });
-
-//     return res.status(201).json({
-//       message: "Onboarding created successfully",
-//       generated_password: plainPassword,
-//       onboarding,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ message: "Error creating onboarding" });
-//   }
-// };
-
-// // Get All Onboardings
-// const getAllOnboardings = async (
-//   req: CompanyRequest,
-//   res: Response
-// ): Promise<any> => {
-//   try {
-//     const company_code = req.user.company_code;
-
-//     const onboardings = await Onboarding.findAll({
-//       where: { company_code },
-//     });
-
-//     return res.status(200).json({
-//       message: "All onboardings fetched",
-//       data: onboardings,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ message: "Error fetching onboardings" });
-//   }
-// };
-
-// // Get Onboarding by ID
-// const getOnboardingById = async (
-//   req: CompanyRequest,
-//   res: Response
-// ): Promise<any> => {
-//   try {
-//     const { id } = req.params;
-//     const company_code = req.user.company_code;
-
-//     const onboarding = await Onboarding.findOne({
-//       where: { id, company_code },
-//     });
-
-//     if (!onboarding) {
-//       return res.status(404).json({ message: "Onboarding not found" });
-//     }
-
-//     return res.status(200).json({
-//       message: "Onboarding found",
-//       data: onboarding,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ message: "Error fetching onboarding" });
-//   }
-// };
-
-// // Update Onboarding
-// const updateOnboarding = async (
-//   req: CompanyRequest,
-//   res: Response
-// ): Promise<any> => {
-//   try {
-//     const { id } = req.params;
-//     const {
-//       name,
-//       email,
-//       contact,
-//       role,
-//       designation,
-//       department,
-//       reporting_manager,
-//       status,
-//       joining_date,
-//       probation_period,
-//     } = req.body;
-
-//     const company_code = req.user.company_code;
-
-//     const onboarding = await Onboarding.findOne({
-//       where: { id, company_code },
-//     });
-
-//     if (!onboarding) {
-//       return res.status(404).json({ message: "Onboarding not found" });
-//     }
-
-//     await onboarding.update({
-//       name,
-//       email,
-//       contact,
-//       role,
-//       designation,
-//       department,
-//       reporting_manager,
-//       status,
-//       joining_date,
-//       probation_period,
-//     });
-
-//     return res.status(200).json({
-//       message: "Onboarding updated successfully",
-//       data: onboarding,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ message: "Error updating onboarding" });
-//   }
-// };
-
-// // Delete Onboarding
-// const deleteOnboarding = async (
-//   req: CompanyRequest,
-//   res: Response
-// ): Promise<any> => {
-//   try {
-//     const { id } = req.params;
-//     const company_code = req.user.company_code;
-
-//     const onboarding = await Onboarding.findOne({
-//       where: { id, company_code },
-//     });
-
-//     if (!onboarding) {
-//       return res.status(404).json({ message: "Onboarding not found" });
-//     }
-
-//     await onboarding.update({ deleted_at: new Date() });
-
-//     return res.status(200).json({ message: "Onboarding deleted (soft)" });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ message: "Error deleting onboarding" });
-//   }
-// };
 
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
@@ -374,10 +185,85 @@ const deleteOnboarding = async (
   }
 };
 
+const fileFields = [
+  "passport_photo",
+  "aadhar_photo",
+  "pan_photo",
+  "resume",
+  "offer_letter",
+  "joining_letter",
+  "experience_letter",
+] as const;
+
+type FileField = (typeof fileFields)[number];
+
+// Extract the object key from a full Wasabi URL
+function extractS3Key(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, ""); // remove leading slash // Wasabi URLs are like: /ansatt-bucket/documents/filename.png // So remove 'ansatt-bucket/' from path
+    return pathname.replace(/^ansatt-bucket\//, "");
+  } catch {
+    return url;
+  }
+}
+
+const getAllPresignedUrls = async (
+  req: CompanyRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const company_code = req.user.company_code;
+
+    const record = await Onboarding.findOne({
+      where: { id, company_code },
+    });
+
+    if (!record) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    const urls: Record<FileField, string | null> = {
+      passport_photo: null,
+      aadhar_photo: null,
+      pan_photo: null,
+      resume: null,
+      offer_letter: null,
+      joining_letter: null,
+      experience_letter: null,
+    };
+
+    console.log("DEBUG KEYS GENERATING PRESIGNED URLS FOR:");
+    for (const field of fileFields) {
+      const filePath = record[field];
+      console.log(`Field: ${field}, FilePath: ${filePath}`); // 👈 ADD THIS
+
+      if (typeof filePath === "string" && filePath) {
+        const key = extractS3Key(filePath);
+        console.log(`✅ Field: ${field}, Key: ${key}`);
+        const url = await generatePresignedGetUrl(key, 120); // 2 mins
+        urls[field] = url;
+      } else {
+        console.log(`❌ Skipping ${field}, value is not string or empty`);
+      }
+    }
+
+    return res.status(200).json({
+      message: "Presigned URLs generated",
+      data: urls,
+    });
+  } catch (error) {
+    console.error("Presigned URL generation failed:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 export {
   createOnboarding,
   getAllOnboardings,
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
+  getAllPresignedUrls,
 };

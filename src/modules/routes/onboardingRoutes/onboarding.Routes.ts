@@ -5,12 +5,7 @@ import {
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
-  // uploadDocuments,
-  // getDocuments,
-  // deleteDocument,
-  // generateOfferLetter,
-  // generateAppointmentLetter,
-  // listAllLetters,
+  getAllPresignedUrls,
 } from "../../controllers/index";
 import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
@@ -58,34 +53,10 @@ onboardingRouter.post(
   createOnboarding
 );
 
-// KYC docs – use Wasabi/S3 logic
-// onboardingRouter.post(
-//   "/:id/upload",
-//   authenticateCompanyMaster,
-//   uploadDocuments
-// );
-// onboardingRouter.get("/:id/documents", authenticateCompanyMaster, getDocuments);
-// onboardingRouter.delete(
-//   "/:id/documents/:docId",
-//   authenticateCompanyMaster,
-//   deleteDocument
-// );
-
-// // Letters
-// onboardingRouter.get(
-//   "/letters/offer/:id",
-//   authenticateCompanyMaster,
-//   generateOfferLetter
-// );
-// onboardingRouter.get(
-//   "/letters/appointment/:id",
-//   authenticateCompanyMaster,
-//   generateAppointmentLetter
-// );
-// onboardingRouter.get(
-//   "/letters/:id/list",
-//   authenticateCompanyMaster,
-//   listAllLetters
-// );
+onboardingRouter.get(
+  "/Onboarding/:id/presigned-url",
+  authenticateCompanyMaster,
+  getAllPresignedUrls
+);
 
 export { onboardingRouter };

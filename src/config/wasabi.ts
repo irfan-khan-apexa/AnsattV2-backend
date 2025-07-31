@@ -12,9 +12,9 @@ const wasabiS3 = new S3Client({
   },
   forcePathStyle: true,
 });
-console.log("Wasabi Credentials:", {
-  accessKeyId: process.env.WASABI_ACCESS_KEY,
-  secretAccessKey: process.env.WASABI_SECRET_KEY,
-});
+// console.log("Wasabi Credentials:", {
+//   accessKeyId: process.env.WASABI_ACCESS_KEY,
+//   secretAccessKey: process.env.WASABI_SECRET_KEY,
+// });
 
 export default wasabiS3;

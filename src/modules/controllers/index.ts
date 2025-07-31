@@ -62,6 +62,7 @@ import {
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
+  getAllPresignedUrls,
 } from "./onboardingController/onBoarding.Controller";
 
 // All controllers exported as single object
@@ -108,4 +109,5 @@ export {
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
+  getAllPresignedUrls,
 };
