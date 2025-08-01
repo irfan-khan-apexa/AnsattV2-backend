@@ -31,6 +31,10 @@ export interface OnboardingAttributes {
   experience_letter?: string;
 
   deleted_at?: Date;
+
+  // ✅ Presigned URL Caching
+  presigned_url_cache?: Record<string, string | null>;
+  presigned_url_cache_time?: Date;
 }
 
 export class Onboarding
@@ -53,16 +57,19 @@ export class Onboarding
 
   public pan_card!: string;
   public aadhar_card!: string;
-
-  pan_photo!: string;
-  aadhar_photo!: string;
-
+  public pan_photo!: string;
+  public aadhar_photo!: string;
   public passport_photo!: string;
 
   public resume!: string;
   public offer_letter!: string;
   public joining_letter!: string;
   public experience_letter!: string;
+
+  public deleted_at!: Date;
+
+  public presigned_url_cache!: Record<string, string | null>;
+  public presigned_url_cache_time!: Date;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -97,29 +104,26 @@ Onboarding.init(
     pan_card: DataTypes.STRING,
     aadhar_card: DataTypes.STRING,
 
-    pan_photo: {
-      type: DataTypes.TEXT,
-    },
-    aadhar_photo: {
-      type: DataTypes.TEXT,
-    },
-    passport_photo: {
-      type: DataTypes.TEXT,
-    },
-    resume: {
-      type: DataTypes.TEXT,
-    },
-    offer_letter: {
-      type: DataTypes.TEXT,
-    },
-    joining_letter: {
-      type: DataTypes.TEXT,
-    },
-    experience_letter: {
-      type: DataTypes.TEXT,
-    },
+    pan_photo: DataTypes.TEXT,
+    aadhar_photo: DataTypes.TEXT,
+    passport_photo: DataTypes.TEXT,
+
+    resume: DataTypes.TEXT,
+    offer_letter: DataTypes.TEXT,
+    joining_letter: DataTypes.TEXT,
+    experience_letter: DataTypes.TEXT,
 
     deleted_at: DataTypes.DATE,
+
+    // ✅ New fields
+    presigned_url_cache: {
+      type: DataTypes.JSON, // use JSON if you're using MySQL
+      allowNull: true,
+    },
+    presigned_url_cache_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,

@@ -222,11 +222,10 @@ const fileFields = [
 
 type FileField = (typeof fileFields)[number];
 
-// Extract the object key from a full Wasabi URL
 function extractS3Key(url: string): string {
   try {
     const parsed = new URL(url);
-    const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, ""); // remove leading slash // Wasabi URLs are like: /ansatt-bucket/documents/filename.png // So remove 'ansatt-bucket/' from path
+    const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
     return pathname.replace(/^ansatt-bucket\//, "");
   } catch {
     return url;
@@ -249,6 +248,19 @@ const getAllPresignedUrls = async (
       return res.status(404).json({ message: "Employee not found" });
     }
 
+    const now = new Date();
+    const cacheTime = record.presigned_url_cache_time;
+    const cacheValid =
+      cacheTime &&
+      now.getTime() - cacheTime.getTime() < 7 * 24 * 60 * 60 * 1000;
+
+    if (cacheValid && record.presigned_url_cache) {
+      return res.status(200).json({
+        message: "Presigned URLs served from cache",
+        data: record.presigned_url_cache,
+      });
+    }
+
     const urls: Record<FileField, string | null> = {
       passport_photo: null,
       aadhar_photo: null,
@@ -260,25 +272,31 @@ const getAllPresignedUrls = async (
     };
 
     for (const field of fileFields) {
-      const encryptedValue = record[field]; // ✅ Ye encrypted URL hai
+      const encryptedValue = record[field];
 
       if (typeof encryptedValue === "string" && encryptedValue) {
         try {
-          const decryptedUrl = decrypt(encryptedValue); // ✅ Decrypt kar rahe
-          const key = extractS3Key(decryptedUrl); // ✅ S3 key nikal rahe
-          const presignedUrl = await generatePresignedGetUrl(key, 120); // ✅ URL bna rahe
+          const decryptedUrl = decrypt(encryptedValue);
+          const key = extractS3Key(decryptedUrl);
+          const presignedUrl = await generatePresignedGetUrl(
+            key,
+            7 * 24 * 60 * 60 // 7 days
+          );
           urls[field] = presignedUrl;
         } catch (err) {
           console.error(`Error in ${field}:`, err);
           urls[field] = null;
         }
-      } else {
-        urls[field] = null;
       }
     }
 
+    // Save new cache
+    record.presigned_url_cache = urls;
+    record.presigned_url_cache_time = new Date();
+    await record.save();
+
     return res.status(200).json({
-      message: "Presigned URLs generated",
+      message: "New presigned URLs generated",
       data: urls,
     });
   } catch (error) {
@@ -286,7 +304,6 @@ const getAllPresignedUrls = async (
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
-
 export {
   createOnboarding,
   getAllOnboardings,
