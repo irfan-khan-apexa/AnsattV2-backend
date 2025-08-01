@@ -26,7 +26,11 @@ Permission.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    field: { type: DataTypes.STRING, allowNull: false, unique: true },
+    field: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      // unique: true
+    },
     allowed: { type: DataTypes.BOOLEAN, defaultValue: false },
   },
   {

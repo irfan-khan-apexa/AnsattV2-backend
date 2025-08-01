@@ -97,14 +97,27 @@ Onboarding.init(
     pan_card: DataTypes.STRING,
     aadhar_card: DataTypes.STRING,
 
-    pan_photo: DataTypes.STRING,
-    aadhar_photo: DataTypes.STRING,
-    passport_photo: DataTypes.STRING,
-
-    resume: DataTypes.STRING,
-    offer_letter: DataTypes.STRING,
-    joining_letter: DataTypes.STRING,
-    experience_letter: DataTypes.STRING,
+    pan_photo: {
+      type: DataTypes.TEXT,
+    },
+    aadhar_photo: {
+      type: DataTypes.TEXT,
+    },
+    passport_photo: {
+      type: DataTypes.TEXT,
+    },
+    resume: {
+      type: DataTypes.TEXT,
+    },
+    offer_letter: {
+      type: DataTypes.TEXT,
+    },
+    joining_letter: {
+      type: DataTypes.TEXT,
+    },
+    experience_letter: {
+      type: DataTypes.TEXT,
+    },
 
     deleted_at: DataTypes.DATE,
   },

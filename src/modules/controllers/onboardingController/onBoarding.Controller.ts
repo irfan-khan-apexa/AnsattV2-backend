@@ -9,6 +9,7 @@ import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { RoleModuleAccess } from "../../../config/roleModuleAccess";
+import { encrypt, decrypt } from "../../../utils/encryption";
 
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
@@ -21,13 +22,33 @@ const createOnboarding = async (
   try {
     const file = req.files as any;
 
-    const passport_photo = file?.passport_photo?.[0]?.location || null;
-    const aadhar_photo = file?.aadhar_photo?.[0]?.location || null;
-    const pan_photo = file?.pan_photo?.[0]?.location || null;
-    const resume = file?.resume?.[0]?.location || null;
-    const offer_letter = file?.offer_letter?.[0]?.location || null;
-    const joining_letter = file?.joining_letter?.[0]?.location || null;
-    const experience_letter = file?.experience_letter?.[0]?.location || null;
+    const passport_photo = file?.passport_photo?.[0]?.location
+      ? encrypt(file.passport_photo[0].location)
+      : undefined;
+
+    const aadhar_photo = file?.aadhar_photo?.[0]?.location
+      ? encrypt(file.aadhar_photo[0].location)
+      : undefined;
+
+    const pan_photo = file?.pan_photo?.[0]?.location
+      ? encrypt(file.pan_photo[0].location)
+      : undefined;
+
+    const resume = file?.resume?.[0]?.location
+      ? encrypt(file.resume[0].location)
+      : undefined;
+
+    const offer_letter = file?.offer_letter?.[0]?.location
+      ? encrypt(file.offer_letter[0].location)
+      : undefined;
+
+    const joining_letter = file?.joining_letter?.[0]?.location
+      ? encrypt(file.joining_letter[0].location)
+      : undefined;
+
+    const experience_letter = file?.experience_letter?.[0]?.location
+      ? encrypt(file.experience_letter[0].location)
+      : undefined;
 
     const {
       name,
@@ -81,13 +102,17 @@ const createOnboarding = async (
       joining_letter,
       experience_letter,
     });
+    console.log("📦 req.body:", req.body);
+    console.log("📅 joining_date:", req.body.joining_date);
 
     return res
       .status(201)
       .json({ message: "Onboarding created", data: newEmployee });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Failed to create onboarding" });
+  } catch (error: any) {
+    console.error("🔥 Error in createOnboarding:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to create onboarding", error: error.message });
   }
 };
 
@@ -234,18 +259,21 @@ const getAllPresignedUrls = async (
       experience_letter: null,
     };
 
-    console.log("DEBUG KEYS GENERATING PRESIGNED URLS FOR:");
     for (const field of fileFields) {
-      const filePath = record[field];
-      console.log(`Field: ${field}, FilePath: ${filePath}`); // 👈 ADD THIS
+      const encryptedValue = record[field]; // ✅ Ye encrypted URL hai
 
-      if (typeof filePath === "string" && filePath) {
-        const key = extractS3Key(filePath);
-        console.log(`✅ Field: ${field}, Key: ${key}`);
-        const url = await generatePresignedGetUrl(key, 120); // 2 mins
-        urls[field] = url;
+      if (typeof encryptedValue === "string" && encryptedValue) {
+        try {
+          const decryptedUrl = decrypt(encryptedValue); // ✅ Decrypt kar rahe
+          const key = extractS3Key(decryptedUrl); // ✅ S3 key nikal rahe
+          const presignedUrl = await generatePresignedGetUrl(key, 120); // ✅ URL bna rahe
+          urls[field] = presignedUrl;
+        } catch (err) {
+          console.error(`Error in ${field}:`, err);
+          urls[field] = null;
+        }
       } else {
-        console.log(`❌ Skipping ${field}, value is not string or empty`);
+        urls[field] = null;
       }
     }
 

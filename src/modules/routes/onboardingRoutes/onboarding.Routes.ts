@@ -29,6 +29,15 @@ onboardingRouter.get(
 );
 onboardingRouter.put(
   "/Onboarding/:id",
+  upload.fields([
+    { name: "passport_photo", maxCount: 1 },
+    { name: "aadhar_photo", maxCount: 1 },
+    { name: "pan_photo", maxCount: 1 },
+    { name: "resume", maxCount: 1 },
+    { name: "offer_letter", maxCount: 1 },
+    { name: "joining_letter", maxCount: 1 },
+    { name: "experience_letter", maxCount: 1 },
+  ]),
   authenticateCompanyMaster,
   updateOnboarding
 );
