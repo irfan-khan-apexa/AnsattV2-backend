@@ -10,6 +10,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { RoleModuleAccess } from "../../../config/roleModuleAccess";
 import { encrypt, decrypt } from "../../../utils/encryption";
+import { createOfferLetter } from "../../../services/generateOfferLetter";
 
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
@@ -304,6 +305,94 @@ const getAllPresignedUrls = async (
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+const generateOfferLetterById = async (
+  req: CompanyRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { company_code, company_name } = req.user; // ✅ extract from token
+
+    const employee = await Onboarding.findOne({ where: { id, company_code } });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    const urls = await createOfferLetter(employee, company_name); // ✅ pass name here
+
+    if (!urls.pdf) {
+      return res.status(500).json({ message: "PDF generation failed" });
+    }
+
+    employee.offer_letter = urls.pdf;
+    await employee.save();
+
+    return res.status(200).json({
+      message: "Offer letter generated successfully",
+      data: {
+        pdf: urls.pdf,
+        docx: urls.docx,
+        employee,
+      },
+    });
+  } catch (err) {
+    console.error("Error generating offer letter:", err);
+    return res.status(500).json({
+      message: "Failed to generate offer letter",
+      error: (err as Error).message,
+    });
+  }
+};
+
+// controllers/onboardingController.ts (Add this function)
+
+const downloadOfferLetter = async (
+  req: CompanyRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const { id, format } = req.params;
+    const company_code = req.user.company_code;
+
+    // ✅ Validate format
+    if (!format || !["pdf", "docx"].includes(format.toLowerCase())) {
+      return res.status(400).json({
+        message: "Invalid format. Must be 'pdf' or 'docx'.",
+      });
+    }
+
+    const employee = await Onboarding.findOne({ where: { id, company_code } });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    const encryptedUrl = employee.offer_letter;
+    if (!encryptedUrl) {
+      return res.status(404).json({ message: "Offer letter not found" });
+    }
+
+    const decryptedUrl = decrypt(encryptedUrl);
+
+    // ✅ Derive correct key based on requested format
+    const originalKey = extractS3Key(decryptedUrl);
+    const baseKey = originalKey.replace(/\.pdf|\.docx/gi, "");
+    const finalKey = `${baseKey}.${format.toLowerCase()}`;
+
+    const presignedUrl = await generatePresignedGetUrl(finalKey, 5 * 60); // 5 mins
+
+    return res.status(200).json({
+      message: `Offer letter ${format.toUpperCase()} download link generated`,
+      url: presignedUrl,
+    });
+  } catch (error) {
+    console.error("Error generating offer letter download link:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export {
   createOnboarding,
   getAllOnboardings,
@@ -311,4 +400,6 @@ export {
   updateOnboarding,
   deleteOnboarding,
   getAllPresignedUrls,
+  generateOfferLetterById,
+  downloadOfferLetter,
 };

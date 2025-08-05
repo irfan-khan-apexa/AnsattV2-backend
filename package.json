@@ -20,18 +20,20 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "^2.0.0",
     "@types/multer-s3": "^3.0.3",
+    "@types/pdfkit": "^0.17.2",
     "@types/sequelize": "^4.28.20",
     "sequelize-cli": "^6.6.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.850.0",
+    "@aws-sdk/client-s3": "^3.859.0",
     "@aws-sdk/s3-request-presigner": "^3.850.0",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
+    "docx": "^9.5.1",
     "dotenv": "^16.6.1",
     "dotenv-cli": "^8.0.0",
     "express": "^5.1.0",
@@ -39,6 +41,8 @@
     "multer": "^2.0.2",
     "multer-s3": "^3.0.1",
     "mysql2": "^3.14.0",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.1",
     "sequelize": "^6.37.7"
   }
 }

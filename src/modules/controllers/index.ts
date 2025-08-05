@@ -63,6 +63,8 @@ import {
   updateOnboarding,
   deleteOnboarding,
   getAllPresignedUrls,
+  generateOfferLetterById,
+  downloadOfferLetter,
 } from "./onboardingController/onBoarding.Controller";
 
 // All controllers exported as single object
@@ -110,4 +112,6 @@ export {
   updateOnboarding,
   deleteOnboarding,
   getAllPresignedUrls,
+  generateOfferLetterById,
+  downloadOfferLetter,
 };

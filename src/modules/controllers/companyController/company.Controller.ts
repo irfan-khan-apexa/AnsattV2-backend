@@ -106,6 +106,7 @@ const loginCompany = async (req: Request, res: Response): Promise<any> => {
       {
         id: company.id,
         role: "company_master",
+        company_name: company.name,
         company_code: company.company_code,
       },
       process.env.JWT_SECRET || "your-secret-key",

@@ -6,6 +6,8 @@ import {
   updateOnboarding,
   deleteOnboarding,
   getAllPresignedUrls,
+  generateOfferLetterById,
+  downloadOfferLetter,
 } from "../../controllers/index";
 import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
@@ -66,6 +68,18 @@ onboardingRouter.get(
   "/Onboarding/:id/presigned-url",
   authenticateCompanyMaster,
   getAllPresignedUrls
+);
+
+onboardingRouter.post(
+  "/Onboarding/:id/generate-offer-letter",
+  authenticateCompanyMaster,
+  generateOfferLetterById
+);
+
+onboardingRouter.get(
+  "/Onboarding/:id/offer-letter/download/:format",
+  authenticateCompanyMaster,
+  downloadOfferLetter
 );
 
 export { onboardingRouter };

@@ -19,7 +19,7 @@ const upload = multer({
     key: function (req, file, cb) {
       const ext = path.extname(file.originalname);
       const filename = `${Date.now()}-${file.fieldname}${ext}`;
-      // ⭐ IMPORTANT: This is the exact key the file will have in Wasabi.
+      //  IMPORTANT: This is the exact key the file will have in Wasabi.
       // Make sure this matches how you expect files to be located.
       // If you intended files to be in a 'files/' directory, change 'documents' to 'files'.
       cb(null, `documents/${filename}`);

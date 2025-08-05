@@ -41,6 +41,9 @@ export class Onboarding
   extends Model<OnboardingAttributes>
   implements OnboardingAttributes
 {
+  static findById(id: string) {
+    throw new Error("Method not implemented.");
+  }
   public id!: number;
   public company_code!: string;
   public name!: string;
