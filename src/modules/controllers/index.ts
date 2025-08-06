@@ -65,6 +65,7 @@ import {
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
+  getAllTemplates,
 } from "./onboardingController/onBoarding.Controller";
 
 // All controllers exported as single object
@@ -114,4 +115,5 @@ export {
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
+  getAllTemplates,
 };

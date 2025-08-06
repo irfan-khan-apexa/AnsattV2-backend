@@ -1,4 +1,4 @@
-export const generateOfferContent = (data: {
+const generateOfferContent = (data: {
   name: string;
   designation: string;
   department: string;
@@ -43,3 +43,4 @@ ${data.company_name}
 [Signature Placeholder]
   `;
 };
+export { generateOfferContent };

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Employee } from "../../models/index";
+import { Employee, Onboarding } from "../../models/index";
 import {
   AuthenticatedRequest,
   CompanyRequest,
@@ -95,13 +95,15 @@ const loginEmployee = async (req: Request, res: Response): Promise<any> => {
   const { email, password } = req.body;
 
   try {
-    const user = await Employee.findOne({ where: { email } });
+    // ✅ Use Onboarding model instead of Employee
+    const user = await Onboarding.findOne({ where: { email } });
 
     if (!user) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // ✅ Use auto_password
+    const isMatch = password === user.auto_password;
 
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid password" });

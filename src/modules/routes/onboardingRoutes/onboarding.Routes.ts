@@ -8,6 +8,7 @@ import {
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
+  getAllTemplates,
 } from "../../controllers/index";
 import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
@@ -80,6 +81,12 @@ onboardingRouter.get(
   "/Onboarding/:id/offer-letter/download/:format",
   authenticateCompanyMaster,
   downloadOfferLetter
+);
+
+onboardingRouter.get(
+  "/Onboarding/templates",
+  // authenticateCompanyMaster,
+  getAllTemplates
 );
 
 export { onboardingRouter };

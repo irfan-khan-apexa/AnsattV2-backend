@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import { RoleModuleAccess } from "../../../config/roleModuleAccess";
 import { encrypt, decrypt } from "../../../utils/encryption";
 import { createOfferLetter } from "../../../services/generateOfferLetter";
+import templates from "../../../../templates/index";
 
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
@@ -306,13 +307,18 @@ const getAllPresignedUrls = async (
   }
 };
 
+// src/controllers/onboardingController.ts
+
+// Inside your controller file
+
 const generateOfferLetterById = async (
   req: CompanyRequest,
   res: Response
 ): Promise<any> => {
   try {
     const { id } = req.params;
-    const { company_code, company_name } = req.user; // ✅ extract from token
+    const { company_code, company_name } = req.user;
+    const template = req.query.template || "standard"; // ✅ fallback to "standard"
 
     const employee = await Onboarding.findOne({ where: { id, company_code } });
 
@@ -320,7 +326,11 @@ const generateOfferLetterById = async (
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    const urls = await createOfferLetter(employee, company_name); // ✅ pass name here
+    const urls = await createOfferLetter(
+      employee,
+      company_name,
+      template as string
+    );
 
     if (!urls.pdf) {
       return res.status(500).json({ message: "PDF generation failed" });
@@ -335,6 +345,7 @@ const generateOfferLetterById = async (
         pdf: urls.pdf,
         docx: urls.docx,
         employee,
+        used_template: template,
       },
     });
   } catch (err) {
@@ -393,6 +404,14 @@ const downloadOfferLetter = async (
   }
 };
 
+const getAllTemplates = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const templateNames = Object.keys(templates);
+    res.status(200).json({ templates: templateNames });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching templates", error });
+  }
+};
 export {
   createOnboarding,
   getAllOnboardings,
@@ -402,4 +421,5 @@ export {
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
+  getAllTemplates,
 };
