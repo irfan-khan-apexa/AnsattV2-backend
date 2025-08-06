@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 // import { SuperMaster } from "../models/SuperMaster.model";
-import { SuperMaster } from "../../models/index";
+import { Onboarding, SuperMaster } from "../../models/index";
 import { Company } from "../../models/index";
 
 const signupSuperMaster = async (
@@ -70,7 +70,7 @@ const loginSuperMaster = async (req: Request, res: Response): Promise<any> => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: "super_master" }, // ✅ now accessible
+      { id: user.id, role: "super_master" }, //
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "1d" }
     );
@@ -93,5 +93,37 @@ const getAllCompanies = async (req: Request, res: Response): Promise<any> => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+const getEmployeesByCompanyCode = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const { company_code } = req.params;
+
+  try {
+    // Check if the company exists
+    const company = await Company.findOne({ where: { company_code } });
+    if (!company) {
+      return res.status(404).json({ message: "Company not found" });
+    }
+
+    // Get all employees of that company
+    const employees = await Onboarding.findAll({
+      where: { company_code },
+      attributes: { exclude: ["auto_password", "presigned_url_cache"] }, // Optional: exclude sensitive fields
+    });
+
+    return res.status(200).json({ company: company.name, employees });
+  } catch (error) {
+    console.error("Error fetching employees:", error);
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
+
 // export default { loginSuperMaster };
-export { signupSuperMaster, loginSuperMaster, getAllCompanies };
+export {
+  signupSuperMaster,
+  loginSuperMaster,
+  getAllCompanies,
+  getEmployeesByCompanyCode,
+};

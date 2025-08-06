@@ -2,6 +2,7 @@ import {
   loginSuperMaster,
   signupSuperMaster,
   getAllCompanies,
+  getEmployeesByCompanyCode,
 } from "./superMasterController/superMaster.Controller";
 
 import {
@@ -82,6 +83,7 @@ export {
   loginEmployee,
   getEmployeeModules,
   getAllCompanies,
+  getEmployeesByCompanyCode,
   createRole,
   getAllRoles,
   updateRole,

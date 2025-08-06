@@ -14,6 +14,7 @@ import {
   loginSuperMaster,
   signupSuperMaster,
   getAllCompanies,
+  getEmployeesByCompanyCode,
 } from "../../controllers/index";
 import { authenticateSuperMaster } from "../../../middlewares/authMiddleware";
 
@@ -26,5 +27,9 @@ superMasterRouter.get(
   authenticateSuperMaster,
   getAllCompanies
 );
-
+superMasterRouter.get(
+  "/super-master/companies/:company_code/employees",
+  authenticateSuperMaster,
+  getEmployeesByCompanyCode
+);
 export { superMasterRouter };
