@@ -20,6 +20,12 @@ const onboardingRouter = Router();
 //   authenticateCompanyMaster,
 //   createOnboarding
 // );
+
+onboardingRouter.get(
+  "/Onboarding/templates",
+  // authenticateCompanyMaster,
+  getAllTemplates
+);
 onboardingRouter.get(
   "/Onboarding",
   authenticateCompanyMaster,
@@ -81,12 +87,6 @@ onboardingRouter.get(
   "/Onboarding/:id/offer-letter/download/:format",
   authenticateCompanyMaster,
   downloadOfferLetter
-);
-
-onboardingRouter.get(
-  "/Onboarding/templates",
-  // authenticateCompanyMaster,
-  getAllTemplates
 );
 
 export { onboardingRouter };
