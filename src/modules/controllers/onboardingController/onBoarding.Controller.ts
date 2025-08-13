@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import { RoleModuleAccess } from "../../../config/roleModuleAccess";
 import { encrypt, decrypt } from "../../../utils/encryption";
 import { createOfferLetter } from "../../../services/generateOfferLetter";
+
 import templates from "../../../../templates/index";
 
 const generateStrongPassword = (): string => {
@@ -412,6 +413,7 @@ const getAllTemplates = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: "Error fetching templates", error });
   }
 };
+
 export {
   createOnboarding,
   getAllOnboardings,

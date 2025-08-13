@@ -68,6 +68,14 @@ import {
   downloadOfferLetter,
   getAllTemplates,
 } from "./onboardingController/onBoarding.Controller";
+import {
+  createExitRequest,
+  getAllExitRequests,
+  getExitRequestById,
+  updateExitRequestStatus,
+  generateExitLetterById,
+  downloadExitLetter,
+} from "./exitRequestController/exitRequest.controller";
 
 // All controllers exported as single object
 export {
@@ -118,4 +126,10 @@ export {
   generateOfferLetterById,
   downloadOfferLetter,
   getAllTemplates,
+  createExitRequest,
+  getAllExitRequests,
+  getExitRequestById,
+  updateExitRequestStatus,
+  generateExitLetterById,
+  downloadExitLetter,
 };

@@ -9,6 +9,7 @@ import { moduleRouter } from "./rolePermissionRoutes/module.Routes";
 import { permissionRouter } from "./rolePermissionRoutes/permission.routes";
 import { policyRouter } from "./policyRoutes/policyRoutes";
 import { leaveRouter } from "./leaveRoutes/leaveRoutes";
+import { exitRouter } from "./exitRequestRoutes/exitRequest.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -20,6 +21,7 @@ router.use(moduleRouter);
 router.use(permissionRouter);
 router.use(policyRouter);
 router.use(leaveRouter);
+router.use(exitRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({

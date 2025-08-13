@@ -1,4 +1,6 @@
 import sequelize from "../config/sequelize";
+// import { syncAllModels } from "../modules/models/index";
+
 // import { SuperMaster } from "../modules/models/SuperMaster.model";
 
 const connectDB = async () => {
@@ -10,6 +12,7 @@ const connectDB = async () => {
 
     // Or use: await sequelize.sync(); to sync all defined models
     // console.log("SuperMaster table synced.");
+    // await syncAllModels();
   } catch (error) {
     console.error(" Database connection failed:", error);
     process.exit(1);

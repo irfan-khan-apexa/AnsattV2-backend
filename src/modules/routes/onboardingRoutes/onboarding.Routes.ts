@@ -9,6 +9,7 @@ import {
   generateOfferLetterById,
   downloadOfferLetter,
   getAllTemplates,
+  generateExitLetterById,
 } from "../../controllers/index";
 import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
@@ -82,7 +83,11 @@ onboardingRouter.post(
   authenticateCompanyMaster,
   generateOfferLetterById
 );
-
+onboardingRouter.post(
+  "/Onboarding/:id/generate-exit-letter",
+  authenticateCompanyMaster,
+  generateExitLetterById
+);
 onboardingRouter.get(
   "/Onboarding/:id/offer-letter/download/:format",
   authenticateCompanyMaster,

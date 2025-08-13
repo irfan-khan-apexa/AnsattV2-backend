@@ -35,12 +35,15 @@ export interface OnboardingAttributes {
   // ✅ Presigned URL Caching
   presigned_url_cache?: Record<string, string | null>;
   presigned_url_cache_time?: Date;
+
+  exit_date?: Date;
 }
 
 export class Onboarding
   extends Model<OnboardingAttributes>
   implements OnboardingAttributes
 {
+  exit_letter: string | undefined;
   static findById(id: string) {
     throw new Error("Method not implemented.");
   }
@@ -55,6 +58,7 @@ export class Onboarding
   public reporting_manager!: string;
   public status!: string;
   public joining_date!: Date;
+  public exit_date!: Date;
   public probation_period!: string;
   public auto_password!: string;
 
@@ -101,6 +105,7 @@ Onboarding.init(
       defaultValue: "pending",
     },
     joining_date: DataTypes.DATE,
+    exit_date: DataTypes.DATE,
     probation_period: DataTypes.STRING,
     auto_password: DataTypes.STRING,
 

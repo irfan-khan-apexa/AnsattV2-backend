@@ -3,6 +3,7 @@ import { Company } from "./companyModel/company.Model";
 import { Employee } from "./employeeModel/employee.Model";
 import { OfferLetter } from "./onboardingModel/offerLetter.Model";
 import { Onboarding } from "./onboardingModel/Onboarding.Model";
+import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
 import { Module } from "./rolePermission/module.model";
 import { Role } from "./rolePermission/role.model";
 import { RoleModulePermission } from "./rolePermission/roleModulePermission.model";
@@ -30,4 +31,5 @@ export {
   Policy,
   Leave,
   Onboarding,
+  ExitRequest,
 };
