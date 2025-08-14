@@ -21,8 +21,8 @@ exitRouter.get(
   getAllExitRequests
 );
 
-// Update status (approve/reject/complete)
 exitRouter.get("/exit/:id", getExitRequestById);
+// Update status (approve/reject/complete)
 
 exitRouter.put("/exit/:id", authenticateCompanyMaster, updateExitRequestStatus);
 

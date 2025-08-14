@@ -19,6 +19,7 @@ const allowedOrigins = [
   "http://localhost:8081",
   "https://your-frontend.netlify.app",
   "https://ansatt--d1k0v36vat.expo.app",
+  "https://ansatt--hpl0ntrzk0.expo.app",
 ];
 
 app.use(
