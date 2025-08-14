@@ -15,17 +15,39 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ✅ CORS Configuration — Add this before routes!
-const allowedOrigins = [
-  "http://localhost:8081",
-  "https://your-frontend.netlify.app",
-  "https://ansatt--d1k0v36vat.expo.app",
-  "https://ansatt--hpl0ntrzk0.expo.app",
+// const allowedOrigins = [
+//   "http://localhost:8081",
+//   "https://your-frontend.netlify.app",
+//   "https://ansatt--d1k0v36vat.expo.app",
+//   "https://ansatt--hpl0ntrzk0.expo.app",
+// ];
+
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     credentials: true,
+//   })
+// );
+
+const allowedOriginPatterns = [
+  /^http:\/\/localhost:\d+$/,
+  /^https:\/\/your-frontend\.netlify\.app$/,
+  /^https:\/\/.*\.expo\.app$/,
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOriginPatterns.some((pattern) => pattern.test(origin))
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
