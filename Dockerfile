@@ -20,7 +20,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 
 # Expose the app port
-EXPOSE 3000
+EXPOSE 5000
 
 # Start the compiled server (adjust path if different)
 CMD ["node", "dist/server.js"]
