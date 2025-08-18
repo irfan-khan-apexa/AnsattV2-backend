@@ -1,19 +1,26 @@
-# Use Node base image
-FROM node:18
+# 1) Install deps
+FROM node:18 AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
 
-# Set working directory
+# 2) Build the app
+FROM node:18 AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+# 3) Run with only production deps and built artifacts
+FROM node:18 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-
-# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install --production
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
 
-# Copy rest of the code
-COPY . .
-
-# Expose the port your app runs on
+# Expose the app port
 EXPOSE 3000
 
-# Start the app
-CMD ["npm", "run", "dev"]
+# Start the compiled server (adjust path if different)
+CMD ["node", "dist/server.js"]
