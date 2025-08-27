@@ -19,7 +19,7 @@ export const experienceLetterTemplate = ({
 ${company_name}
 Date: ${new Date().toLocaleDateString()}
 
-TO WHOMSOEVER IT MAY CONCERN
+TO WHOMSOEVER IT MAY CONCERN /////*
 
 This is to certify that ${name} was employed with ${company_name} as a ${designation}${
     department ? ` in the ${department} department` : ""

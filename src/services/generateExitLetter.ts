@@ -5,6 +5,7 @@ import path from "path";
 import wasabiS3 from "../config/wasabi";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { encrypt } from "../utils/encryption";
+
 import { exitLetterTemplate } from "../../templates/exitTemplate";
 import { experienceLetterTemplate } from "../../templates/experienceLetterTemplate";
 
@@ -19,14 +20,13 @@ export const createLetter = async (
   }-${name.replace(/\s+/g, "_")}-${Date.now()}`;
 
   const tmpDir = path.join(__dirname, "..", "..", "tmp");
-  if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true });
-  }
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
   const pdfPath = path.join(tmpDir, `${filename}.pdf`);
   const docxPath = path.join(tmpDir, `${filename}.docx`);
 
   let content: string;
+
   if (type === "exit") {
     if (
       !employee.designation ||
@@ -39,8 +39,8 @@ export const createLetter = async (
       name: employee.name,
       designation: employee.designation,
       department: employee.department,
-      joining_date: employee.joining_date.toISOString().split("T")[0],
-      exit_date: employee.exit_date.toISOString().split("T")[0],
+      joining_date: new Date(employee.joining_date).toISOString().split("T")[0],
+      exit_date: new Date(employee.exit_date).toISOString().split("T")[0],
       company_name,
     });
   } else {
@@ -51,20 +51,22 @@ export const createLetter = async (
       name: employee.name,
       designation: employee.designation,
       department: employee.department,
-      joining_date: employee.joining_date.toISOString().split("T")[0],
-      exit_date: employee.exit_date?.toISOString().split("T")[0] || "",
+      joining_date: new Date(employee.joining_date).toISOString().split("T")[0],
+      exit_date: employee.exit_date
+        ? new Date(employee.exit_date).toISOString().split("T")[0]
+        : "",
       company_name,
       company_address: employee.company_address || "",
     });
   }
 
-  // Generate PDF
+  // PDF
   const pdfDoc = new PDFDocument();
   pdfDoc.pipe(fs.createWriteStream(pdfPath));
   pdfDoc.fontSize(12).text(content, { align: "left" });
   pdfDoc.end();
 
-  // Generate DOCX
+  // DOCX
   const doc = new Document({
     sections: [
       {

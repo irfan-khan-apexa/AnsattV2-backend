@@ -7,7 +7,7 @@ const standardOfferTemplate = (data: {
   probation_period: string;
 }) => {
   return `
-    OFFER LETTER  standartd
+    OFFER LETTER  standartd /////// *
 
     Dear ${data.name},
 

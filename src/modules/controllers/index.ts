@@ -76,6 +76,13 @@ import {
   generateExitLetterById,
   downloadExitLetter,
 } from "./exitRequestController/exitRequest.controller";
+import {
+  createSalary,
+  getEmployeeSlips,
+  downloadSlip,
+  bulkUploadSalaryAdvanced,
+  exportSalaryData
+} from "./salaryController/salary.Controller";
 
 // All controllers exported as single object
 export {
@@ -132,4 +139,9 @@ export {
   updateExitRequestStatus,
   generateExitLetterById,
   downloadExitLetter,
+  createSalary,
+  getEmployeeSlips,
+  downloadSlip,
+  bulkUploadSalaryAdvanced,
+  exportSalaryData
 };

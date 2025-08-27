@@ -19,6 +19,7 @@ const createExitRequest = async (req: Request, res: Response): Promise<any> => {
       remarks,
     } = req.body;
 
+    // Required fields validation
     if (
       !company_code ||
       !employee_id ||
@@ -29,6 +30,7 @@ const createExitRequest = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // Check employee exist karta hai ya nahi
     const employee = await Onboarding.findOne({
       where: { id: employee_id, company_code },
     });
@@ -37,6 +39,18 @@ const createExitRequest = async (req: Request, res: Response): Promise<any> => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
+    // Check agar already request exist karti hai same employee ke liye
+    const existingRequest = await ExitRequest.findOne({
+      where: { employee_id, company_code },
+    });
+
+    if (existingRequest) {
+      return res
+        .status(400)
+        .json({ message: "Exit request already exists for this employee" });
+    }
+
+    // Agar request exist nahi karti to nayi request create karo
     const newExit = await ExitRequest.create({
       company_code,
       employee_id,
@@ -53,22 +67,45 @@ const createExitRequest = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+
 // Get all Exit Requests for a company
+// const getAllExitRequests = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     let { company_code } = req.query;
+
+//     if (!company_code || typeof company_code !== "string") {
+//       return res
+//         .status(400)
+//         .json({ message: "company_code is required and must be a string" });
+//     }
+
+//     const requests = await ExitRequest.findAll({
+//       where: { company_code },
+//       include: [
+//         {
+//           model: Onboarding,
+//           attributes: ["name", "email", "department", "designation"],
+//         },
+//       ],
+//     });
+
+//     res.status(200).json({ data: requests });
+//   } catch (err) {
+//     console.error("Error fetching exit requests:", err);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 const getAllExitRequests = async (
-  req: Request,
+  req: CompanyRequest,
   res: Response
 ): Promise<any> => {
   try {
-    let { company_code } = req.query;
-
-    if (!company_code || typeof company_code !== "string") {
-      return res
-        .status(400)
-        .json({ message: "company_code is required and must be a string" });
-    }
-
     const requests = await ExitRequest.findAll({
-      where: { company_code },
+      where: { company_code: req.user.company_code },
       include: [
         {
           model: Onboarding,
@@ -77,10 +114,10 @@ const getAllExitRequests = async (
       ],
     });
 
-    res.status(200).json({ data: requests });
-  } catch (err) {
-    console.error("Error fetching exit requests:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(200).json({ data: requests });
+  } catch (error) {
+    console.error("Error fetching exit requests:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 

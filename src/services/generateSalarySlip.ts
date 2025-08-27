@@ -1,5 +1,4 @@
-// src/services/generateOfferLetter.ts
-
+// services/generateSalarySlip.ts
 import PDFDocument from "pdfkit";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import fs from "fs";
@@ -7,58 +6,40 @@ import path from "path";
 import wasabiS3 from "../config/wasabi";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { encrypt } from "../utils/encryption";
-import offerTemplates from "../../templates"; // ✅ central offer templates index
+import templates from "../../templates"; // central templates import
 
-// ✅ Dynamic template selector
 function selectTemplateByName(name: string) {
   const key = name?.toLowerCase();
-  const template = Object.entries(offerTemplates).find(
+  const template = Object.entries(templates).find(
     ([tplName]) => tplName.toLowerCase() === key
   );
-  return template ? template[1] : offerTemplates["generateOfferContent"]; // fallback
+  return template ? template[1] : null;
 }
 
-export const createOfferLetter = async (
+export const createSalarySlip = async (
+  salary: any,
   employee: any,
-  company_name: string,
   templateName: string
 ) => {
-  const name = employee.name || "Unknown";
-  const filename = `OfferLetter-${name.replace(/\s+/g, "_")}-${Date.now()}`;
-
+  const filename = `SalarySlip-${employee.name}-${salary.month}-${Date.now()}`;
   const tmpDir = path.join(__dirname, "..", "..", "tmp");
-  if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true });
-  }
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
   const pdfPath = path.join(tmpDir, `${filename}.pdf`);
   const docxPath = path.join(tmpDir, `${filename}.docx`);
 
-  // ✅ Required fields validation
-  if (!employee.designation || !employee.joining_date) {
-    throw new Error("Missing required employee fields.");
-  }
-
   // ✅ Pick template dynamically
   const templateFn =
-    selectTemplateByName(templateName) ||
-    offerTemplates["generateOfferContent"];
-  const content = templateFn({
-    name: employee.name,
-    designation: employee.designation,
-    department: employee.department,
-    joining_date: employee.joining_date.toISOString().split("T")[0],
-    probation_period: employee.probation_period || "3 months",
-    company_name,
-  });
+    selectTemplateByName(templateName) || templates["standardSalaryTemplate"];
+  const content = templateFn({ employee, salary });
 
-  // ✅ PDF
+  // PDF
   const pdfDoc = new PDFDocument();
   pdfDoc.pipe(fs.createWriteStream(pdfPath));
   pdfDoc.fontSize(12).text(content, { align: "left" });
   pdfDoc.end();
 
-  // ✅ DOCX
+  // DOCX
   const doc = new Document({
     sections: [
       {
@@ -74,11 +55,11 @@ export const createOfferLetter = async (
   const buffer = await Packer.toBuffer(doc);
   fs.writeFileSync(docxPath, buffer);
 
-  // ✅ Upload to Wasabi
+  // Upload both
   const urls: { pdf?: string; docx?: string } = {};
   for (const format of ["pdf", "docx"] as const) {
     const filePath = format === "pdf" ? pdfPath : docxPath;
-    const key = `documents/offer_letters/${filename}.${format}`;
+    const key = `documents/salary_slips/${filename}.${format}`;
     const fileBuffer = fs.readFileSync(filePath);
 
     await wasabiS3.send(

@@ -1,4 +1,4 @@
-const generateOfferContent = (data: {
+const basicOfferTemplate = (data: {
   name: string;
   designation: string;
   department: string;
@@ -43,4 +43,4 @@ ${data.company_name}
 [Signature Placeholder]
   `;
 };
-export { generateOfferContent };
+export { basicOfferTemplate };

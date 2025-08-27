@@ -10,6 +10,8 @@ import { RoleModulePermission } from "./rolePermission/roleModulePermission.mode
 import { Permission } from "./rolePermission/permission.model";
 import { Policy } from "./policyModel/policyModel";
 import { Leave } from "./leaveModel/leaveModel";
+import { Salary } from "./salaryModel/Salary.Model";
+import sequelize from "../../config/sequelize";
 
 Role.hasMany(RoleModulePermission, { foreignKey: "role_id" });
 RoleModulePermission.belongsTo(Role, { foreignKey: "role_id" });
@@ -19,6 +21,13 @@ RoleModulePermission.belongsTo(Module, { foreignKey: "module_id" });
 
 // Employee.hasOne(Onboarding, { foreignKey: "employee_id" });
 // Onboarding.belongsTo(Employee, { foreignKey: "employee_id" });
+
+// sequelize.sync({ alter: true }).then(() => {
+//   console.log("✅ All models synced with DB");
+// }).catch((err) => {
+//   console.error("❌ Error syncing models:", err);
+// });
+
 export {
   SuperMaster,
   Company,
@@ -32,4 +41,5 @@ export {
   Leave,
   Onboarding,
   ExitRequest,
+  Salary,
 };
