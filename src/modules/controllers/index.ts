@@ -49,12 +49,22 @@ import {
   updatePolicy,
   deletePolicy,
 } from "./policyController/policyController";
+// import {
+//   applyLeave,
+//   getMyLeaves,
+//   getAllLeaves,
+//   approveLeave,
+//   rejectLeave,
+// } from "./leaveController/leaveController";
 import {
-  applyLeave,
-  getMyLeaves,
-  getAllLeaves,
-  approveLeave,
+  applyLeave, 
+  getMyLeaves, 
+  getAllLeaves, 
+  approveLeave, 
   rejectLeave,
+ addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
+    addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
+    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,deleteFinancialYear
 } from "./leaveController/leaveController";
 import { createOfferLetter } from "./onboardingController/offerLetter.Controller";
 import {
@@ -123,6 +133,9 @@ export {
   getAllLeaves,
   approveLeave,
   rejectLeave,
+ addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
+   addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
+   getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,deleteFinancialYear,
   createOfferLetter,
   createOnboarding,
   getAllOnboardings,
