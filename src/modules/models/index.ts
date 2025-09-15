@@ -10,6 +10,10 @@ import { RoleModulePermission } from "./rolePermission/roleModulePermission.mode
 import { Permission } from "./rolePermission/permission.model";
 import { Policy } from "./policyModel/policyModel";
 import { Leave } from "./leaveModel/leaveModel";
+import { LeaveMaster } from "./leaveModel/LeaveMasterModel";
+import { LeaveTransaction } from "./leaveModel/LeaveTransactionModel";
+import { LeaveExtraField } from "./leaveModel/LeaveExtraFieldModel";
+import { FinancialYear } from "./leaveModel/FinancialYearModel";
 import { Salary } from "./salaryModel/Salary.Model";
 import sequelize from "../../config/sequelize";
 
@@ -39,6 +43,10 @@ export {
   Permission,
   Policy,
   Leave,
+  LeaveMaster,
+  LeaveTransaction,
+  LeaveExtraField,
+  FinancialYear,
   Onboarding,
   ExitRequest,
   Salary,

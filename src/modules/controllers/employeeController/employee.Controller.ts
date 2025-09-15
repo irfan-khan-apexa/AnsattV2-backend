@@ -108,7 +108,7 @@ const loginEmployee = async (req: Request, res: Response): Promise<any> => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid password" });
     }
-
+    
     const token = jwt.sign(
       { id: user.id, role: "employee", company_code: user.company_code },
       process.env.JWT_SECRET || "your-secret-key",
