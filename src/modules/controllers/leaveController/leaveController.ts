@@ -523,27 +523,41 @@ const getAllEmployeesLeaveBalance = async (req: any, res: Response): Promise<any
 const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
   try {
     const { startDate, endDate } = req.body;
-    const companyCode = (req as any).user.company_code; // token se nikal rahe hain
+    const companyCode = (req as any).user.company_code;
 
     if (!startDate || !endDate) {
-      return res.status(400).json({ message: "Start and End Date are required" });
+      return res
+        .status(400)
+        .json({ message: "Start and End Date are required" });
     }
 
-    // ✅ camelCase use karo kyunki model me companyCode define hai
-    const [fy, created] = await FinancialYear.upsert({
+    // ✅ Check if already exists
+    const existingFY = await FinancialYear.findOne({ where: { companyCode } });
+
+    if (existingFY) {
+      return res.status(400).json({
+        message: "Financial Year already exists for this company",
+        financialYear: existingFY,
+      });
+    }
+
+    // ✅ Create new
+    const fy = await FinancialYear.create({
       companyCode,
       startDate,
       endDate,
     });
 
-    res.status(200).json({
-      message: created ? "Financial Year created" : "Financial Year updated",
+    return res.status(201).json({
+      message: "Financial Year created successfully",
       financialYear: fy,
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in setFinancialYear:", error);
+    return res.status(500).json({ message: error.message });
   }
 };
+
 
 // ✅ Get Company Financial Year
 const getFinancialYear = async (req: Request, res: Response): Promise<any> => {
@@ -578,8 +592,6 @@ const deleteFinancialYear = async (req: Request, res: Response): Promise<any> =>
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 
 

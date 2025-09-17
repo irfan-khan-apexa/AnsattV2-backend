@@ -1,6 +1,7 @@
 import { SuperMaster } from "./superMasterModel/superMaster.Model";
 import { Company } from "./companyModel/company.Model";
 import { Employee } from "./employeeModel/employee.Model";
+import { Department } from "./departmentModel/department.Model";
 import { OfferLetter } from "./onboardingModel/offerLetter.Model";
 import { Onboarding } from "./onboardingModel/Onboarding.Model";
 import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
@@ -36,6 +37,7 @@ export {
   SuperMaster,
   Company,
   Employee,
+  Department,
   OfferLetter,
   Module,
   Role,
