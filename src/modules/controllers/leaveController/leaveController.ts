@@ -233,7 +233,7 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
       </a>
     </div>
 
-    <p style="margin-top:30px;">Regards,<br><b>Leave Management System</b></p>
+    <p style="margin-top:30px;">Regards,<br><b>HR APEXXA TECHUB</b></p>
   </div>
   `
 );
