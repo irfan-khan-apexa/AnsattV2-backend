@@ -24,6 +24,8 @@ RoleModulePermission.belongsTo(Role, { foreignKey: "role_id" });
 Module.hasMany(RoleModulePermission, { foreignKey: "module_id" });
 RoleModulePermission.belongsTo(Module, { foreignKey: "module_id" });
 
+
+
 // Employee.hasOne(Onboarding, { foreignKey: "employee_id" });
 // Onboarding.belongsTo(Employee, { foreignKey: "employee_id" });
 

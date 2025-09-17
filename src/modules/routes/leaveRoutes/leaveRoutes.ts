@@ -26,6 +26,7 @@ leaveRouter.put("/leaves/reject/:id", authenticateCompanyMaster, rejectLeave);
 // Company Master Routes (Leave Master Config)
 leaveRouter.post("/leave-category", authenticateCompanyMaster, addNewCategory);
 leaveRouter.get("/leave-category", authenticateCompanyMaster, getLeaveCategory);
+leaveRouter.get("/leave-category/for-employee", authenticateEmployee, getLeaveCategory);
 leaveRouter.put("/leave-category/rename/:id", authenticateCompanyMaster, updateLeaveCategory);
 leaveRouter.delete("/leave-category/delete/:id", authenticateCompanyMaster, deleteLeavecategory);
 
@@ -33,6 +34,7 @@ leaveRouter.delete("/leave-category/delete/:id", authenticateCompanyMaster, dele
 // Extra Field Routes
 leaveRouter.post("/extra-fields", authenticateCompanyMaster, addExtraField);
 leaveRouter.get("/extra-fields", authenticateCompanyMaster, getExtraFields);
+leaveRouter.get("/extra-fields/for-employee", authenticateEmployee, getExtraFields);
 leaveRouter.get("/extra-fields/:id", authenticateCompanyMaster, getExtraFieldById);
 leaveRouter.put("/extra-fields/:id", authenticateCompanyMaster, renameExtraField);
 leaveRouter.delete("/extra-fields/:id", authenticateCompanyMaster, deleteExtraField);

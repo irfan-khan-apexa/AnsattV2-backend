@@ -141,6 +141,12 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ message: "Required fields missing" });
     }
 
+    // ✅ employee fetch karo for name
+    const employee = await Onboarding.findByPk(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
     const metaFields = await LeaveExtraField.findAll({ where: { companyCode } });
     const mappedExtraFields: any = {};
     metaFields.forEach(f => {
@@ -156,6 +162,7 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
 
     const leave = await LeaveTransaction.create({
       employeeId,
+      employeeName: employee.name,   // ✅ store employee name also
       category,
       startDate,
       endDate,
@@ -166,27 +173,70 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
       extraFields: mappedExtraFields,
     });
 
- const employee = await Onboarding.findByPk(employeeId);
-
     // 👇 Email to HR/Manager
- await sendMail(
+   await sendMail(
   ["yamib619@gmail.com", "golurj050@gmail.com"],
-  "New Leave Request",
-  `<p>Employee ${employee?.name} <b>${employeeId}</b> applied for leave from ${startDate} to ${endDate} (${calculatedDays} days).</p>
-   <p>Reason: ${reason}</p>
-   <p>
-     <a href="https://your-frontend.com/leaves/approve/${leave.id}" 
-        style="background:#28a745;color:#fff;padding:8px 12px;text-decoration:none;border-radius:5px;">
-         Approve
-     </a>
-     &nbsp;
-     <a href="https://your-frontend.com/leaves/reject/${leave.id}" 
-        style="background:#dc3545;color:#fff;padding:8px 12px;text-decoration:none;border-radius:5px;">
-         Reject
-     </a>
-   </p>`
-);
+  "New Leave Request Submitted",
+  `
+  <div style="font-family: Arial, sans-serif; font-size:14px; color:#333; line-height:1.6;">
+    <h2 style="color:#2c3e50;"> New Leave Application</h2>
+    <p>Dear HR/Manager,</p>
+    <p>A new leave request has been submitted by <b>${employee?.name}</b> (Employee ID: <b>${employeeId}</b>).</p>
+    
+    <table style="border-collapse:collapse; width:100%; margin-top:15px;">
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>Employee Name</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${employee?.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>Employee ID</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${employeeId}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>Department</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${employee?.department || "N/A"}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>Leave Category</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${category}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>Start Date</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${startDate}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>End Date</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${endDate}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>Total Days</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${calculatedDays}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; border:1px solid #ddd;"><b>Reason</b></td>
+        <td style="padding:8px; border:1px solid #ddd;">${reason}</td>
+      </tr>
+    </table>
 
+    <p style="margin-top:20px;">
+      Please take the necessary action by clicking one of the options below:
+    </p>
+
+    <div style="margin-top:15px;">
+      <a href="https://your-frontend.com/leaves/approve/${leave.id}" 
+        style="background:#28a745; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px; margin-right:10px;">
+         Approve
+      </a>
+      <a href="https://your-frontend.com/leaves/reject/${leave.id}" 
+        style="background:#dc3545; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px;">
+         Reject
+      </a>
+    </div>
+
+    <p style="margin-top:30px;">Regards,<br><b>Leave Management System</b></p>
+  </div>
+  `
+);
 
 
     res.status(201).json({ message: "Leave applied", leave });
@@ -195,6 +245,7 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: "Error applying leave" });
   }
 };
+
 
 // ✅ Approve Leave
 const approveLeave = async (req: Request, res: Response): Promise<any> => {
@@ -292,23 +343,43 @@ const addNewCategory = async (req: Request, res: Response): Promise<any> => {
 
 
 // ✅ Get Categories by type (optional filter)
+// const getLeaveCategory = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const { type } = req.query;
+//     const companyCode = (req as any).user.company_code;
+
+//     const whereClause: any = { companyCode };
+//     if (type) whereClause.type = type;
+
+//     const records = await LeaveMaster.findAll({ where: whereClause });
+
+//     res.status(200).json(records);
+//   } catch (err) {
+//     console.error("Error in getLeaveCategory:", err);
+//     res.status(500).json({ message: "Error fetching categories" });
+//   }
+// };
+// ✅ Leave Category
 const getLeaveCategory = async (req: Request, res: Response): Promise<any> => {
   try {
     const { type } = req.query;
-    const companyCode = (req as any).user.company_code;
+    const user = (req as any).user;
 
-    const whereClause: any = { companyCode };
+    if (!user?.company_code) {
+      return res.status(401).json({ message: "Invalid token: company_code missing" });
+    }
+
+    const whereClause: any = { companyCode: user.company_code };
+
     if (type) whereClause.type = type;
 
     const records = await LeaveMaster.findAll({ where: whereClause });
-
     res.status(200).json(records);
   } catch (err) {
     console.error("Error in getLeaveCategory:", err);
     res.status(500).json({ message: "Error fetching categories" });
   }
 };
-
 
 // ✅ Rename/Update Category Name
 const updateLeaveCategory = async (req: Request, res: Response): Promise<any> => {
@@ -392,17 +463,31 @@ const addExtraField = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+// const getExtraFields = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const companyCode = (req as any).user.company_code; //  FIXED
+//     const fields = await LeaveExtraField.findAll({ where: { companyCode } });
+//     res.status(200).json({ fields });
+//   } catch (err) {
+//     console.error("Error in getExtraFields:", err);
+//     res.status(500).json({ message: "Error fetching fields" });
+//   }
+// };
 const getExtraFields = async (req: Request, res: Response): Promise<any> => {
   try {
-    const companyCode = (req as any).user.company_code; //  FIXED
-    const fields = await LeaveExtraField.findAll({ where: { companyCode } });
+    const user = (req as any).user;
+
+    if (!user?.company_code) {
+      return res.status(401).json({ message: "Invalid token: company_code missing" });
+    }
+
+    const fields = await LeaveExtraField.findAll({ where: { companyCode: user.company_code } });
     res.status(200).json({ fields });
   } catch (err) {
     console.error("Error in getExtraFields:", err);
     res.status(500).json({ message: "Error fetching fields" });
   }
 };
-
 
 // Get by ID
  const getExtraFieldById = async (req: Request, res: Response): Promise<any>  => {
