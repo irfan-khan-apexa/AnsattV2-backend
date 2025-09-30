@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 
 import { superMasterRouter } from "./superMasterRoutes/superMaster.Routes";
 import { companyRouter } from "./companyRoutes/company.Routes";
+import { departmentRouter } from "./departmentRoutes/departmentRoutes";
 import { employeeRouter } from "./employeeRoutes/employee.Routes";
 import { onboardingRouter } from "./onboardingRoutes/onboarding.Routes";
 import { roleRouter } from "./rolePermissionRoutes/role.Routes";
@@ -15,6 +16,7 @@ const router = Router();
 
 router.use(superMasterRouter);
 router.use(companyRouter);
+router.use(departmentRouter);
 router.use(employeeRouter);
 router.use(onboardingRouter);
 router.use(roleRouter);

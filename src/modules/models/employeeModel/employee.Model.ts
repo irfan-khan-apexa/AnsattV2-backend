@@ -58,5 +58,5 @@ Employee.init(
 );
 
 // Employee.sync();
-Employee.sync({ alter: true });
+// Employee.sync({ alter: true });
 export default Employee;

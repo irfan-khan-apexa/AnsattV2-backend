@@ -57,5 +57,5 @@ Salary.init(
   { sequelize, tableName: "salaries", timestamps: true }
 );
 
-Salary.sync({ alter: true });
+// Salary.sync({ alter: true });
 export default Salary;

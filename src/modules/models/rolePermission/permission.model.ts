@@ -40,5 +40,5 @@ Permission.init(
   }
 );
 
-Permission.sync({ alter: true });
+// Permission.sync({ alter: true });
 export default Permission;

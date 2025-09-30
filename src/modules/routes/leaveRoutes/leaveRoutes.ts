@@ -3,11 +3,12 @@ import {
   applyLeave,
   getMyLeaves,
   getAllLeaves,
+  handleLeaveAction,
   approveLeave,
   rejectLeave,
 addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
     addExtraField,getExtraFields, getExtraFieldById,renameExtraField, deleteExtraField,getLeaveBalance,
-    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,deleteFinancialYear
+    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear
 } from "../../controllers/index";
 import { authenticateEmployee } from "../../../middlewares/authMiddleware";
 import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
@@ -20,6 +21,7 @@ leaveRouter.get("/leaves/mine", authenticateEmployee, getMyLeaves);
 
 // Company Master Routes
 leaveRouter.get("/leaves", authenticateCompanyMaster, getAllLeaves);
+leaveRouter.get("/leaves/action", handleLeaveAction);
 leaveRouter.put("/leaves/approve/:id", authenticateCompanyMaster, approveLeave);
 leaveRouter.put("/leaves/reject/:id", authenticateCompanyMaster, rejectLeave);
 
@@ -46,6 +48,7 @@ leaveRouter.get("/leaves/balance/all",authenticateEmployee, getAllEmployeesLeave
 //financial year
 leaveRouter.post("/financial-year",authenticateCompanyMaster,setFinancialYear );
 leaveRouter.get("/financial-year",authenticateCompanyMaster, getFinancialYear);
+leaveRouter.get("/all-financial-year",authenticateCompanyMaster, getAllFinancialYears);
 leaveRouter.delete("/financial-year",authenticateCompanyMaster, deleteFinancialYear);
 
 
