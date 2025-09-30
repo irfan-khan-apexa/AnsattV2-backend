@@ -20,6 +20,9 @@ import {
 } from "./employeeController/employee.Controller";
 
 import {
+ createDepartment,getDepartments,getDepartmentById,updateDepartment,deleteDepartment
+} from "./departmentController/department.Controller";
+import {
   createRole,
   getAllRoles,
   updateRole,
@@ -60,11 +63,12 @@ import {
   applyLeave, 
   getMyLeaves, 
   getAllLeaves, 
+handleLeaveAction,
   approveLeave, 
   rejectLeave,
  addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
     addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
-    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,deleteFinancialYear
+    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear
 } from "./leaveController/leaveController";
 import { createOfferLetter } from "./onboardingController/offerLetter.Controller";
 import {
@@ -109,6 +113,7 @@ export {
   getEmployeeModules,
   getAllCompanies,
   getEmployeesByCompanyCode,
+  createDepartment,getDepartments,getDepartmentById,updateDepartment,deleteDepartment,
   createRole,
   getAllRoles,
   updateRole,
@@ -131,11 +136,12 @@ export {
   applyLeave,
   getMyLeaves,
   getAllLeaves,
+  handleLeaveAction,
   approveLeave,
   rejectLeave,
  addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
    addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
-   getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,deleteFinancialYear,
+   getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
   createOfferLetter,
   createOnboarding,
   getAllOnboardings,

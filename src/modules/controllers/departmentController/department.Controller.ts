@@ -1,89 +1,153 @@
-// controllers/department.controller.ts
 import { Request, Response } from "express";
 import { Department,Onboarding } from "../../models/index";
 
- const createDepartment = async (req: Request, res: Response): Promise<any> => {
+
+
+const createDepartment = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { name, managerId } = req.body;
-    const companyCode = (req as any).user.company_code;
+    const { name, HrId } = req.body;
+    const companyCode = (req as any).user.company_code; // token से companyCode
 
-    if (!name || !managerId) {
-      return res.status(400).json({ message: "Name and Manager are required" });
+    if (!name || !HrId) {
+      return res.status(400).json({ message: "Name and HrId are required" });
     }
 
-    // check manager exists in same company
-    const manager = await Onboarding.findOne({
-      where: { id: managerId, company_code: companyCode },
+    // ✅ Same company में same name का department exist करता है या नहीं
+    const existingDept = await Department.findOne({
+      where: { name, companyCode },
     });
-    if (!manager) {
-      return res.status(404).json({ message: "Manager not found in this company" });
+    if (existingDept) {
+      return res.status(400).json({
+        message: `Department with name '${name}' already exists in this company`,
+      });
     }
 
-    const dept = await Department.create({
+    // ✅ Check employee exist करता है या नहीं उसी company में
+    const hrEmployee = await Onboarding.findOne({
+      where: { id: HrId, company_code: companyCode },
+    });
+    if (!hrEmployee) {
+      return res
+        .status(404)
+        .json({ message: "HR Employee not found in this company" });
+    }
+
+    // ✅ Create department
+    const department = await Department.create({
       name,
-      managerId,
+      HrId,
       companyCode,
     });
 
-    res.status(201).json({ message: "Department created", department: dept });
+    res.status(201).json({
+      message: "Department created successfully",
+      department,
+    });
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    console.error("Error creating department:", err);
+    res.status(500).json({ message: "Error creating department" });
   }
 };
 
- const getDepartments = async (req: Request, res: Response): Promise<any> => {
+
+
+// ✅ Get All Departments (company wise)
+const getDepartments = async (req: Request, res: Response): Promise<any> => {
   try {
+    const companyCode = (req as any).user.company_code; // token से
+    const departments = await Department.findAll({
+      where: { companyCode },
+    });
+    res.json(departments);
+  } catch (err) {
+    console.error("Error fetching departments:", err);
+    res.status(500).json({ message: "Error fetching departments" });
+  }
+};
+
+// ✅ Get Department by ID (company wise)
+const getDepartmentById = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
     const companyCode = (req as any).user.company_code;
 
-    const depts = await Department.findAll({
-      where: { companyCode },
-      include: [{ model: Onboarding, as: "manager", attributes: ["id", "name", "email"] }],
+    const department = await Department.findOne({
+      where: { id, companyCode },
     });
 
-    res.status(200).json(depts);
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
- const updateDepartment = async (req: Request, res: Response): Promise<any> => {
-  try {
-    const { id } = req.params;
-    const { name, managerId } = req.body;
-    const companyCode = (req as any).user.company_code;
-
-    const dept = await Department.findOne({ where: { id, companyCode } });
-    if (!dept) return res.status(404).json({ message: "Department not found" });
-
-    if (managerId) {
-      const manager = await Onboarding.findOne({
-        where: { id: managerId, company_code: companyCode },
-      });
-      if (!manager) {
-        return res.status(404).json({ message: "Manager not found in this company" });
-      }
+    if (!department) {
+      return res
+        .status(404)
+        .json({ message: "Department not found in this company" });
     }
 
-    await dept.update({ name, managerId });
-    res.status(200).json({ message: "Department updated", department: dept });
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    res.json(department);
+  } catch (err) {
+    console.error("Error fetching department:", err);
+    res.status(500).json({ message: "Error fetching department" });
   }
 };
 
- const deleteDepartment = async (req: Request, res: Response): Promise<any> => {
+
+// ✅ Update Department
+const updateDepartment = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { name, HrId } = req.body;
+    const companyCode = (req as any).user.company_code; // ✅ token से company code
+
+    // ✅ Department उसी company का होना चाहिए
+    const department = await Department.findOne({ where: { id, companyCode } });
+    if (!department) {
+      return res.status(404).json({ message: "Department not found in this company" });
+    }
+
+    // ✅ अगर HrId update कर रहे हैं तो check करो
+    if (HrId) {
+      const hrEmployee = await Onboarding.findOne({
+        where: { id: HrId, company_code: companyCode },
+      });
+      if (!hrEmployee) {
+        return res.status(404).json({ message: "HR Employee not found in this company" });
+      }
+      department.HrId = HrId;
+    }
+
+    // ✅ Name update करो अगर दिया है
+    if (name) {
+      department.name = name;
+    }
+
+    await department.save();
+
+    res.json({ message: "Department updated", department });
+  } catch (err) {
+    console.error("Error updating department:", err);
+    res.status(500).json({ message: "Error updating department" });
+  }
+};
+
+
+const deleteDepartment = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
     const companyCode = (req as any).user.company_code;
 
-    const dept = await Department.findOne({ where: { id, companyCode } });
-    if (!dept) return res.status(404).json({ message: "Department not found" });
+    const department = await Department.findOne({
+      where: { id, companyCode },
+    });
 
-    await dept.destroy();
-    res.status(200).json({ message: "Department deleted" });
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    if (!department) {
+      return res
+        .status(404)
+        .json({ message: "Department not found in this company" });
+    }
+
+    await department.destroy();
+    res.json({ message: "Department deleted" });
+  } catch (err) {
+    console.error("Error deleting department:", err);
+    res.status(500).json({ message: "Error deleting department" });
   }
 };
-
-export {createDepartment,getDepartments,updateDepartment,deleteDepartment };
+export {createDepartment,getDepartments,updateDepartment,deleteDepartment ,getDepartmentById};

@@ -13,6 +13,7 @@ import { Policy } from "./policyModel/policyModel";
 import { Leave } from "./leaveModel/leaveModel";
 import { LeaveMaster } from "./leaveModel/LeaveMasterModel";
 import { LeaveTransaction } from "./leaveModel/LeaveTransactionModel";
+import { LeaveActionToken } from "./leaveModel/LeaveActionTokenModel";
 import { LeaveExtraField } from "./leaveModel/LeaveExtraFieldModel";
 import { FinancialYear } from "./leaveModel/FinancialYearModel";
 import { Salary } from "./salaryModel/Salary.Model";
@@ -24,16 +25,27 @@ RoleModulePermission.belongsTo(Role, { foreignKey: "role_id" });
 Module.hasMany(RoleModulePermission, { foreignKey: "module_id" });
 RoleModulePermission.belongsTo(Module, { foreignKey: "module_id" });
 
+// Onboarding belongs to Department
+// Onboarding.belongsTo(Department, { foreignKey: "department" });
+
+// Onboarding has one Manager (self relation)
+// Onboarding.belongsTo(Onboarding, { foreignKey: "reporting_manager", as: "Manager" });
 
 
 // Employee.hasOne(Onboarding, { foreignKey: "employee_id" });
 // Onboarding.belongsTo(Employee, { foreignKey: "employee_id" });
 
-// sequelize.sync({ alter: true }).then(() => {
+// sequelize.sync({
+//   alter: true,
+//   logging: console.log, // <-- ye line add karo
+// })
+// .then(() => {
 //   console.log("✅ All models synced with DB");
-// }).catch((err) => {
+// })
+// .catch((err) => {
 //   console.error("❌ Error syncing models:", err);
 // });
+
 
 export {
   SuperMaster,
@@ -49,6 +61,7 @@ export {
   Leave,
   LeaveMaster,
   LeaveTransaction,
+  LeaveActionToken,
   LeaveExtraField,
   FinancialYear,
   Onboarding,

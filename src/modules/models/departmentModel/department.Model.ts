@@ -1,11 +1,22 @@
-import { Model, DataTypes } from "sequelize";
+import { Model, DataTypes,Optional } from "sequelize";
 import sequelize from "../../../config/sequelize";
 
-class Department extends Model {
+interface DepartmentAttributes {
+    id: number;
+   companyCode: string;
+   name: string;
+   HrId: number;
+}
+interface DepartmentCreationAttributes extends Optional<DepartmentAttributes, "id"> {}
+
+class Department 
+extends Model<DepartmentAttributes, DepartmentCreationAttributes>
+  implements DepartmentAttributes 
+  {
   public id!: number;
   public companyCode!: string;
   public name!: string;
-  public managerId!: number;
+  public HrId!: number;
 }
 
 Department.init(
@@ -23,7 +34,7 @@ Department.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    managerId: {
+    HrId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
@@ -34,5 +45,5 @@ Department.init(
     timestamps: true,
   }
 );
-
+Department.sync({ alter: true });
 export { Department };

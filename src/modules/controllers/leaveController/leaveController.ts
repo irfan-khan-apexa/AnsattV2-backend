@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
-import { Leave ,LeaveMaster,LeaveTransaction,LeaveExtraField,FinancialYear,Onboarding} from "../../models";
+import { Leave ,LeaveMaster,LeaveTransaction,LeaveExtraField,FinancialYear,Onboarding,Department,LeaveActionToken} from "../../models";
 import { Op } from "sequelize";
 import { calculateLeaveBalance } from "../../../utils/leaveUtils";
 import { sendMail } from "../../../utils/mailer";
+import * as crypto from "crypto";
 
 
 
@@ -98,63 +99,17 @@ const getAllLeaves = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-// ✅ Approve Leave
-// const approveLeave = async (req: Request, res: Response): Promise<any> => {
-//   try {
-//     const leave = await LeaveTransaction.findByPk(req.params.id);
-//     if (!leave) return res.status(404).json({ message: "Leave not found" });
 
-//     leave.status = "Approved";
-//     await leave.save();
-
-//     res.status(200).json({ message: "Leave approved", leave });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Error approving leave" });
-//   }
-// };
-
-// ✅ Reject Leave
-// const rejectLeave = async (req: Request, res: Response): Promise<any> => {
-//   try {
-//     const leave = await LeaveTransaction.findByPk(req.params.id);
-//     if (!leave) return res.status(404).json({ message: "Leave not found" });
-
-//     leave.status = "Rejected";
-//     await leave.save();
-
-//     res.status(200).json({ message: "Leave rejected", leave });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Error rejecting leave" });
-//   }
-// };
 
 const applyLeave = async (req: Request, res: Response): Promise<any> => {
   try {
     const employeeId = (req as any).user.id;
-    const companyCode = (req as any).user.company_code;
+    const { category, startDate, endDate, reason } = req.body;
 
-    const { category, startDate, endDate, reason, noOfDays, document, extraFieldValues } = req.body;
-
-    if (!category || !startDate || !endDate || !reason) {
-      return res.status(400).json({ message: "Required fields missing" });
-    }
-
-    // ✅ employee fetch karo for name
     const employee = await Onboarding.findByPk(employeeId);
-    if (!employee) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
-
-    const metaFields = await LeaveExtraField.findAll({ where: { companyCode } });
-    const mappedExtraFields: any = {};
-    metaFields.forEach(f => {
-      mappedExtraFields[f.name] = extraFieldValues?.[f.name] ?? "";
-    });
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
 
     const calculatedDays =
-      noOfDays ??
       Math.ceil(
         (new Date(endDate).getTime() - new Date(startDate).getTime()) /
           (1000 * 60 * 60 * 24)
@@ -162,99 +117,176 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
 
     const leave = await LeaveTransaction.create({
       employeeId,
-      employeeName: employee.name,   // ✅ store employee name also
+      employeeName: employee.name,
       category,
       startDate,
       endDate,
       noOfDays: calculatedDays,
       reason,
       status: "Pending",
-      document: document || null,
-      extraFields: mappedExtraFields,
     });
 
-    // 👇 Email to HR/Manager
-   await sendMail(
-  ["yamib619@gmail.com", "golurj050@gmail.com"],
-  "New Leave Request Submitted",
-  `
-  <div style="font-family: Arial, sans-serif; font-size:14px; color:#333; line-height:1.6;">
-    <h2 style="color:#2c3e50;"> New Leave Application</h2>
-    <p>Dear HR/Manager,</p>
-    <p>A new leave request has been submitted by <b>${employee?.name}</b> (Employee ID: <b>${employeeId}</b>).</p>
-    
-    <table style="border-collapse:collapse; width:100%; margin-top:15px;">
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>Employee Name</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${employee?.name}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>Employee ID</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${employeeId}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>Department</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${employee?.department || "N/A"}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>Leave Category</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${category}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>Start Date</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${startDate}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>End Date</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${endDate}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>Total Days</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${calculatedDays}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px; border:1px solid #ddd;"><b>Reason</b></td>
-        <td style="padding:8px; border:1px solid #ddd;">${reason}</td>
-      </tr>
-    </table>
+    // 🔽 Find HR + Manager Emails
+    let recipients: string[] = [];
 
-    <p style="margin-top:20px;">
-      Please take the necessary action by clicking one of the options below:
-    </p>
+    if (employee.department) {
+      const dept = await Department.findByPk(employee.department);
+      if (dept) {
+        const hr = await Onboarding.findByPk(dept.HrId);
+        if (hr?.email) recipients.push(hr.email);
+      }
+    }
 
-    <div style="margin-top:15px;">
-      <a href="https://your-frontend.com/leaves/approve/${leave.id}" 
-        style="background:#28a745; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px; margin-right:10px;">
-         Approve
-      </a>
-      <a href="https://your-frontend.com/leaves/reject/${leave.id}" 
-        style="background:#dc3545; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px;">
-         Reject
-      </a>
-    </div>
+    if (employee.reporting_manager) {
+      const manager = await Onboarding.findByPk(employee.reporting_manager);
+      if (manager?.email) recipients.push(manager.email);
+    }
 
-    <p style="margin-top:30px;">Regards,<br><b>HR APEXXA TECHUB</b></p>
-  </div>
-  `
-);
+    // ✅ For each recipient, create unique token and send mail
+    for (const recipient of recipients) {
+      const actionToken = crypto.randomBytes(32).toString("hex");
 
+      await LeaveActionToken.create({
+        leaveId: leave.id,
+        token: actionToken,
+        email: recipient, // 🔹 email save kar rahe hai
+        expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
+        used: false,
+      });
 
-    res.status(201).json({ message: "Leave applied", leave });
+      const approveUrl = `http://localhost:5000/api/leaves/action?token=${actionToken}&type=approve`;
+      const rejectUrl = `http://localhost:5000/api/leaves/action?token=${actionToken}&type=reject`;
+
+      const mailHtml = `
+        <div style="font-family: Arial, sans-serif; font-size:14px; color:#333;">
+          <h2>New Leave Application</h2>
+          <p>Dear HR/Manager,</p>
+          <p>A new leave request has been submitted by <b>${employee.name}</b> (Employee ID: <b>${employeeId}</b>).</p>
+
+          <table border="1" cellspacing="0" cellpadding="8" style="width:100%; border-collapse:collapse;">
+            <tr><td><b>Employee Name</b></td><td>${employee.name}</td></tr>
+            <tr><td><b>Employee ID</b></td><td>${employeeId}</td></tr>
+            <tr><td><b>Department</b></td><td>${employee.department}</td></tr>
+            <tr><td><b>Leave Category</b></td><td>${category}</td></tr>
+            <tr><td><b>Start Date</b></td><td>${startDate}</td></tr>
+            <tr><td><b>End Date</b></td><td>${endDate}</td></tr>
+            <tr><td><b>Total Days</b></td><td>${calculatedDays}</td></tr>
+            <tr><td><b>Reason</b></td><td>${reason}</td></tr>
+          </table>
+
+          <p style="margin-top:20px;">Please take the necessary action:</p>
+          <a href="${approveUrl}" style="background:#28a745; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px; margin-right:10px;">Approve</a>
+          <a href="${rejectUrl}" style="background:#dc3545; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px;">Reject</a>
+        </div>
+      `;
+
+      await sendMail([recipient], "New Leave Request Submitted", mailHtml);
+    }
+
+    res.status(201).json({ message: "Leave applied & mails sent", leave });
   } catch (err) {
     console.error("Error applying leave:", err);
     res.status(500).json({ message: "Error applying leave" });
   }
 };
 
+const handleLeaveAction = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { token, type, reason } = req.query;
+
+    if (!token || !type || !["approve", "reject"].includes(type as string)) {
+      return res.status(400).send("Invalid link");
+    }
+
+    const actionToken = await LeaveActionToken.findOne({ where: { token } });
+    if (!actionToken) return res.status(400).send("Invalid or expired link");
+    if (new Date() > actionToken.expiresAt) {
+      await actionToken.destroy(); // ⏳ expired → delete
+      return res.status(400).send("Link expired");
+    }
+
+    const leave = await LeaveTransaction.findByPk(actionToken.leaveId);
+    if (!leave) {
+      await actionToken.destroy(); // ❌ leave not found → delete
+      return res.status(404).send("Leave not found");
+    }
+    if (leave.status !== "Pending") {
+      await actionToken.destroy(); // ⚠️ already processed → delete
+      return res.status(400).send("Leave already processed");
+    }
+
+    // 🔹 Find approver by email
+    const approver = await Onboarding.findOne({ where: { email: actionToken.email } });
+    if (!approver) {
+      await actionToken.destroy(); // 👤 approver not found → delete
+      return res.status(404).send("Approver not found");
+    }
+
+    // ✅ If Reject clicked but no reason yet → show form
+    if (type === "reject" && !reason) {
+      return res.send(`
+        <div style="font-family: Arial; max-width:500px; margin:50px auto; padding:20px; border:1px solid #ccc; border-radius:8px;">
+          <h2>Reject Leave Request</h2>
+          <p>Please provide a reason for rejection:</p>
+          <form method="GET" action="/api/leaves/action">
+            <input type="hidden" name="token" value="${token}" />
+            <input type="hidden" name="type" value="reject" />
+            <textarea name="reason" rows="4" style="width:100%; padding:8px;" required></textarea>
+            <br/><br/>
+            <button type="submit" style="background:#dc3545; color:#fff; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">
+              Submit Rejection
+            </button>
+          </form>
+        </div>
+      `);
+    }
+
+    // ✅ Approve / Reject
+    leave.status = type === "approve" ? "Approved" : "Rejected";
+    leave.actionBy = approver.id;
+    leave.actionReason = type === "reject" ? (reason as string || "No reason provided") : null;
+
+    await leave.save();
+
+       // 🗑️ Delete ALL tokens for this leave (including other recipients’)
+    await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
+
+    return res.send(`
+      <div style="font-family: Arial; text-align:center; padding:30px;">
+        <h2>Leave ${leave.status}</h2>
+        <p>Leave request of <b>${leave.employeeName}</b> has been <b>${leave.status}</b>.</p>
+        ${leave.status === "Rejected" ? `<p>Reason: ${leave.actionReason}</p>` : ""}
+      </div>
+    `);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Something went wrong");
+  }
+};
+
+
+
+
+
 
 // ✅ Approve Leave
+
+
+// ✅ Approve Leave (from App)
 const approveLeave = async (req: Request, res: Response): Promise<any> => {
   try {
     const leave = await LeaveTransaction.findByPk(req.params.id);
     if (!leave) return res.status(404).json({ message: "Leave not found" });
 
+    if (leave.status !== "Pending") {
+      return res.status(400).json({ message: "Leave already processed" });
+    }
+
     leave.status = "Approved";
     await leave.save();
+
+    // 🗑️ Delete all tokens for this leave
+    await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
     // 👇 Send mail to employee
     const employee = await Onboarding.findByPk(leave.employeeId);
@@ -273,14 +305,21 @@ const approveLeave = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-// ✅ Reject Leave
+// ✅ Reject Leave (from App)
 const rejectLeave = async (req: Request, res: Response): Promise<any> => {
   try {
     const leave = await LeaveTransaction.findByPk(req.params.id);
     if (!leave) return res.status(404).json({ message: "Leave not found" });
 
+    if (leave.status !== "Pending") {
+      return res.status(400).json({ message: "Leave already processed" });
+    }
+
     leave.status = "Rejected";
     await leave.save();
+
+    // 🗑️ Delete all tokens for this leave
+    await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
     // 👇 Send mail to employee
     const employee = await Onboarding.findByPk(leave.employeeId);
@@ -298,6 +337,7 @@ const rejectLeave = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: "Error rejecting leave" });
   }
 };
+
 
 
 
@@ -604,33 +644,45 @@ const getAllEmployeesLeaveBalance = async (req: any, res: Response): Promise<any
 };
 
 
-// ✅ Set or Update Financial Year
+// ✅ Set Financial Year
+// ✅ Set Financial Year (Always one active at a time + No duplicate date ranges)
 const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
   try {
     const { startDate, endDate } = req.body;
     const companyCode = (req as any).user.company_code;
 
     if (!startDate || !endDate) {
-      return res
-        .status(400)
-        .json({ message: "Start and End Date are required" });
+      return res.status(400).json({ message: "Start and End Date are required" });
     }
 
-    // ✅ Check if already exists
-    const existingFY = await FinancialYear.findOne({ where: { companyCode } });
+    // ✅ Duplicate check
+  const duplicate = await FinancialYear.findOne({
+  where: {
+    companyCode,
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
+  },
+});
 
-    if (existingFY) {
-      return res.status(400).json({
-        message: "Financial Year already exists for this company",
-        financialYear: existingFY,
-      });
-    }
+if (duplicate) {
+  return res.status(400).json({
+    message: "A financial year with the same dates already exists for this company",
+    financialYear: duplicate,
+  });
+}
 
-    // ✅ Create new
+    // ✅ Step 1: Sabhi purane ko inactive kar do (sirf is company ke liye)
+    await FinancialYear.update(
+      { isActive: false },
+      { where: { companyCode } }
+    );
+
+    // ✅ Step 2: Naya year create karo aur active banao
     const fy = await FinancialYear.create({
       companyCode,
       startDate,
       endDate,
+      isActive: true,
     });
 
     return res.status(201).json({
@@ -644,15 +696,19 @@ const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
 };
 
 
-// ✅ Get Company Financial Year
+
+
+// ✅ Get Current Financial Year
 const getFinancialYear = async (req: Request, res: Response): Promise<any> => {
   try {
     const companyCode = (req as any).user.company_code;
 
-    const fy = await FinancialYear.findOne({ where: { companyCode } });
+    const fy = await FinancialYear.findOne({
+      where: { companyCode, isActive: true },
+    });
 
     if (!fy) {
-      return res.status(404).json({ message: "Financial Year not found" });
+      return res.status(404).json({ message: "Active Financial Year not found" });
     }
 
     res.status(200).json(fy);
@@ -660,6 +716,23 @@ const getFinancialYear = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// ✅ Get All Financial Years (history)
+const getAllFinancialYears = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const companyCode = (req as any).user.company_code;
+
+    const years = await FinancialYear.findAll({
+      where: { companyCode },
+      order: [["startDate", "DESC"]],
+    });
+
+    res.status(200).json(years);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // ✅ Delete Financial Year
 const deleteFinancialYear = async (req: Request, res: Response): Promise<any> => {
@@ -680,8 +753,8 @@ const deleteFinancialYear = async (req: Request, res: Response): Promise<any> =>
 
 
 
-export { applyLeave, getMyLeaves, getAllLeaves, approveLeave, 
+export { applyLeave, getMyLeaves, getAllLeaves,handleLeaveAction, approveLeave, 
   rejectLeave, addNewCategory, getLeaveCategory,updateLeaveCategory
   , deleteLeavecategory, addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField ,getLeaveBalance ,
-getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,deleteFinancialYear};
+getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear};
 

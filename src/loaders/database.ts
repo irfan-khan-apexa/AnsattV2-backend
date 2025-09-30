@@ -10,7 +10,8 @@ const connectDB = async () => {
     // Sync your models
     // await SuperMaster.sync(); // This ensures the table exists
 
-    // Or use: await sequelize.sync(); to sync all defined models
+  // await sequelize.sync();
+   // to sync all defined models
     // console.log("SuperMaster table synced.");
     // await syncAllModels();
   } catch (error) {
