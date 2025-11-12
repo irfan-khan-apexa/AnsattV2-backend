@@ -9,9 +9,16 @@ export interface SalaryAttributes {
   basic: number;
   hra?: number | null;
   allowances?: number | null;
-  deductions?: number | null;
+  deductions?: number | null; // employee-side deductions
   bonus?: number | null;
   net_salary: number;
+
+  // NEW fields
+  gross?: number | null; // basic + hra + allowances + bonus
+  pf_esic_pt?: number | null; // employee PF / ESIC / Professional Tax combined (employee contribution)
+  employer_pf?: number | null; // employer PF contribution
+  ctc?: number | null; // gross + employer contributions
+
   generated_by: number; // HR/Admin who generated
   salary_slip?: string | null; // encrypted Wasabi URL
 }
@@ -19,7 +26,16 @@ export interface SalaryAttributes {
 // For creation, `id` and optional fields are not required
 export type SalaryCreationAttributes = Optional<
   SalaryAttributes,
-  "id" | "hra" | "allowances" | "deductions" | "bonus" | "salary_slip"
+  | "id"
+  | "hra"
+  | "allowances"
+  | "deductions"
+  | "bonus"
+  | "salary_slip"
+  | "gross"
+  | "pf_esic_pt"
+  | "employer_pf"
+  | "ctc"
 >;
 
 export class Salary
@@ -36,6 +52,13 @@ export class Salary
   public deductions!: number | null;
   public bonus!: number | null;
   public net_salary!: number;
+
+  // NEW
+  public gross!: number | null;
+  public pf_esic_pt!: number | null;
+  public employer_pf!: number | null;
+  public ctc!: number | null;
+
   public generated_by!: number;
   public salary_slip!: string | null;
 }
@@ -46,10 +69,18 @@ Salary.init(
     company_code: { type: DataTypes.STRING, allowNull: false },
     month: { type: DataTypes.STRING, allowNull: false },
     basic: { type: DataTypes.FLOAT, allowNull: false },
+
     hra: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
     allowances: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
     deductions: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
     bonus: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
+
+    // NEW fields
+    gross: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
+    pf_esic_pt: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
+    employer_pf: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
+    ctc: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
+
     net_salary: { type: DataTypes.FLOAT, allowNull: false },
     generated_by: { type: DataTypes.INTEGER, allowNull: false },
     salary_slip: { type: DataTypes.TEXT, allowNull: true },
@@ -57,5 +88,5 @@ Salary.init(
   { sequelize, tableName: "salaries", timestamps: true }
 );
 
-// Salary.sync({ alter: true });
+Salary.sync({ alter: true });
 export default Salary;
