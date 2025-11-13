@@ -4,7 +4,10 @@ import {
   getEmployeeSlips,
   downloadSlip,
   bulkUploadSalaryAdvanced,
-  exportSalaryData
+  exportSalaryData,
+  updateSalary,
+  deleteSalary,
+  getAllSalaries
 } from "../../../modules/controllers/index";
 import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../config/multer";
@@ -12,6 +15,7 @@ import upload from "../../../config/multer";
 const salaryRouter = Router();
 
 salaryRouter.post("/salary", authenticateCompanyMaster, createSalary);
+salaryRouter.get("/all-salary", authenticateCompanyMaster, getAllSalaries);
 salaryRouter.get(
   "/salary/:employee_id",
   authenticateCompanyMaster,
@@ -32,6 +36,16 @@ salaryRouter.post(
   "/salary/export-bulk",
   authenticateCompanyMaster,
   exportSalaryData
+);
+salaryRouter.put(
+  "/salary/:id",
+  authenticateCompanyMaster,
+ updateSalary
+);
+salaryRouter.delete(
+  "/salary/:id",
+  authenticateCompanyMaster,
+ deleteSalary
 );
 
 export { salaryRouter };
