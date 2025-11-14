@@ -15,7 +15,7 @@ import upload from "../../../config/multer";
 const salaryRouter = Router();
 
 salaryRouter.post("/salary", authenticateCompanyMaster, createSalary);
-salaryRouter.get("/all-salary", authenticateCompanyMaster, getAllSalaries);
+salaryRouter.get("/salary/all", authenticateCompanyMaster, getAllSalaries);
 salaryRouter.get(
   "/salary/:employee_id",
   authenticateCompanyMaster,
