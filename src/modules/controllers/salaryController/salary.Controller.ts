@@ -745,13 +745,14 @@ const getAllSalaries = async (
     const sortOrder = (order || "DESC").toUpperCase() === "ASC" ? "ASC" : "DESC";
 
     // Use findAndCountAll for pagination metadata
-    const { rows: salaries, count } = await Salary.findAndCountAll({
-      where,
-      order: [[Sequelize.literal(`"${sortField}"`), sortOrder]],
-      offset,
-      limit: pageSize,
-      raw: true,
-    });
+   const { rows: salaries, count } = await Salary.findAndCountAll({
+  where,
+  order: [[sortField, sortOrder]],
+  offset,
+  limit: pageSize,
+  raw: true,
+});
+
 
     return res.status(200).json({
       data: salaries,
