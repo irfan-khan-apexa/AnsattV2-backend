@@ -95,7 +95,10 @@ import {
   getEmployeeSlips,
   downloadSlip,
   bulkUploadSalaryAdvanced,
-  exportSalaryData
+  exportSalaryData,
+  updateSalary,
+  deleteSalary,
+  getAllSalaries
 } from "./salaryController/salary.Controller";
 
 // All controllers exported as single object
@@ -162,5 +165,8 @@ export {
   getEmployeeSlips,
   downloadSlip,
   bulkUploadSalaryAdvanced,
-  exportSalaryData
+  exportSalaryData,
+  updateSalary,
+  deleteSalary,
+  getAllSalaries
 };

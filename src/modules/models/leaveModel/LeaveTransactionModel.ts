@@ -37,6 +37,6 @@ LeaveTransaction.init(
 );
 
 
-LeaveTransaction.sync({ alter: true });
+// LeaveTransaction.sync({ alter: true });
 
 export { LeaveTransaction };
