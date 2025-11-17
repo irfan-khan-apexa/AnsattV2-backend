@@ -89,6 +89,8 @@ import {
   updateExitRequestStatus,
   generateExitLetterById,
   downloadExitLetter,
+    createExitFeedback,
+  getFeedbacksForEmployee
 } from "./exitRequestController/exitRequest.controller";
 import {
   createSalary,
@@ -100,6 +102,16 @@ import {
   deleteSalary,
   getAllSalaries
 } from "./salaryController/salary.Controller";
+import {
+createAsset,
+  updateAsset,
+  deleteAsset,
+  assignAsset,
+  returnAsset,
+  getEmployeeAssets,
+  getAssetHistory,
+  getAllAssets,
+} from "./assetController/asset.Controller";
 
 // All controllers exported as single object
 export {
@@ -161,6 +173,8 @@ export {
   updateExitRequestStatus,
   generateExitLetterById,
   downloadExitLetter,
+    createExitFeedback,
+  getFeedbacksForEmployee,
   createSalary,
   getEmployeeSlips,
   downloadSlip,
@@ -168,5 +182,13 @@ export {
   exportSalaryData,
   updateSalary,
   deleteSalary,
-  getAllSalaries
+  getAllSalaries,
+  createAsset,
+  updateAsset,
+  deleteAsset,
+  assignAsset,
+  returnAsset,
+  getEmployeeAssets,
+  getAssetHistory,
+  getAllAssets,
 };

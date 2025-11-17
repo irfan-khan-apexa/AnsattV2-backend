@@ -17,6 +17,9 @@ import { LeaveActionToken } from "./leaveModel/LeaveActionTokenModel";
 import { LeaveExtraField } from "./leaveModel/LeaveExtraFieldModel";
 import { FinancialYear } from "./leaveModel/FinancialYearModel";
 import { Salary } from "./salaryModel/Salary.Model";
+import { Asset } from "./assetModel/Asset.Model";
+import { AssetAssign } from "./assetModel/AssetAssign.Model";
+import { ExitFeedback } from "./exitRequestModel/exitFeedback.Model";
 import sequelize from "../../config/sequelize";
 
 Role.hasMany(RoleModulePermission, { foreignKey: "role_id" });
@@ -67,4 +70,7 @@ export {
   Onboarding,
   ExitRequest,
   Salary,
+  Asset,
+  AssetAssign,
+  ExitFeedback
 };

@@ -12,6 +12,7 @@ import { policyRouter } from "./policyRoutes/policyRoutes";
 import { leaveRouter } from "./leaveRoutes/leaveRoutes";
 import { exitRouter } from "./exitRequestRoutes/exitRequest.Routes";
 import { salaryRouter } from "./salaryRoutes/salary.Routes";
+import { assetRouter } from "./assetRoutes/asset.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -26,6 +27,7 @@ router.use(policyRouter);
 router.use(leaveRouter);
 router.use(exitRouter);
 router.use(salaryRouter);
+router.use(assetRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({

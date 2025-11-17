@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ExitRequest, Onboarding, Company } from "../../models/index";
+import { ExitRequest, Onboarding, Company, Asset,ExitFeedback } from "../../models/index";
 import {
   AuthenticatedRequest,
   CompanyRequest,
@@ -148,6 +148,9 @@ const getExitRequestById = async (
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
+
 const updateExitRequestStatus = async (
   req: Request,
   res: Response
@@ -177,6 +180,57 @@ const updateExitRequestStatus = async (
   }
 };
 
+// const generateExitLetterById = async (
+//   req: CompanyRequest,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { id } = req.params;
+//     const { company_code, company_name } = req.user;
+//     const { type = "exit", exit_date } = req.query; // type: exit | experience
+
+//     const employee = await Onboarding.findOne({ where: { id, company_code } });
+//     if (!employee) {
+//       return res.status(404).json({ message: "Employee not found" });
+//     }
+
+//     if (exit_date) {
+//       employee.exit_date = new Date(exit_date as string);
+//       await employee.save();
+//     }
+
+//     const urls = await createLetter(
+//       type as "exit" | "experience",
+//       employee,
+//       company_name
+//     );
+
+//     if (type === "exit" && urls.pdf) {
+//       employee.exit_letter = urls.pdf;
+//     } else if (type === "experience" && urls.pdf) {
+//       employee.experience_letter = urls.pdf;
+//     }
+
+//     await employee.save();
+
+//     return res.status(200).json({
+//       message: `${type} letter generated successfully`,
+//       data: {
+//         pdf: urls.pdf,
+//         docx: urls.docx,
+//         employee,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Error generating letter:", err);
+//     return res.status(500).json({
+//       message: "Failed to generate letter",
+//       error: (err as Error).message,
+//     });
+//   }
+// };
+
+
 const generateExitLetterById = async (
   req: CompanyRequest,
   res: Response
@@ -186,10 +240,28 @@ const generateExitLetterById = async (
     const { company_code, company_name } = req.user;
     const { type = "exit", exit_date } = req.query; // type: exit | experience
 
+    // Fetch employee
     const employee = await Onboarding.findOne({ where: { id, company_code } });
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
+
+    // --------- NEW: Check assigned assets ----------
+    // Import Asset model at top: import { Asset } from "../../models/index";
+    const assignedAssets = await Asset.findAll({
+      where: { company_code, assigned_to: id, status: "assigned" },
+      attributes: ["id", "name", "serial_number", "assigned_to", "status"],
+      raw: true,
+    });
+
+    if (assignedAssets && assignedAssets.length > 0) {
+      return res.status(400).json({
+        message:
+          "Cannot generate exit letter: employee has unreturned assigned assets. Please return them first.",
+        assets: assignedAssets,
+      });
+    }
+    // --------- END NEW ----------
 
     if (exit_date) {
       employee.exit_date = new Date(exit_date as string);
@@ -226,6 +298,7 @@ const generateExitLetterById = async (
     });
   }
 };
+
 
 function extractS3Key(url: string): string {
   try {
@@ -299,6 +372,82 @@ const downloadExitLetter = async (
   }
 };
 
+
+const createExitFeedback = async (req: CompanyRequest, res: Response): Promise<any> => {
+  try {
+    const user = (req as any).user; // from authenticateEmployee
+    if (!user || !user.id || !user.company_code) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const company_code = user.company_code;
+    const created_by = user.id;
+
+    // Force employee_id to be the logged-in user (ignore any client-sent employee_id)
+    const employee_id = Number(created_by);
+
+    const {
+      improvements,
+      problems,
+      positives,
+      comments,
+      rating,
+    } = req.body;
+
+    // Basic validation
+    if (!Array.isArray(improvements) || improvements.length === 0)
+      return res.status(400).json({ message: "improvements array required" });
+
+    if (!Array.isArray(problems) || problems.length === 0)
+      return res.status(400).json({ message: "problems array required" });
+
+    if (!Array.isArray(positives) || positives.length === 0)
+      return res.status(400).json({ message: "positives array required" });
+
+    // Trim to max 3 items each
+    const trimTo3 = (arr: any[]) => arr.slice(0, 3).map(String);
+
+    const payload = {
+      company_code,
+      employee_id,
+      improvements: trimTo3(improvements),
+      problems: trimTo3(problems),
+      positives: trimTo3(positives),
+      comments: comments ?? null,
+      rating: rating ? Number(rating) : null,
+      created_by,
+    };
+
+    const fb = await ExitFeedback.create(payload as any);
+    return res.status(201).json({ message: "Feedback saved", data: fb });
+  } catch (err: any) {
+    console.error("createExitFeedbackByEmployee error:", err);
+    return res.status(500).json({ message: "Error saving feedback", error: err.message });
+  }
+};
+
+const getFeedbacksForEmployee = async (req: CompanyRequest, res: Response): Promise<any> => {
+try {
+    const company_code = req.user.company_code;
+    // accept either /exit/feedback/:employee_id  OR /exit/feedback/:id
+    const employee_id = Number(req.params.employee_id ?? req.params.id);
+    if (!employee_id) return res.status(400).json({ message: "Invalid employee_id" });
+
+    const feedbacks = await ExitFeedback.findAll({
+      where: { company_code, employee_id },
+      order: [["createdAt", "DESC"]],
+      raw: true,
+    });
+
+    return res.status(200).json({ data: feedbacks });
+  } catch (err: any) {
+    console.error("getFeedbacksForEmployee error:", err);
+    return res.status(500).json({ message: "Error fetching feedbacks", error: err.message });
+  }
+};
+
+
+
 export {
   createExitRequest,
   getAllExitRequests,
@@ -306,4 +455,6 @@ export {
   updateExitRequestStatus,
   generateExitLetterById,
   downloadExitLetter,
+  createExitFeedback,
+  getFeedbacksForEmployee
 };
