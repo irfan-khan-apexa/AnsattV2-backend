@@ -93,31 +93,25 @@ const deleteEmployee = async (
 
 const loginEmployee = async (req: Request, res: Response): Promise<any> => {
   const { email, password } = req.body;
-
   try {
-    // ✅ Use Onboarding model instead of Employee
-    const user = await Onboarding.findOne({ where: { email } });
+    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
 
-    if (!user) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
+    const user = await Employee.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: "Employee not found" });
 
-    // ✅ Use auto_password
-    const isMatch = password === user.auto_password;
+    // compare hashed password
+    const isMatch = await bcrypt.compare(password, (user as any).password);
+    if (!isMatch) return res.status(401).json({ message: "Invalid password" });
 
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid password" });
-    }
-    
     const token = jwt.sign(
-      { id: user.id, role: "employee", company_code: user.company_code },
+      { id: user.id, role: user.role || "employee", company_code: (user as any).company_code },
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "1d" }
     );
 
-    return res.status(200).json({ token });
+    return res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email, company_code: (user as any).company_code } });
   } catch (error) {
-    console.error(error);
+    console.error("loginEmployee error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };

@@ -6,8 +6,10 @@ import {
   updateExitRequestStatus,
   generateExitLetterById,
   downloadExitLetter,
+    createExitFeedback,
+  getFeedbacksForEmployee
 } from "../../controllers/index";
-import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
+import { authenticateCompanyMaster ,authenticateEmployee} from "../../../middlewares/authMiddleware";
 
 const exitRouter = Router();
 
@@ -36,5 +38,22 @@ exitRouter.get(
   authenticateCompanyMaster,
   downloadExitLetter
 );
+
+
+
+
+exitRouter.post(
+  "/exit/feedback",
+  authenticateEmployee,
+  createExitFeedback
+);
+exitRouter.get(
+  "/exit/feedback/:id",
+  authenticateCompanyMaster,
+  getFeedbacksForEmployee
+);
+
+
+
 
 export { exitRouter };
