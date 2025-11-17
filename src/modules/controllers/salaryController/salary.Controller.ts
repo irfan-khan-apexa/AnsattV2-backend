@@ -378,13 +378,36 @@ const createSalary = async (
 };
 
 interface ColumnMapping {
-  [key: string]: string; // file column name → model field
+  [key: string]: string;
 }
 
-const bulkUploadSalaryAdvanced = async (
-  req: CompanyRequest,
-  res: Response
-): Promise<any> => {
+// ✔ Check if month is valid YYYY-MM
+const isValidMonthFormat = (value: string): boolean => {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+};
+
+// ✔ Convert Excel Serial Number → YYYY-MM (main fix)
+const parseMonthValue = (monthVal: any): string => {
+  if (!monthVal) return "";
+
+  // If already correct string format
+  if (typeof monthVal === "string" && isValidMonthFormat(monthVal)) {
+    return monthVal;
+  }
+
+  // If Excel serial number (e.g. 45962)
+  if (typeof monthVal === "number") {
+    const excelDate = new Date((monthVal - 25569) * 86400 * 1000);
+    const year = excelDate.getFullYear();
+    const month = String(excelDate.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }
+
+  return "";
+};
+
+// ✔ MAIN FUNCTION
+const bulkUploadSalaryAdvanced = async (req: CompanyRequest, res: Response): Promise<any> => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -396,19 +419,19 @@ const bulkUploadSalaryAdvanced = async (
     let mapping: ColumnMapping = {};
     if (req.body.mapping) {
       try {
-        mapping = JSON.parse(req.body.mapping); // mapping example: {"EmployeeID":"employee_id","Month":"month","Basic":"basic","HRA":"hra","Allowances":"allowances","Deductions":"deductions","Bonus":"bonus","PF/ESIC/PT":"pf_esic_pt","Employer PF":"employer_pf"}
+        mapping = JSON.parse(req.body.mapping);
       } catch (err) {
         console.error("Invalid mapping JSON:", req.body.mapping);
       }
     }
 
-    // Read Excel/CSV file
+    // Read Excel
     const workbook = XLSX.read(buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     let data: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
 
-    // Apply column mapping if provided
+    // Apply Column Mapping (if provided)
     if (Object.keys(mapping).length > 0) {
       data = data.map((row) => {
         const newRow: any = {};
@@ -434,13 +457,15 @@ const bulkUploadSalaryAdvanced = async (
         employer_pf = 0,
       } = row;
 
-      // Validate required fields
-      if (!employee_id || !month || !basic) {
+      // ✔ FIX: Convert any month value to YYYY-MM
+      const formattedMonth = parseMonthValue(month);
+
+      if (!employee_id || !basic || !formattedMonth) {
         results.push({
           employee_id,
           month,
           status: "failed",
-          reason: "Missing required fields (employee_id / month / basic)",
+          reason: "Invalid row: Required fields missing OR invalid month format",
         });
         continue;
       }
@@ -452,31 +477,32 @@ const bulkUploadSalaryAdvanced = async (
       if (!employee) {
         results.push({
           employee_id,
-          month,
+          month: formattedMonth,
           status: "failed",
           reason: "Employee not found",
         });
         continue;
       }
 
+      // Convert numeric values
       const numBasic = Number(basic);
-      const numHra = Number(hra || 0);
-      const numAllow = Number(allowances || 0);
-      const numBonus = Number(bonus || 0);
-      const numDed = Number(deductions || 0);
-      const numPfEmp = Number(pf_esic_pt || 0);
-      const numEmployerPf = Number(employer_pf || 0);
+      const numHra = Number(hra);
+      const numAllow = Number(allowances);
+      const numBonus = Number(bonus);
+      const numDed = Number(deductions);
+      const numPfEmp = Number(pf_esic_pt);
+      const numEmployerPf = Number(employer_pf);
 
       const gross = numBasic + numHra + numAllow + numBonus;
       const net_salary = gross - (numDed + numPfEmp);
       const ctc = gross + numEmployerPf;
 
-      // Create or update salary
+      // Save/Upsert salary
       const [salary] = await Salary.upsert(
         {
           employee_id,
           company_code,
-          month,
+          month: formattedMonth,
           basic: numBasic,
           hra: numHra,
           allowances: numAllow,
@@ -492,32 +518,33 @@ const bulkUploadSalaryAdvanced = async (
         { returning: true }
       );
 
-      // Generate salary slip
+      // Generate salary slip PDF
       const urls = await createSalarySlip(
         salary,
         employee,
         (req.query.template as string) || "standard"
       );
+
       salary.salary_slip = urls.pdf ?? null;
       await salary.save();
 
       results.push({
         employee_id,
-        month,
+        month: formattedMonth,
         status: "success",
         salary_id: salary.id,
       });
     }
-    console.log("Parsed Data Sample:", data[0]);
-    console.log("Mapping:", mapping);
 
     return res.status(200).json({ message: "Bulk upload processed", results });
   } catch (error: any) {
-    return res
-      .status(500)
-      .json({ message: "Error in bulk upload", error: error.message });
+    return res.status(500).json({
+      message: "Error in bulk upload",
+      error: error.message,
+    });
   }
 };
+
 
 const exportSalaryData = async (
   req: CompanyRequest,
