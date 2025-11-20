@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Module from "../../models/rolePermission/module.model";
+import Module from "../../models/roleModel/module.model";
 
 //  Create Module
 const createModule = async (req: Request, res: Response): Promise<any> => {
