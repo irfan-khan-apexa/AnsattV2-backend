@@ -1,38 +1,95 @@
 import { Request, Response } from "express";
-import { Permission } from "../../models/index";
+import {Permission} from "../../models/index";
+import { CompanyRequest } from "../../../middlewares/authMiddleware";
+import { Op } from "sequelize";
 
-const createPermission = async (req: Request, res: Response): Promise<any> => {
+// CREATE
+ const createPermission = async (req: CompanyRequest, res: Response):Promise<any> => {
   try {
-    const { field, allowed } = req.body;
+    const { key, description } = req.body;
+    const company_code = req.user.company_code;
 
-    if (!field) return res.status(400).json({ message: "Field is required" });
+    if (!key) return res.status(400).json({ message: "key required" });
 
-    const existing = await Permission.findOne({ where: { field } });
-    if (existing)
-      return res.status(409).json({ message: "Permission already exists" });
+    const exists = await Permission.findOne({ where: { key, company_code } });
+    if (exists) return res.status(400).json({ message: "Permission already exists" });
 
-    const permission = await Permission.create({
-      field,
-      allowed: allowed ?? false,
+    const perm = await Permission.create({ key, description, company_code });
+    return res.status(201).json({ message: "Permission created", data: perm });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+// LIST
+ const listPermissions = async (req: CompanyRequest, res: Response):Promise<any> => {
+  try {
+    const company_code = req.user.company_code;
+
+    const perms = await Permission.findAll({
+      where: { company_code },
+      order: [["createdAt", "DESC"]],
     });
 
-    res.status(201).json({ message: "Permission created", permission });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error creating permission" });
+    return res.status(200).json({ data: perms });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
   }
 };
 
-const getAllPermissions = async (
-  _req: Request,
-  res: Response
-): Promise<any> => {
+// GET SINGLE
+ const getPermission = async (req: CompanyRequest, res: Response):Promise<any> => {
   try {
-    const permissions = await Permission.findAll();
-    res.status(200).json({ permissions });
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching permissions" });
+    const { id } = req.params;
+    const company_code = req.user.company_code;
+
+    const perm = await Permission.findOne({ where: { id, company_code } });
+    if (!perm) return res.status(404).json({ message: "Not found" });
+
+    return res.status(200).json({ data: perm });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
   }
 };
 
-export { createPermission, getAllPermissions };
+// UPDATE
+ const updatePermission = async (req: CompanyRequest, res: Response):Promise<any> => {
+  try {
+    const { id } = req.params;
+    const company_code = req.user.company_code;
+    const updates = req.body;
+
+    const perm = await Permission.findOne({ where: { id, company_code } });
+    if (!perm) return res.status(404).json({ message: "Not found" });
+
+    await perm.update(updates);
+    return res.status(200).json({ message: "Updated", data: perm });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE
+ const deletePermission = async (req: CompanyRequest, res: Response):Promise<any> => {
+  try {
+    const { id } = req.params;
+    const company_code = req.user.company_code;
+
+    const perm = await Permission.findOne({ where: { id, company_code } });
+    if (!perm) return res.status(404).json({ message: "Not found" });
+
+    await perm.destroy();
+    return res.status(200).json({ message: "Deleted" });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+
+ export {
+  createPermission,
+  listPermissions,
+  getPermission,
+  updatePermission,
+  deletePermission,
+};

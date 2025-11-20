@@ -42,7 +42,10 @@ import {
 // } from "./rolePermissionController/roleModulePermission.Controller";
 import {
   createPermission,
-  getAllPermissions,
+  listPermissions,
+  getPermission,
+  updatePermission,
+  deletePermission,
 } from "./rolePermissionController/permission.Controller";
 
 import {
@@ -142,7 +145,10 @@ export {
   // updateRoleModulePermission,
   // deleteRoleModulePermission,
   createPermission,
-  getAllPermissions,
+  listPermissions,
+  getPermission,
+  updatePermission,
+  deletePermission,
   createPolicy,
   getAllPolicies,
   getPolicyById,

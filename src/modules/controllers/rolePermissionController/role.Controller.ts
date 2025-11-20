@@ -146,7 +146,7 @@ const createRole = async (req: Request, res: Response): Promise<any> => {
 
     // ✅ Fetch all master permission fields
     const availablePermissions = await Permission.findAll();
-    const allFields = availablePermissions.map((p) => p.field);
+    // const allFields = availablePermissions.map((p) => p.field);
 
     // ✅ Save each module's permissions
     for (const permObj of permissions) {
@@ -163,9 +163,9 @@ const createRole = async (req: Request, res: Response): Promise<any> => {
         module_id: moduleId,
       };
 
-      for (const field of allFields) {
-        permissionData[field] = fields[field] ?? false;
-      }
+      // for (const field of allFields) {
+      //   permissionData[field] = fields[field] ?? false;
+      // }
 
       await RoleModulePermission.create(permissionData);
     }

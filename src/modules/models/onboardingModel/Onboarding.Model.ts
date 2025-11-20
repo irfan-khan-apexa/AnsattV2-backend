@@ -102,7 +102,7 @@ Onboarding.init(
     reporting_manager: DataTypes.INTEGER,
     status: {
       type: DataTypes.STRING,
-      defaultValue: "pending",
+      // defaultValue: "pending",
     },
     joining_date: DataTypes.DATE,
     exit_date: DataTypes.DATE,

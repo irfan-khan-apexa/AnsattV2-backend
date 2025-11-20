@@ -13,6 +13,7 @@ import { encrypt, decrypt } from "../../../utils/encryption";
 import { createOfferLetter } from "../../../services/generateOfferLetter";
 
 import templates from "../../../../templates/index";
+import { log } from "console";
 
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
@@ -225,15 +226,42 @@ const fileFields = [
 
 type FileField = (typeof fileFields)[number];
 
+// function extractS3Key(url: string): string {
+//   try {
+//     const parsed = new URL(url);
+
+//     // pathname example: "/ansatt-bucket-2/documents/123.png"
+//     let pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
+
+//     // Remove bucket prefix if present
+//     pathname = pathname.replace(/^ansatt-bucket-2\//, "");
+//     console.log(pathname,"pathname");
+    
+
+//     return pathname; // final key: "documents/123.png"
+//   } catch {
+//     return url;
+//   }
+// }
+
 function extractS3Key(url: string): string {
   try {
     const parsed = new URL(url);
-    const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
-    return pathname.replace(/^ansatt-bucket\//, "");
+    let pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
+
+    // If URL includes bucket name in path, remove it
+    const bucketPrefix = "ansatt-bucket-2/";
+    if (pathname.startsWith(bucketPrefix)) {
+      pathname = pathname.substring(bucketPrefix.length);
+    }
+
+    return pathname;
   } catch {
     return url;
   }
 }
+
+
 
 const getAllPresignedUrls = async (
   req: CompanyRequest,
@@ -257,12 +285,12 @@ const getAllPresignedUrls = async (
       cacheTime &&
       now.getTime() - cacheTime.getTime() < 7 * 24 * 60 * 60 * 1000;
 
-    if (cacheValid && record.presigned_url_cache) {
-      return res.status(200).json({
-        message: "Presigned URLs served from cache",
-        data: record.presigned_url_cache,
-      });
-    }
+    // if (cacheValid && record.presigned_url_cache) {
+    //   return res.status(200).json({
+    //     message: "Presigned URLs served from cache",
+    //     data: record.presigned_url_cache,
+    //   });
+    // }
 
     const urls: Record<FileField, string | null> = {
       passport_photo: null,
