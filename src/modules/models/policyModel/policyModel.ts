@@ -1,3 +1,4 @@
+// models/Policy.ts
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../../../config/sequelize";
 
@@ -7,6 +8,7 @@ interface PolicyAttributes {
   content: string;
   department: string;
   role: string;
+  company_code: string;   // <-- added
 }
 
 interface PolicyCreationAttributes extends Optional<PolicyAttributes, "id"> {}
@@ -20,6 +22,7 @@ class Policy
   public content!: string;
   public department!: string;
   public role!: string;
+  public company_code!: string;  // <-- added
 }
 
 Policy.init(
@@ -28,6 +31,10 @@ Policy.init(
       type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
+    },
+    company_code: {                 // <-- must add this
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     title: { type: DataTypes.STRING, allowNull: false },
     content: { type: DataTypes.TEXT, allowNull: false },
@@ -41,6 +48,7 @@ Policy.init(
   }
 );
 
-// Policy.sync({ alter: true });
+// DEV ONLY
+Policy.sync({ alter: true });
 
 export { Policy };

@@ -14,6 +14,7 @@ import { createOfferLetter } from "../../../services/generateOfferLetter";
 
 import templates from "../../../../templates/index";
 import { log } from "console";
+import { OnboardingAttributes } from "../../models/onboardingModel/Onboarding.Model";
 
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
@@ -163,6 +164,9 @@ const updateOnboarding = async (
   try {
     const { id } = req.params;
 
+    console.log("FILES:", req.files);
+    console.log("BODY:", req.body);
+
     const record = await Onboarding.findOne({
       where: { id, company_code: req.user.company_code },
     });
@@ -171,7 +175,42 @@ const updateOnboarding = async (
       return res.status(404).json({ message: "Onboarding record not found" });
     }
 
-    await record.update(req.body);
+    // 1) Update any normal fields coming in req.body
+    // Use safe cast because req.body values may be strings for dates/nums
+    await record.update(req.body || {});
+
+    // 2) If files uploaded (multer-s3), save their S3 locations/keys to the record
+    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+    if (files && Object.keys(files).length > 0) {
+      const updates: Partial<OnboardingAttributes> = {};
+
+      // list all file-fields your route accepts and map them
+      const fileFields = [
+        "pan_photo",
+        "aadhar_photo",
+        "passport_photo",
+        "resume",
+        "offer_letter",
+        "joining_letter",
+        "experience_letter",
+      ];
+
+      fileFields.forEach((field) => {
+        const fArr = (files as any)[field] as Express.Multer.File[] | undefined;
+        if (fArr && fArr.length > 0) {
+          // multer-s3 provides .location (full URL). fallback to .key if needed.
+          const fileObj: any = fArr[0];
+          updates[field as keyof OnboardingAttributes] = fileObj.location || fileObj.key || null;
+        }
+      });
+
+      if (Object.keys(updates).length > 0) {
+        await record.update(updates);
+      }
+    }
+
+    // reload to get fresh values
+    await record.reload();
 
     return res.status(200).json({
       message: "Onboarding updated successfully",
@@ -184,6 +223,7 @@ const updateOnboarding = async (
     });
   }
 };
+
 
 // Delete
 const deleteOnboarding = async (
@@ -285,11 +325,9 @@ const getAllPresignedUrls = async (
       cacheTime &&
       now.getTime() - cacheTime.getTime() < 7 * 24 * 60 * 60 * 1000;
 
+    // Optional: you can return cached if still valid
     // if (cacheValid && record.presigned_url_cache) {
-    //   return res.status(200).json({
-    //     message: "Presigned URLs served from cache",
-    //     data: record.presigned_url_cache,
-    //   });
+    //   return res.status(200).json({ message: "Presigned URLs served from cache", data: record.presigned_url_cache });
     // }
 
     const urls: Record<FileField, string | null> = {
@@ -303,25 +341,53 @@ const getAllPresignedUrls = async (
     };
 
     for (const field of fileFields) {
-      const encryptedValue = record[field];
+      const storedValue = (record as any)[field];
+      console.log(`Stored value for ${field}:`, storedValue);
 
-      if (typeof encryptedValue === "string" && encryptedValue) {
-        try {
-          const decryptedUrl = decrypt(encryptedValue);
-          const key = extractS3Key(decryptedUrl);
-          const presignedUrl = await generatePresignedGetUrl(
-            key,
-            7 * 24 * 60 * 60 // 7 days
-          );
-          urls[field] = presignedUrl;
-        } catch (err) {
-          console.error(`Error in ${field}:`, err);
-          urls[field] = null;
-        }
+      if (!storedValue) {
+        urls[field] = null;
+        continue;
+      }
+
+      // Try to interpret storedValue:
+      // 1) If it's encrypted (your app's pattern), try decrypt()
+      // 2) If decrypt fails, assume it's plain URL or key and proceed
+      let possibleUrlOrKey = String(storedValue);
+      let decrypted = null;
+      try {
+        // If decrypt function throws for plain text, catch and fallback
+        decrypted = decrypt(possibleUrlOrKey);
+        // If decrypt returns something falsy, fallback to original
+        if (decrypted) possibleUrlOrKey = decrypted;
+      } catch (err) {
+        // Not encrypted or decrypt failed -> use original storedValue
+        // console.debug("Decrypt failed or not encrypted for", field, err);
+        possibleUrlOrKey = String(storedValue);
+      }
+
+      // Now possibleUrlOrKey may be:
+      // - a full public URL (https://s3.../bucket/documents/...)
+      // - an s3 key (documents/123.png or ansatt-bucket-2/documents/123.png)
+      // - something else (handle defensively)
+
+      // Extract key robustly:
+      const key = extractS3Key(possibleUrlOrKey);
+      if (!key) {
+        console.warn(`Could not extract key for ${field} from value:`, possibleUrlOrKey);
+        urls[field] = null;
+        continue;
+      }
+
+      try {
+        const presignedUrl = await generatePresignedGetUrl(key, 7 * 24 * 60 * 60);
+        urls[field] = presignedUrl;
+      } catch (err) {
+        console.error(`generatePresignedGetUrl failed for ${field} (key=${key}):`, err);
+        urls[field] = null;
       }
     }
 
-    // Save new cache
+    // Save cache
     record.presigned_url_cache = urls;
     record.presigned_url_cache_time = new Date();
     await record.save();
@@ -335,6 +401,7 @@ const getAllPresignedUrls = async (
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 
 // src/controllers/onboardingController.ts
 
