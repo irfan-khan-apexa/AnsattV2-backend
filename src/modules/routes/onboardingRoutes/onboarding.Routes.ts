@@ -10,6 +10,7 @@ import {
   downloadOfferLetter,
   getAllTemplates,
   generateExitLetterById,
+  bulkCreateOnboarding
 } from "../../controllers/index";
 import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
@@ -93,5 +94,8 @@ onboardingRouter.get(
   authenticateCompanyMaster,
   downloadOfferLetter
 );
+
+
+onboardingRouter.post("/onboarding/bulk-import", upload.single("file"), bulkCreateOnboarding);
 
 export { onboardingRouter };

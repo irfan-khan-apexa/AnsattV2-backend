@@ -71,7 +71,8 @@ handleLeaveAction,
   rejectLeave,
  addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
     addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
-    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear
+    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
+    
 } from "./leaveController/leaveController";
 import { createOfferLetter } from "./onboardingController/offerLetter.Controller";
 import {
@@ -84,6 +85,7 @@ import {
   generateOfferLetterById,
   downloadOfferLetter,
   getAllTemplates,
+  bulkCreateOnboarding
 } from "./onboardingController/onBoarding.Controller";
 import {
   createExitRequest,
@@ -93,7 +95,8 @@ import {
   generateExitLetterById,
   downloadExitLetter,
     createExitFeedback,
-  getFeedbacksForEmployee
+  getFeedbacksForEmployee,
+  getMyExitRequest
 } from "./exitRequestController/exitRequest.controller";
 import {
   createSalary,
@@ -169,6 +172,7 @@ export {
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
+  bulkCreateOnboarding,
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
@@ -179,6 +183,7 @@ export {
   updateExitRequestStatus,
   generateExitLetterById,
   downloadExitLetter,
+  getMyExitRequest,
     createExitFeedback,
   getFeedbacksForEmployee,
   createSalary,

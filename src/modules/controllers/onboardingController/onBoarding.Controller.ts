@@ -15,6 +15,7 @@ import { createOfferLetter } from "../../../services/generateOfferLetter";
 import templates from "../../../../templates/index";
 import { log } from "console";
 import { OnboardingAttributes } from "../../models/onboardingModel/Onboarding.Model";
+import XLSX from "xlsx";
 
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
@@ -509,6 +510,99 @@ const getAllTemplates = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+
+
+
+
+const bulkCreateOnboarding = async (req: Request, res: Response):Promise<any> => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No Excel/CSV file uploaded" });
+    }
+
+    // Read uploaded file
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const company_code = (req as any).user.company_code;
+    const failedRows: any[] = [];
+    const successRows: any[] = [];
+
+    for (const row of sheetData as any[]) {
+      try {
+        const {
+          name,
+          email,
+          contact,
+          role,
+          designation,
+          department,
+          reporting_manager,
+          joining_date,
+          probation_period,
+          pan_card,
+          aadhar_card,
+        } = row;
+
+        if (!name || !email) {
+          failedRows.push({ row, error: "Name or email missing" });
+          continue;
+        }
+
+        // Duplicate check
+        const existing = await Onboarding.findOne({
+          where: { email, company_code },
+        });
+
+        if (existing) {
+          failedRows.push({ row, error: "Duplicate email found" });
+          continue;
+        }
+
+        const auto_password = generateStrongPassword();
+
+        const newEmp = await Onboarding.create({
+          name,
+          email,
+          contact,
+          role,
+          designation,
+          department,
+          reporting_manager,
+          joining_date,
+          probation_period,
+          company_code,
+          auto_password,
+          pan_card,
+          aadhar_card,
+        });
+
+        successRows.push(newEmp);
+      } catch (err: any) {
+        failedRows.push({ row, error: err.message });
+      }
+    }
+
+    return res.status(200).json({
+      message: "Bulk import completed",
+      success_count: successRows.length,
+      failed_count: failedRows.length,
+      successRows,
+      failedRows,
+    });
+  } catch (error: any) {
+    console.error("Bulk import error:", error);
+    return res.status(500).json({
+      message: "Failed to process bulk data",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
 export {
   createOnboarding,
   getAllOnboardings,
@@ -519,4 +613,5 @@ export {
   generateOfferLetterById,
   downloadOfferLetter,
   getAllTemplates,
+  bulkCreateOnboarding
 };
