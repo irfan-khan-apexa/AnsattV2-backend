@@ -9,8 +9,8 @@ export interface OnboardingAttributes {
   contact: string;
   role: string;
   designation: string;
-  department: number;
-  reporting_manager: number;
+  department: string;
+  reporting_manager: string;
   status?: string;
   joining_date?: Date;
   probation_period?: string;
@@ -54,8 +54,8 @@ export class Onboarding
   public contact!: string;
   public role!: string;
   public designation!: string;
-  public department!: number;
-  public reporting_manager!: number;
+  public department!: string;
+  public reporting_manager!: string;
   public status!: string;
   public joining_date!: Date;
   public exit_date!: Date;
@@ -98,8 +98,8 @@ Onboarding.init(
     contact: DataTypes.STRING,
     role: DataTypes.STRING,
     designation: DataTypes.STRING,
-    department: DataTypes.INTEGER,
-    reporting_manager: DataTypes.INTEGER,
+    department: DataTypes.STRING,
+    reporting_manager: DataTypes.STRING,
     status: {
       type: DataTypes.STRING,
       // defaultValue: "pending",
@@ -141,5 +141,5 @@ Onboarding.init(
   }
 );
 
-// Onboarding.sync({ alter: true });
+Onboarding.sync({alter:true});
 export default Onboarding;

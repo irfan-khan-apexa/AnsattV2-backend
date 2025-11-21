@@ -17,5 +17,5 @@ Permission.init(
   },
   { sequelize, tableName: "permissions", timestamps: true }
 );
-
+Permission.sync()
 export default Permission;

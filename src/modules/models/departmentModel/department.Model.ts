@@ -45,5 +45,5 @@ Department.init(
     timestamps: true,
   }
 );
-Department.sync({ alter: true });
+// Department.sync();
 export { Department };

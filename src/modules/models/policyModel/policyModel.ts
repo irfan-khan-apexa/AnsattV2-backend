@@ -49,6 +49,6 @@ Policy.init(
 );
 
 // DEV ONLY
-Policy.sync({ alter: true });
+Policy.sync();
 
 export { Policy };

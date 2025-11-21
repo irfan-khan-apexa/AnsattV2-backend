@@ -25,6 +25,6 @@ FinancialYear.init(
 );
 
 
-// FinancialYear.sync({ alter: true });
+FinancialYear.sync();
 
 export { FinancialYear };
