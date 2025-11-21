@@ -52,6 +52,6 @@ Leave.init(
   }
 );
 
-Leave.sync({ alter: true });
+Leave.sync();
 
 export { Leave };

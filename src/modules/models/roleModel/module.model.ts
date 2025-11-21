@@ -35,7 +35,7 @@ Module.init(
   }
 );
 
-// Module.sync();
+Module.sync();
 // Module.sync({ alter: true });
 
 export default Module;

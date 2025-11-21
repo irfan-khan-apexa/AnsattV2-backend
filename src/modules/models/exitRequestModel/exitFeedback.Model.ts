@@ -50,5 +50,5 @@ ExitFeedback.init(
   },
   { sequelize, tableName: "exit_feedbacks", timestamps: true }
 );
-ExitFeedback.sync({alter:true})
+ExitFeedback.sync()
 export default ExitFeedback;

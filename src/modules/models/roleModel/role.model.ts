@@ -37,6 +37,6 @@ Role.init(
   }
 );
 
-// Role.sync();
+Role.sync();
 // Role.sync({ alter: true });
 export default Role;

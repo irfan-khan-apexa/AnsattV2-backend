@@ -52,6 +52,6 @@ RoleModulePermission.init(
   }
 );
 
-// RoleModulePermission.sync();
+RoleModulePermission.sync();
 RoleModulePermission.belongsTo(Module, { foreignKey: "module_id" });
 export default RoleModulePermission;
