@@ -1,25 +1,28 @@
+// models/LeaveTransaction.ts (update)
 import { Model, DataTypes } from "sequelize";
 import sequelize from "../../../config/sequelize";
 
 class LeaveTransaction extends Model {
   public id!: number;
+  public companyCode!: string;          // <-- new
   public employeeId!: number;
   public employeeName!: string; 
   public category!: string;
   public startDate!: Date;
   public endDate!: Date;
   public noOfDays!: number;
-  public reason!: string;       // user reason
-  public status!: string;       // Pending | Approved | Rejected
+  public reason!: string;
+  public status!: string;
   public document?: string;
   public extraFields?: any;
- public actionBy?: number | null;     // ✅ HR/Manager ka ID
-  public actionReason?: string | null;; // optional reason for rejection
+  public actionBy?: number | null;
+  public actionReason?: string | null;
 }
 
 LeaveTransaction.init(
   {
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
+    companyCode: { type: DataTypes.STRING, allowNull: true }, // <-- new required field
     employeeId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     employeeName: { type: DataTypes.STRING, allowNull: false },
     category: { type: DataTypes.STRING, allowNull: false },
@@ -35,8 +38,5 @@ LeaveTransaction.init(
   },
   { sequelize, tableName: "leave_transactions", timestamps: true }
 );
-
-
 // LeaveTransaction.sync({ alter: true });
-
 export { LeaveTransaction };

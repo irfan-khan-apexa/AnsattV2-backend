@@ -50,13 +50,138 @@ import * as crypto from "crypto";
 //   }
 // };
 
-// Get My Leaves (Employee)
+const applyLeave = async (req: Request, res: Response): Promise<any> => {
+  try {
+    // token-derived
+    const employeeId = (req as any).user?.id;
+    
+    const companyCode = (req as any).user?.company_code || (req as any).user?.companyCode;
+    
+    // console.log("employeeId",employeeId,"companyCode",companyCode);
+    const { category, startDate, endDate, reason } = req.body;
+
+    // input validations
+    if (!employeeId) return res.status(401).json({ message: "Invalid token: user id missing" });
+    if (!companyCode) return res.status(401).json({ message: "Invalid token: company_code missing" });
+    if (!category || !startDate || !endDate || !reason) {
+      return res.status(400).json({ message: "category, startDate, endDate and reason are required" });
+    }
+
+    const employee = await Onboarding.findByPk(employeeId);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+    // calculate days (inclusive)
+    const sd = new Date(startDate);
+    const ed = new Date(endDate);
+    if (isNaN(sd.getTime()) || isNaN(ed.getTime())) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+    const calculatedDays = Math.ceil((ed.getTime() - sd.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    if (calculatedDays <= 0) return res.status(400).json({ message: "endDate must be same or after startDate" });
+
+    // debug log for developers
+    console.log("applyLeave -> payload:", {
+      employeeId,
+      companyCode,
+      category,
+      startDate,
+      endDate,
+      calculatedDays,
+      reason,
+    });
+
+    // create record
+    const leave = await LeaveTransaction.create({
+      companyCode,
+      employeeId,
+      employeeName: (employee as any).name,
+      category,
+      startDate,
+      endDate,
+      noOfDays: calculatedDays,
+      reason,
+      status: "Pending",
+    });
+
+    // find recipients (HR + manager)
+    const recipients: string[] = [];
+
+    if ((employee as any).department) {
+      const dept = await Department.findByPk((employee as any).department);
+      if (dept && (dept as any).HrId) {
+        const hr = await Onboarding.findByPk((dept as any).HrId);
+        if (hr?.email) recipients.push(hr.email);
+      }
+    }
+
+    if ((employee as any).reporting_manager) {
+      const manager = await Onboarding.findByPk((employee as any).reporting_manager);
+      if (manager?.email) recipients.push(manager.email);
+    }
+
+    // create tokens & send mails (if recipients exist)
+    for (const recipient of recipients) {
+      const actionToken = crypto.randomBytes(32).toString("hex");
+
+      await LeaveActionToken.create({
+        leaveId: leave.id,
+        token: actionToken,
+        email: recipient,
+        expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
+        used: false,
+      });
+
+      // NOTE: use your public domain in production
+      const approveUrl = `${process.env.APP_ORIGIN || "http://localhost:5000"}/api/leaves/action?token=${actionToken}&type=approve`;
+      const rejectUrl = `${process.env.APP_ORIGIN || "http://localhost:5000"}/api/leaves/action?token=${actionToken}&type=reject`;
+
+      const mailHtml = `
+        <div style="font-family: Arial, sans-serif; font-size:14px; color:#333;">
+          <h2>New Leave Application</h2>
+          <p>A new leave request has been submitted by <b>${(employee as any).name}</b> (Employee ID: <b>${employeeId}</b>).</p>
+          <table border="1" cellspacing="0" cellpadding="8" style="width:100%; border-collapse:collapse;">
+            <tr><td><b>Employee Name</b></td><td>${(employee as any).name}</td></tr>
+            <tr><td><b>Employee ID</b></td><td>${employeeId}</td></tr>
+            <tr><td><b>Department</b></td><td>${(employee as any).department}</td></tr>
+            <tr><td><b>Leave Category</b></td><td>${category}</td></tr>
+            <tr><td><b>Start Date</b></td><td>${startDate}</td></tr>
+            <tr><td><b>End Date</b></td><td>${endDate}</td></tr>
+            <tr><td><b>Total Days</b></td><td>${calculatedDays}</td></tr>
+            <tr><td><b>Reason</b></td><td>${reason}</td></tr>
+          </table>
+          <p style="margin-top:20px;">Please take the necessary action:</p>
+          <a href="${approveUrl}" style="background:#28a745; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px; margin-right:10px;">Approve</a>
+          <a href="${rejectUrl}" style="background:#dc3545; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px;">Reject</a>
+        </div>
+      `;
+
+      // send mail (ensure sendMail handles array or single)
+      try {
+        await sendMail([recipient], "New Leave Request Submitted", mailHtml);
+      } catch (mailErr) {
+        console.error("Failed to send leave notification to", recipient, mailErr);
+        // do not rollback leave creation — just log
+      }
+    }
+
+    return res.status(201).json({ message: "Leave applied & mails sent", leave });
+  } catch (err: any) {
+    console.error("Error applying leave:", err);
+    return res.status(500).json({ message: "Error applying leave", error: err.message });
+  }
+};
+
 const getMyLeaves = async (req: Request, res: Response): Promise<any> => {
   try {
     const employeeId = (req as any).user.id;
+    const companyCode = (req as any).user.company_code || (req as any).user.companyCode;
+
+    if (!companyCode) {
+      return res.status(401).json({ message: "Invalid token: company_code missing" });
+    }
 
     const leaves = await LeaveTransaction.findAll({
-      where: { employeeId },
+      where: { employeeId, companyCode },
       order: [["createdAt", "DESC"]],
     });
 
@@ -69,12 +194,28 @@ const getMyLeaves = async (req: Request, res: Response): Promise<any> => {
 
 
 
+
 // ✅ Get All Leaves (HR/Manager)
+// --- getAllLeaves (updated) ---
 const getAllLeaves = async (req: Request, res: Response): Promise<any> => {
   try {
     const { page = "1", limit = "10", search, status, category, start, end } = req.query;
 
+    const user = (req as any).user;
+    console.log();
+    
+    const companyCode = user?.company_code || user?.companyCode;
+
+    if (!companyCode && !user?.isSuperAdmin) {
+      return res.status(401).json({ message: "Invalid token: company_code missing" });
+    }
+
     const whereClause: any = {};
+
+    // Enforce company filter for non-super-admin users
+    if (!user?.isSuperAdmin) {
+      whereClause.companyCode = companyCode;
+    }
 
     if (status) whereClause.status = status;
     if (category) whereClause.category = category;
@@ -96,97 +237,6 @@ const getAllLeaves = async (req: Request, res: Response): Promise<any> => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching leaves" });
-  }
-};
-
-
-
-const applyLeave = async (req: Request, res: Response): Promise<any> => {
-  try {
-    const employeeId = (req as any).user.id;
-    const { category, startDate, endDate, reason } = req.body;
-
-    const employee = await Onboarding.findByPk(employeeId);
-    if (!employee) return res.status(404).json({ message: "Employee not found" });
-
-    const calculatedDays =
-      Math.ceil(
-        (new Date(endDate).getTime() - new Date(startDate).getTime()) /
-          (1000 * 60 * 60 * 24)
-      ) + 1;
-
-    const leave = await LeaveTransaction.create({
-      employeeId,
-      employeeName: employee.name,
-      category,
-      startDate,
-      endDate,
-      noOfDays: calculatedDays,
-      reason,
-      status: "Pending",
-    });
-
-    // 🔽 Find HR + Manager Emails
-    let recipients: string[] = [];
-
-    if (employee.department) {
-      const dept = await Department.findByPk(employee.department);
-      if (dept) {
-        const hr = await Onboarding.findByPk(dept.HrId);
-        if (hr?.email) recipients.push(hr.email);
-      }
-    }
-
-    if (employee.reporting_manager) {
-      const manager = await Onboarding.findByPk(employee.reporting_manager);
-      if (manager?.email) recipients.push(manager.email);
-    }
-
-    // ✅ For each recipient, create unique token and send mail
-    for (const recipient of recipients) {
-      const actionToken = crypto.randomBytes(32).toString("hex");
-
-      await LeaveActionToken.create({
-        leaveId: leave.id,
-        token: actionToken,
-        email: recipient, // 🔹 email save kar rahe hai
-        expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
-        used: false,
-      });
-
-      const approveUrl = `http://localhost:5000/api/leaves/action?token=${actionToken}&type=approve`;
-      const rejectUrl = `http://localhost:5000/api/leaves/action?token=${actionToken}&type=reject`;
-
-      const mailHtml = `
-        <div style="font-family: Arial, sans-serif; font-size:14px; color:#333;">
-          <h2>New Leave Application</h2>
-          <p>Dear HR/Manager,</p>
-          <p>A new leave request has been submitted by <b>${employee.name}</b> (Employee ID: <b>${employeeId}</b>).</p>
-
-          <table border="1" cellspacing="0" cellpadding="8" style="width:100%; border-collapse:collapse;">
-            <tr><td><b>Employee Name</b></td><td>${employee.name}</td></tr>
-            <tr><td><b>Employee ID</b></td><td>${employeeId}</td></tr>
-            <tr><td><b>Department</b></td><td>${employee.department}</td></tr>
-            <tr><td><b>Leave Category</b></td><td>${category}</td></tr>
-            <tr><td><b>Start Date</b></td><td>${startDate}</td></tr>
-            <tr><td><b>End Date</b></td><td>${endDate}</td></tr>
-            <tr><td><b>Total Days</b></td><td>${calculatedDays}</td></tr>
-            <tr><td><b>Reason</b></td><td>${reason}</td></tr>
-          </table>
-
-          <p style="margin-top:20px;">Please take the necessary action:</p>
-          <a href="${approveUrl}" style="background:#28a745; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px; margin-right:10px;">Approve</a>
-          <a href="${rejectUrl}" style="background:#dc3545; color:#fff; padding:10px 18px; text-decoration:none; border-radius:5px;">Reject</a>
-        </div>
-      `;
-
-      await sendMail([recipient], "New Leave Request Submitted", mailHtml);
-    }
-
-    res.status(201).json({ message: "Leave applied & mails sent", leave });
-  } catch (err) {
-    console.error("Error applying leave:", err);
-    res.status(500).json({ message: "Error applying leave" });
   }
 };
 

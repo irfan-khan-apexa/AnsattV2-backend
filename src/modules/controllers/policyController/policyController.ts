@@ -5,12 +5,20 @@ import { Policy } from "../../models/index";
 const createPolicy = async (req: Request, res: Response): Promise<any> => {
   try {
     const { title, content, department, role } = req.body;
+    const company_code = (req as any).user.company_code; // <-- from token
 
     if (!title || !content || !department || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const policy = await Policy.create({ title, content, department, role });
+    const policy = await Policy.create({
+      title,
+      content,
+      department,
+      role,
+      company_code, // <-- save company
+    });
+
     res.status(201).json({ message: "Policy created", policy });
   } catch (error) {
     console.error(error);
@@ -18,10 +26,17 @@ const createPolicy = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+
 // Get All Policies
 const getAllPolicies = async (req: Request, res: Response): Promise<any> => {
   try {
-    const policies = await Policy.findAll();
+    const company_code = (req as any).user.company_code;
+
+    const policies = await Policy.findAll({
+      where: { company_code },
+      order: [["createdAt", "DESC"]],
+    });
+
     res.status(200).json(policies);
   } catch (error) {
     console.error(error);
@@ -32,10 +47,16 @@ const getAllPolicies = async (req: Request, res: Response): Promise<any> => {
 // Get Single Policy
 const getPolicyById = async (req: Request, res: Response): Promise<any> => {
   try {
-    const policy = await Policy.findByPk(req.params.id);
+    const company_code = (req as any).user.company_code;
+
+    const policy = await Policy.findOne({
+      where: { id: req.params.id, company_code }, // <-- restrict by company
+    });
+
     if (!policy) {
       return res.status(404).json({ message: "Policy not found" });
     }
+
     res.status(200).json(policy);
   } catch (error) {
     console.error(error);
@@ -43,16 +64,23 @@ const getPolicyById = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+
 // Update Policy
 const updatePolicy = async (req: Request, res: Response): Promise<any> => {
   try {
+    const company_code = (req as any).user.company_code;
     const { title, content, department, role } = req.body;
-    const policy = await Policy.findByPk(req.params.id);
+
+    const policy = await Policy.findOne({
+      where: { id: req.params.id, company_code }, // ensure correct company
+    });
+
     if (!policy) {
-      return res.status(404).json({ message: "Policy not found" });
+      return res.status(404).json({ message: "Policy not found or unauthorized" });
     }
 
     await policy.update({ title, content, department, role });
+
     res.status(200).json({ message: "Policy updated", policy });
   } catch (error) {
     console.error(error);
@@ -60,12 +88,18 @@ const updatePolicy = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+
 // Delete Policy
 const deletePolicy = async (req: Request, res: Response): Promise<any> => {
   try {
-    const policy = await Policy.findByPk(req.params.id);
+    const company_code = (req as any).user.company_code;
+
+    const policy = await Policy.findOne({
+      where: { id: req.params.id, company_code }, // restrict
+    });
+
     if (!policy) {
-      return res.status(404).json({ message: "Policy not found" });
+      return res.status(404).json({ message: "Policy not found or unauthorized" });
     }
 
     await policy.destroy();
@@ -75,6 +109,7 @@ const deletePolicy = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: "Server error while deleting policy" });
   }
 };
+
 export {
   createPolicy,
   getAllPolicies,
