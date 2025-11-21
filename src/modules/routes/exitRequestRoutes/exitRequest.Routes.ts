@@ -7,14 +7,15 @@ import {
   generateExitLetterById,
   downloadExitLetter,
     createExitFeedback,
-  getFeedbacksForEmployee
+  getFeedbacksForEmployee,
+  getMyExitRequest
 } from "../../controllers/index";
 import { authenticateCompanyMaster ,authenticateEmployee} from "../../../middlewares/authMiddleware";
 
 const exitRouter = Router();
 
 // Create a new exit request
-exitRouter.post("/exit/exitrequest", createExitRequest);
+exitRouter.post("/exit/exitrequest",authenticateEmployee, createExitRequest);
 
 // Get a specific exit request by ID
 exitRouter.get(
@@ -23,8 +24,19 @@ exitRouter.get(
   getAllExitRequests
 );
 
-exitRouter.get("/exit/:id", getExitRequestById);
+// exitRouter.get("/exit/:id", getExitRequestById);
 // Update status (approve/reject/complete)
+
+
+
+// Employee can view his own exit request
+exitRouter.get(
+  "/exit/myexitrequest",
+  authenticateEmployee,
+  getMyExitRequest
+);
+
+
 
 exitRouter.put("/exit/:id", authenticateCompanyMaster, updateExitRequestStatus);
 
