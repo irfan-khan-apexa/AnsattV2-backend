@@ -25,16 +25,9 @@ export const createLetter = async (
   const pdfPath = path.join(tmpDir, `${filename}.pdf`);
   const docxPath = path.join(tmpDir, `${filename}.docx`);
 
-  let content: string;
+  let content = "";
 
   if (type === "exit") {
-    if (
-      !employee.designation ||
-      !employee.joining_date ||
-      !employee.exit_date
-    ) {
-      throw new Error("Missing required fields for exit letter.");
-    }
     content = exitLetterTemplate({
       name: employee.name,
       designation: employee.designation,
@@ -44,9 +37,6 @@ export const createLetter = async (
       company_name,
     });
   } else {
-    if (!employee.designation || !employee.joining_date) {
-      throw new Error("Missing required fields for experience letter.");
-    }
     content = experienceLetterTemplate({
       name: employee.name,
       designation: employee.designation,
@@ -60,32 +50,34 @@ export const createLetter = async (
     });
   }
 
-  // PDF
+  // ---- CREATE PDF ----
   const pdfDoc = new PDFDocument();
   pdfDoc.pipe(fs.createWriteStream(pdfPath));
-  pdfDoc.fontSize(12).text(content, { align: "left" });
+  pdfDoc.fontSize(12).text(content);
   pdfDoc.end();
 
-  // DOCX
+  // ---- CREATE DOCX ----
   const doc = new Document({
     sections: [
       {
-        children: content
-          .split("\n")
-          .map(
-            (line) => new Paragraph({ children: [new TextRun(line.trim())] })
-          ),
+        children: content.split("\n").map((line) =>
+          new Paragraph({
+            children: [new TextRun(line)],
+          })
+        ),
       },
     ],
   });
   const buffer = await Packer.toBuffer(doc);
   fs.writeFileSync(docxPath, buffer);
 
+  // ---- UPLOAD BOTH FILES ----
   const urls: { pdf?: string; docx?: string } = {};
 
   for (const format of ["pdf", "docx"] as const) {
     const filePath = format === "pdf" ? pdfPath : docxPath;
     const key = `documents/${type}_letters/${filename}.${format}`;
+
     const fileBuffer = fs.readFileSync(filePath);
 
     await wasabiS3.send(
@@ -93,12 +85,13 @@ export const createLetter = async (
         Bucket: process.env.WASABI_BUCKET_NAME!,
         Key: key,
         Body: fileBuffer,
-        ACL: "public-read",
+        ACL: "private",
       })
     );
 
-    const publicUrl = `${process.env.WASABI_ENDPOINT}/${process.env.WASABI_BUCKET_NAME}/${key}`;
-    urls[format] = encrypt(publicUrl);
+    // 🔥 FIXED: save ONLY encrypted key, not full URL
+    urls[format] = encrypt(key);
+
     fs.unlinkSync(filePath);
   }
 

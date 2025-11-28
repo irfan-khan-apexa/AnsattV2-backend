@@ -29,6 +29,7 @@ export interface OnboardingAttributes {
   offer_letter?: string;
   joining_letter?: string;
   experience_letter?: string;
+  exit_letter?:string;
 
   deleted_at?: Date;
 
@@ -72,6 +73,8 @@ export class Onboarding
   public offer_letter!: string;
   public joining_letter!: string;
   public experience_letter!: string;
+
+
 
   public deleted_at!: Date;
 
@@ -120,6 +123,10 @@ Onboarding.init(
     offer_letter: DataTypes.TEXT,
     joining_letter: DataTypes.TEXT,
     experience_letter: DataTypes.TEXT,
+      exit_letter: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
 
     deleted_at: DataTypes.DATE,
 

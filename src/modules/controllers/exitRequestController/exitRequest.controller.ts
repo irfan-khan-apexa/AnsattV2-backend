@@ -7,30 +7,85 @@ import {
 import { createLetter } from "../../../services/generateExitLetter";
 import { encrypt, decrypt } from "../../../utils/encryption";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
+
 // Create Exit Request
+// const createExitRequest = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const {
+//       company_code,
+//       employee_id,
+//       exit_type,
+//       notice_start_date,
+//       notice_end_date,
+//       remarks,
+//     } = req.body;
+
+//     // Required fields validation
+//     if (
+//       !company_code ||
+//       !employee_id ||
+//       !exit_type ||
+//       !notice_start_date ||
+//       !notice_end_date
+//     ) {
+//       return res.status(400).json({ message: "Missing required fields" });
+//     }
+
+//     // Check employee exist karta hai ya nahi
+//     const employee = await Onboarding.findOne({
+//       where: { id: employee_id, company_code },
+//     });
+
+//     if (!employee) {
+//       return res.status(404).json({ message: "Employee not found" });
+//     }
+
+//     // Check agar already request exist karti hai same employee ke liye
+//     const existingRequest = await ExitRequest.findOne({
+//       where: { employee_id, company_code },
+//     });
+
+//     if (existingRequest) {
+//       return res
+//         .status(400)
+//         .json({ message: "Exit request already exists for this employee" });
+//     }
+
+//     // Agar request exist nahi karti to nayi request create karo
+//     const newExit = await ExitRequest.create({
+//       company_code,
+//       employee_id,
+//       exit_type,
+//       notice_start_date,
+//       notice_end_date,
+//       remarks,
+//     });
+
+//     res.status(201).json({ message: "Exit request created", data: newExit });
+//   } catch (err) {
+//     console.error("Error creating exit request:", err);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 const createExitRequest = async (req: Request, res: Response): Promise<any> => {
   try {
+    // Token se lena (correct mapping)
+    const { company_code, id } = (req as any).user;
+    const employee_id = id; // 👈 Token ke id ko employee_id manenge
+
     const {
-      company_code,
-      employee_id,
       exit_type,
       notice_start_date,
       notice_end_date,
       remarks,
     } = req.body;
 
-    // Required fields validation
-    if (
-      !company_code ||
-      !employee_id ||
-      !exit_type ||
-      !notice_start_date ||
-      !notice_end_date
-    ) {
+    if (!exit_type || !notice_start_date || !notice_end_date) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Check employee exist karta hai ya nahi
+    // Check if employee exists
     const employee = await Onboarding.findOne({
       where: { id: employee_id, company_code },
     });
@@ -39,18 +94,18 @@ const createExitRequest = async (req: Request, res: Response): Promise<any> => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    // Check agar already request exist karti hai same employee ke liye
+    // Check if exit request already exists
     const existingRequest = await ExitRequest.findOne({
       where: { employee_id, company_code },
     });
 
     if (existingRequest) {
-      return res
-        .status(400)
-        .json({ message: "Exit request already exists for this employee" });
+      return res.status(400).json({
+        message: "Exit request already exists for this employee",
+      });
     }
 
-    // Agar request exist nahi karti to nayi request create karo
+    // Create exit request
     const newExit = await ExitRequest.create({
       company_code,
       employee_id,
@@ -60,12 +115,14 @@ const createExitRequest = async (req: Request, res: Response): Promise<any> => {
       remarks,
     });
 
-    res.status(201).json({ message: "Exit request created", data: newExit });
+    return res.status(201).json({ message: "Exit request created", data: newExit });
   } catch (err) {
     console.error("Error creating exit request:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 
 // const getExitRequest = async (req: Request, res: Response): Promise<any> => {
 //   try {
@@ -130,9 +187,8 @@ try {
     });
 
     if (!exitRequest) {
-      return res.status(404).json({
-        message: "No exit request found for this employee",
-      });
+      return res.status(200)
+      // .json({ });
     }
 
     return res.status(200).json({
@@ -311,6 +367,74 @@ const updateExitRequestStatus = async (
 // };
 
 
+// const generateExitLetterById = async (
+//   req: CompanyRequest,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { id } = req.params;
+//     const { company_code, company_name } = req.user;
+//     const { type = "exit", exit_date } = req.query; // type: exit | experience
+
+//     // Fetch employee
+//     const employee = await Onboarding.findOne({ where: { id, company_code } });
+//     if (!employee) {
+//       return res.status(404).json({ message: "Employee not found" });
+//     }
+
+//     // --------- NEW: Check assigned assets ----------
+//     // Import Asset model at top: import { Asset } from "../../models/index";
+//     const assignedAssets = await Asset.findAll({
+//       where: { company_code, assigned_to: id, status: "assigned" },
+//       attributes: ["id", "name", "serial_number", "assigned_to", "status"],
+//       raw: true,
+//     });
+
+//     if (assignedAssets && assignedAssets.length > 0) {
+//       return res.status(400).json({
+//         message:
+//           "Cannot generate exit letter: employee has unreturned assigned assets. Please return them first.",
+//         assets: assignedAssets,
+//       });
+//     }
+//     // --------- END NEW ----------
+
+//     if (exit_date) {
+//       employee.exit_date = new Date(exit_date as string);
+//       await employee.save();
+//     }
+
+//     const urls = await createLetter(
+//       type as "exit" | "experience",
+//       employee,
+//       company_name
+//     );
+
+//     if (type === "exit" && urls.pdf) {
+//       employee.exit_letter = urls.pdf;
+//     } else if (type === "experience" && urls.pdf) {
+//       employee.experience_letter = urls.pdf;
+//     }
+
+//     await employee.save();
+
+//     return res.status(200).json({
+//       message: `${type} letter generated successfully`,
+//       data: {
+//         pdf: urls.pdf,
+//         docx: urls.docx,
+//         employee,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Error generating letter:", err);
+//     return res.status(500).json({
+//       message: "Failed to generate letter",
+//       error: (err as Error).message,
+//     });
+//   }
+// };
+
 const generateExitLetterById = async (
   req: CompanyRequest,
   res: Response
@@ -318,7 +442,13 @@ const generateExitLetterById = async (
   try {
     const { id } = req.params;
     const { company_code, company_name } = req.user;
-    const { type = "exit", exit_date } = req.query; // type: exit | experience
+    let { type = "exit", exit_date } = req.query as { type?: string; exit_date?: string };
+
+    // ✅ Normalize type: "experience", "experienceletter", "exp" sab ko "experience" bana do
+    const normalizedType =
+      typeof type === "string" && type.toLowerCase().startsWith("experience")
+        ? "experience"
+        : "exit";
 
     // Fetch employee
     const employee = await Onboarding.findOne({ where: { id, company_code } });
@@ -326,8 +456,7 @@ const generateExitLetterById = async (
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    // --------- NEW: Check assigned assets ----------
-    // Import Asset model at top: import { Asset } from "../../models/index";
+    // 🔐 Asset check (as it is)
     const assignedAssets = await Asset.findAll({
       where: { company_code, assigned_to: id, status: "assigned" },
       attributes: ["id", "name", "serial_number", "assigned_to", "status"],
@@ -341,29 +470,30 @@ const generateExitLetterById = async (
         assets: assignedAssets,
       });
     }
-    // --------- END NEW ----------
 
+    // ✅ Update exit_date if provided
     if (exit_date) {
-      employee.exit_date = new Date(exit_date as string);
+      employee.exit_date = new Date(exit_date);
       await employee.save();
     }
 
+    // ✅ Use normalizedType everywhere
     const urls = await createLetter(
-      type as "exit" | "experience",
+      normalizedType as "exit" | "experience",
       employee,
       company_name
     );
 
-    if (type === "exit" && urls.pdf) {
-      employee.exit_letter = urls.pdf;
-    } else if (type === "experience" && urls.pdf) {
-      employee.experience_letter = urls.pdf;
+    if (normalizedType === "exit" && urls.pdf) {
+      (employee as any).exit_letter = urls.pdf;
+    } else if (normalizedType === "experience" && urls.pdf) {
+      (employee as any).experience_letter = urls.pdf;
     }
 
     await employee.save();
 
     return res.status(200).json({
-      message: `${type} letter generated successfully`,
+      message: `${normalizedType} letter generated successfully`,
       data: {
         pdf: urls.pdf,
         docx: urls.docx,
@@ -380,15 +510,129 @@ const generateExitLetterById = async (
 };
 
 
+
 function extractS3Key(url: string): string {
   try {
     const parsed = new URL(url);
-    const pathname = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
-    return pathname.replace(/^ansatt-bucket\//, "");
+    const path = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
+    return path.replace(/^ansatt-bucket-2\//, "");
   } catch {
     return url;
   }
 }
+
+// const downloadExitLetter = async (
+//   req: CompanyRequest,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { id, format, type } = req.params;
+//     const company_code = req.user.company_code;
+
+//     // ✅ Validate type
+//     if (!type || !["exit", "experience"].includes(type.toLowerCase())) {
+//       return res.status(400).json({
+//         message: "Invalid letter type. Must be 'exit' or 'experience'.",
+//       });
+//     }
+
+//     // ✅ Validate format
+//     if (!format || !["pdf", "docx"].includes(format.toLowerCase())) {
+//       return res.status(400).json({
+//         message: "Invalid format. Must be 'pdf' or 'docx'.",
+//       });
+//     }
+
+//     // ✅ Fetch employee record
+//     const employee = await Onboarding.findOne({ where: { id, company_code } });
+//     if (!employee) {
+//       return res.status(404).json({ message: "Employee not found" });
+//     }
+
+//     // ✅ Pick letter field based on type
+//     let encryptedUrl: string | undefined;
+//     if (type.toLowerCase() === "exit") {
+//       encryptedUrl = employee.exit_letter;
+//     } else {
+//       encryptedUrl = employee.experience_letter;
+//     }
+
+//     if (!encryptedUrl) {
+//       return res.status(404).json({
+//         message: `${type} letter not found for this employee`,
+//       });
+//     }
+
+//     // ✅ Decrypt letter URL
+//     const decryptedUrl = decrypt(encryptedUrl);
+
+//     // ✅ Extract S3 key & replace extension based on requested format
+//     const originalKey = extractS3Key(decryptedUrl);
+//     const baseKey = originalKey.replace(/\.pdf|\.docx/gi, "");
+//     const finalKey = `${baseKey}.${format.toLowerCase()}`;
+
+//     // ✅ Generate presigned URL for download (valid for 5 mins)
+//     const presignedUrl = await generatePresignedGetUrl(finalKey, 5 * 60);
+
+//     return res.status(200).json({
+//       message: `${type} letter ${format.toUpperCase()} download link generated`,
+//       url: presignedUrl,
+//     });
+//   } catch (error) {
+//     console.error("Error generating letter download link:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+// const downloadExitLetter = async (
+//   req: CompanyRequest,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { id, format, type } = req.params;
+//     const company_code = req.user.company_code;
+
+//     if (!["exit", "experience"].includes(type.toLowerCase())) {
+//       return res.status(400).json({ message: "Invalid letter type." });
+//     }
+
+//     if (!["pdf", "docx"].includes(format.toLowerCase())) {
+//       return res.status(400).json({ message: "Invalid format." });
+//     }
+
+//     const employee = await Onboarding.findOne({ where: { id, company_code } });
+//     if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+//     let encryptedKey =
+//       type === "exit" ? employee.exit_letter : employee.experience_letter;
+
+//     if (!encryptedKey) {
+//       return res.status(404).json({ message: `${type} letter not found.` });
+//     }
+
+//     // STEP 1: decrypt
+//     const decryptedValue = decrypt(encryptedKey);
+
+//     // STEP 2: extract ONLY S3 key (fix)
+//     const rawKey = extractS3Key(decryptedValue);
+
+//     // STEP 3: fix extension
+//     const baseKey = rawKey.replace(/\.(pdf|docx)$/i, "");
+//     const finalKey = `${baseKey}.${format}`;
+
+//     // STEP 4: generate URL
+//     const presignedUrl = await generatePresignedGetUrl(finalKey, 300);
+
+//     return res.status(200).json({
+//       message: `${type} letter ${format.toUpperCase()} download link generated`,
+//       url: presignedUrl,
+//     });
+
+//   } catch (error) {
+//     console.error("Error generating letter download link:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const downloadExitLetter = async (
   req: CompanyRequest,
   res: Response
@@ -397,53 +641,46 @@ const downloadExitLetter = async (
     const { id, format, type } = req.params;
     const company_code = req.user.company_code;
 
-    // ✅ Validate type
-    if (!type || !["exit", "experience"].includes(type.toLowerCase())) {
-      return res.status(400).json({
-        message: "Invalid letter type. Must be 'exit' or 'experience'.",
-      });
+    const letterType = type.toLowerCase();
+    const fileFormat = format.toLowerCase();
+
+    if (!["exit", "experience"].includes(letterType)) {
+      return res.status(400).json({ message: "Invalid letter type." });
     }
 
-    // ✅ Validate format
-    if (!format || !["pdf", "docx"].includes(format.toLowerCase())) {
-      return res.status(400).json({
-        message: "Invalid format. Must be 'pdf' or 'docx'.",
-      });
+    if (!["pdf", "docx"].includes(fileFormat)) {
+      return res.status(400).json({ message: "Invalid format." });
     }
 
-    // ✅ Fetch employee record
     const employee = await Onboarding.findOne({ where: { id, company_code } });
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    // ✅ Pick letter field based on type
-    let encryptedUrl: string | undefined;
-    if (type.toLowerCase() === "exit") {
-      encryptedUrl = employee.exit_letter;
-    } else {
-      encryptedUrl = employee.experience_letter;
+    const encryptedKey =
+      letterType === "exit"
+        ? (employee as any).exit_letter
+        : (employee as any).experience_letter;
+
+    if (!encryptedKey) {
+      return res.status(404).json({ message: `${letterType} letter not found.` });
     }
 
-    if (!encryptedUrl) {
-      return res.status(404).json({
-        message: `${type} letter not found for this employee`,
-      });
-    }
+    // 1) decrypt
+    const decryptedValue = decrypt(encryptedKey);
 
-    // ✅ Decrypt letter URL
-    const decryptedUrl = decrypt(encryptedUrl);
+    // 2) extract S3 key (handles both old full-URL and new key-only formats)
+    const rawKey = extractS3Key(decryptedValue);
 
-    // ✅ Extract S3 key & replace extension based on requested format
-    const originalKey = extractS3Key(decryptedUrl);
-    const baseKey = originalKey.replace(/\.pdf|\.docx/gi, "");
-    const finalKey = `${baseKey}.${format.toLowerCase()}`;
+    // 3) replace extension according to requested format
+    const baseKey = rawKey.replace(/\.(pdf|docx)$/i, "");
+    const finalKey = `${baseKey}.${fileFormat}`;
 
-    // ✅ Generate presigned URL for download (valid for 5 mins)
-    const presignedUrl = await generatePresignedGetUrl(finalKey, 5 * 60);
+    // 4) generate presigned URL
+    const presignedUrl = await generatePresignedGetUrl(finalKey, 300);
 
     return res.status(200).json({
-      message: `${type} letter ${format.toUpperCase()} download link generated`,
+      message: `${letterType} letter ${fileFormat.toUpperCase()} download link generated`,
       url: presignedUrl,
     });
   } catch (error) {
@@ -451,6 +688,7 @@ const downloadExitLetter = async (
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 const createExitFeedback = async (req: CompanyRequest, res: Response): Promise<any> => {

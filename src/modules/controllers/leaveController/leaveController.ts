@@ -322,7 +322,74 @@ const handleLeaveAction = async (req: Request, res: Response): Promise<any> => {
 // ✅ Approve Leave
 
 
-// ✅ Approve Leave (from App)
+// // ✅ Approve Leave (from App)
+// const approveLeave = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const leave = await LeaveTransaction.findByPk(req.params.id);
+//     if (!leave) return res.status(404).json({ message: "Leave not found" });
+
+//     if (leave.status !== "Pending") {
+//       return res.status(400).json({ message: "Leave already processed" });
+//     }
+
+//     leave.status = "Approved";
+//     await leave.save();
+
+//     // 🗑️ Delete all tokens for this leave
+//     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
+
+//     // 👇 Send mail to employee
+//     const employee = await Onboarding.findByPk(leave.employeeId);
+//     if (employee?.email) {
+//       await sendMail(
+//         employee.email,
+//         "Leave Approved",
+//         `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>approved</b>.</p>`
+//       );
+//     }
+
+//     res.status(200).json({ message: "Leave approved", leave });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Error approving leave" });
+//   }
+// };
+
+// // ✅ Reject Leave (from App)
+// const rejectLeave = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const leave = await LeaveTransaction.findByPk(req.params.id);
+//     if (!leave) return res.status(404).json({ message: "Leave not found" });
+
+//     if (leave.status !== "Pending") {
+//       return res.status(400).json({ message: "Leave already processed" });
+//     }
+
+//     leave.status = "Rejected";
+//     await leave.save();
+
+//     // 🗑️ Delete all tokens for this leave
+//     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
+
+//     // 👇 Send mail to employee
+//     const employee = await Onboarding.findByPk(leave.employeeId);
+//     if (employee?.email) {
+//       await sendMail(
+//         employee.email,
+//         "Leave Rejected",
+//         `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>rejected</b>.</p>`
+//       );
+//     }
+
+//     res.status(200).json({ message: "Leave rejected", leave });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Error rejecting leave" });
+//   }
+// };
+
+
+// ✅ Approve Leave (Updated)
 const approveLeave = async (req: Request, res: Response): Promise<any> => {
   try {
     const leave = await LeaveTransaction.findByPk(req.params.id);
@@ -335,27 +402,29 @@ const approveLeave = async (req: Request, res: Response): Promise<any> => {
     leave.status = "Approved";
     await leave.save();
 
-    // 🗑️ Delete all tokens for this leave
+    // 🗑 Delete all action tokens
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
-    // 👇 Send mail to employee
+    // ▶ Mail ko background me bhejo (no await)
     const employee = await Onboarding.findByPk(leave.employeeId);
     if (employee?.email) {
-      await sendMail(
+      sendMail(
         employee.email,
         "Leave Approved",
         `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>approved</b>.</p>`
-      );
+      ).catch((err) => console.log("Mail send failed:", err));
     }
 
-    res.status(200).json({ message: "Leave approved", leave });
+    return res.status(200).json({ message: "Leave approved", leave });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Error approving leave" });
+    return res.status(500).json({ message: "Error approving leave" });
   }
 };
 
-// ✅ Reject Leave (from App)
+
+// ✅ Reject Leave (Updated)
 const rejectLeave = async (req: Request, res: Response): Promise<any> => {
   try {
     const leave = await LeaveTransaction.findByPk(req.params.id);
@@ -368,23 +437,24 @@ const rejectLeave = async (req: Request, res: Response): Promise<any> => {
     leave.status = "Rejected";
     await leave.save();
 
-    // 🗑️ Delete all tokens for this leave
+    // 🗑 Delete all action tokens
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
-    // 👇 Send mail to employee
+    // ▶ Mail ko background me bhejo (no await)
     const employee = await Onboarding.findByPk(leave.employeeId);
     if (employee?.email) {
-      await sendMail(
+      sendMail(
         employee.email,
         "Leave Rejected",
         `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>rejected</b>.</p>`
-      );
+      ).catch((err) => console.log("Mail send failed:", err));
     }
 
-    res.status(200).json({ message: "Leave rejected", leave });
+    return res.status(200).json({ message: "Leave rejected", leave });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Error rejecting leave" });
+    return res.status(500).json({ message: "Error rejecting leave" });
   }
 };
 
