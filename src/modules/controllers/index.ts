@@ -74,7 +74,7 @@ handleLeaveAction,
     getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
     
 } from "./leaveController/leaveController";
-import { createOfferLetter } from "./onboardingController/offerLetter.Controller";
+import { createOfferLetter ,requestLetterAccess,downloadLetter,actionLetterRequest} from "./onboardingController/offerLetter.Controller";
 import {
   createOnboarding,
   getAllOnboardings,
@@ -118,6 +118,9 @@ createAsset,
   getAssetHistory,
   getAllAssets,
 } from "./assetController/asset.Controller";
+import {
+createAnnouncement,getActiveAnnouncements,updateAnnouncement,deleteAnnouncement
+} from "./hrAnnouncementController/hrAnnouncement.Controller";
 
 // All controllers exported as single object
 export {
@@ -166,7 +169,7 @@ export {
  addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
    addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
-  createOfferLetter,
+  createOfferLetter,requestLetterAccess,downloadLetter,actionLetterRequest,
   createOnboarding,
   getAllOnboardings,
   getOnboardingById,
@@ -201,5 +204,7 @@ export {
   returnAsset,
   getEmployeeAssets,
   getAssetHistory,
-  getAllAssets,
+  getAllAssets, 
+
+  createAnnouncement,getActiveAnnouncements,updateAnnouncement,deleteAnnouncement
 };
