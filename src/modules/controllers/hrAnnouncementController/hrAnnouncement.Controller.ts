@@ -69,26 +69,28 @@ try {
   req: CompanyRequest,
   res: Response
 ): Promise<any> => {
-  try {
+ try {
     const company_code = req.user.company_code;
-    const now = new Date();
 
     const announcements = await HrAnnouncement.findAll({
       where: {
         company_code,
-        is_active: true,
-        publish_till: { [Op.lt]: now },
+        is_active: true, // 🔥 sirf active
       },
-      order: [["publish_till", "DESC"]],
+      order: [
+        ["priority", "DESC"],
+        ["publish_from", "DESC"],
+        ["createdAt", "DESC"],
+      ],
     });
 
     return res.status(200).json({
-      message: "Previous announcements fetched",
+      message: "All announcements fetched",
       data: announcements,
     });
   } catch (err: any) {
     return res.status(500).json({
-      message: "Error fetching previous announcements",
+      message: "Error fetching announcements",
       error: err.message,
     });
   }
