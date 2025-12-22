@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { HrAnnouncement } from "../../models";
 import { CompanyRequest } from "../../../middlewares/authMiddleware";
 import Sequelize from "sequelize";
+import { Op } from "sequelize";
 
 const createAnnouncement = async (req: CompanyRequest, res: Response) : Promise<any> => {
   try {
@@ -33,7 +34,7 @@ const createAnnouncement = async (req: CompanyRequest, res: Response) : Promise<
   }
 };
 const getActiveAnnouncements = async (req: CompanyRequest, res: Response): Promise<any>  => {
-  try {
+try {
     const company_code = req.user.company_code;
     const now = new Date();
 
@@ -41,9 +42,10 @@ const getActiveAnnouncements = async (req: CompanyRequest, res: Response): Promi
       where: {
         company_code,
         is_active: true,
-        [Sequelize.Op.and]: [
-          { [Sequelize.Op.or]: [{ publish_from: null }, { publish_from: { [Sequelize.Op.lte]: now } }] },
-          { [Sequelize.Op.or]: [{ publish_till: null }, { publish_till: { [Sequelize.Op.gte]: now } }] },
+        publish_from: { [Op.lte]: now },
+        [Op.or]: [
+          { publish_till: null },
+          { publish_till: { [Op.gte]: now } },
         ],
       },
       order: [
@@ -52,9 +54,43 @@ const getActiveAnnouncements = async (req: CompanyRequest, res: Response): Promi
       ],
     });
 
-    return res.status(200).json({ data: announcements });
+    return res.status(200).json({
+      message: "Active announcements fetched",
+      data: announcements,
+    });
   } catch (err: any) {
-    return res.status(500).json({ message: "Error fetching announcements", error: err.message });
+    return res.status(500).json({
+      message: "Error fetching active announcements",
+      error: err.message,
+    });
+  }
+};
+ const getPreviousAnnouncements = async (
+  req: CompanyRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const company_code = req.user.company_code;
+    const now = new Date();
+
+    const announcements = await HrAnnouncement.findAll({
+      where: {
+        company_code,
+        is_active: true,
+        publish_till: { [Op.lt]: now },
+      },
+      order: [["publish_till", "DESC"]],
+    });
+
+    return res.status(200).json({
+      message: "Previous announcements fetched",
+      data: announcements,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Error fetching previous announcements",
+      error: err.message,
+    });
   }
 };
 
@@ -92,4 +128,4 @@ const deleteAnnouncement = async (req: CompanyRequest, res: Response) : Promise<
   }
 };
 
-export{createAnnouncement,getActiveAnnouncements,updateAnnouncement,deleteAnnouncement}
+export{createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement}

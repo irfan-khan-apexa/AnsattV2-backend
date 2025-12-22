@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createAnnouncement,
   updateAnnouncement,
+  getPreviousAnnouncements,
   deleteAnnouncement,
   getActiveAnnouncements,
 } from "../../../modules/controllers";
@@ -12,6 +13,12 @@ const hrAnnouncementRouter = Router();
 // HR actions
 hrAnnouncementRouter.post("/hr/announcement", authenticateCompanyMaster, createAnnouncement);
 // hrAnnouncementRouter.get("/hr/announcement",authenticateCompanyMaster, getActiveAnnouncements);
+hrAnnouncementRouter.get(
+  "/hr/previousannouncement",
+  authenticateCompanyMaster, // authenticateEmployee only check token dont check roles so it works for both employee aur company token 
+  getPreviousAnnouncements
+);
+
 hrAnnouncementRouter.get(
   "/hr/announcement",
   authenticateEmployee, // authenticateEmployee only check token dont check roles so it works for both employee aur company token 

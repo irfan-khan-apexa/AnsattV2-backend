@@ -119,7 +119,7 @@ createAsset,
   getAllAssets,
 } from "./assetController/asset.Controller";
 import {
-createAnnouncement,getActiveAnnouncements,updateAnnouncement,deleteAnnouncement
+createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement
 } from "./hrAnnouncementController/hrAnnouncement.Controller";
 
 // All controllers exported as single object
@@ -206,5 +206,5 @@ export {
   getAssetHistory,
   getAllAssets, 
 
-  createAnnouncement,getActiveAnnouncements,updateAnnouncement,deleteAnnouncement
+  createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement
 };
