@@ -48,5 +48,5 @@ Company.init(
     timestamps: false,
   }
 );
-Company.sync();
+// Company.sync();
 export { Company };

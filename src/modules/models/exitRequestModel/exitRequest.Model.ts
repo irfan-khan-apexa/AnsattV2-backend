@@ -124,6 +124,6 @@ ExitRequest.belongsTo(Onboarding, {
   foreignKey: "employee_id",
   targetKey: "id",
 });
-ExitRequest.sync();
+// ExitRequest.sync();
 
 export { ExitRequest };

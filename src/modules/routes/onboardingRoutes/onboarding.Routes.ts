@@ -10,9 +10,10 @@ import {
   downloadOfferLetter,
   getAllTemplates,
   generateExitLetterById,
-  bulkCreateOnboarding
+  bulkCreateOnboarding,
+  requestLetterAccess,downloadLetter,actionLetterRequest
 } from "../../controllers/index";
-import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
+import { authenticateCompanyMaster, authenticateEmployee } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
 
 const onboardingRouter = Router();
@@ -97,5 +98,11 @@ onboardingRouter.get(
 
 
 onboardingRouter.post("/onboarding/bulk-import", upload.single("file"), bulkCreateOnboarding);
+
+onboardingRouter.post("/requestLetterAccess", authenticateEmployee, requestLetterAccess);
+onboardingRouter.post("/hr/letter/request/:id/action", authenticateCompanyMaster, actionLetterRequest);
+onboardingRouter.get("/letter/download/:letter_type", authenticateEmployee, downloadLetter);
+
+
 
 export { onboardingRouter };

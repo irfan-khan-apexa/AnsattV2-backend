@@ -4,6 +4,7 @@ import { Employee } from "./employeeModel/employee.Model";
 import { Department } from "./departmentModel/department.Model";
 import { OfferLetter } from "./onboardingModel/offerLetter.Model";
 import { Onboarding } from "./onboardingModel/Onboarding.Model";
+import { LetterAccessRequest} from "./onboardingModel/LetterAccessRequest.Model";
 import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
 import { Module } from "./roleModel/module.model";
 import { Role } from "./roleModel/role.model";
@@ -20,6 +21,7 @@ import { Salary } from "./salaryModel/Salary.Model";
 import { Asset } from "./assetModel/Asset.Model";
 import { AssetAssign } from "./assetModel/AssetAssign.Model";
 import { ExitFeedback } from "./exitRequestModel/exitFeedback.Model";
+import { HrAnnouncement } from "./HrAnnouncementModel/HrAnnouncement.Model";
 import sequelize from "../../config/sequelize";
 
 Role.hasMany(RoleModulePermission, { foreignKey: "role_id" });
@@ -68,9 +70,11 @@ export {
   LeaveExtraField,
   FinancialYear,
   Onboarding,
+  LetterAccessRequest,
   ExitRequest,
   Salary,
   Asset,
   AssetAssign,
-  ExitFeedback
+  ExitFeedback,
+  HrAnnouncement
 };
