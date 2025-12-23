@@ -11,7 +11,7 @@ import {
   getAllTemplates,
   generateExitLetterById,
   bulkCreateOnboarding,
-  requestLetterAccess,downloadLetter,actionLetterRequest
+  requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest
 } from "../../controllers/index";
 import { authenticateCompanyMaster, authenticateEmployee } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
@@ -100,6 +100,8 @@ onboardingRouter.get(
 onboardingRouter.post("/onboarding/bulk-import", upload.single("file"), bulkCreateOnboarding);
 
 onboardingRouter.post("/requestLetterAccess", authenticateEmployee, requestLetterAccess);
+onboardingRouter.get("/getemployeerequest", authenticateEmployee, getEmployeeLetterRequests);
+onboardingRouter.get("/getallrequest", authenticateCompanyMaster, getCompanyLetterRequests);
 onboardingRouter.post("/hr/letter/request/:id/action", authenticateCompanyMaster, actionLetterRequest);
 onboardingRouter.get("/letter/download/:letter_type", authenticateEmployee, downloadLetter);
 

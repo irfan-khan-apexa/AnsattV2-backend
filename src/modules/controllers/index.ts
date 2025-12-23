@@ -74,7 +74,7 @@ handleLeaveAction,
     getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
     
 } from "./leaveController/leaveController";
-import { createOfferLetter ,requestLetterAccess,downloadLetter,actionLetterRequest} from "./onboardingController/offerLetter.Controller";
+import { createOfferLetter ,requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest} from "./onboardingController/offerLetter.Controller";
 import {
   createOnboarding,
   getAllOnboardings,
@@ -169,7 +169,7 @@ export {
  addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
    addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
-  createOfferLetter,requestLetterAccess,downloadLetter,actionLetterRequest,
+  createOfferLetter,requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest,
   createOnboarding,
   getAllOnboardings,
   getOnboardingById,
