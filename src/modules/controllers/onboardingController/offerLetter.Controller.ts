@@ -65,7 +65,92 @@ const requestLetterAccess = async (
   }
 };
 
+const getCompanyLetterRequests = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const user: any = (req as any).user;
 
+    // 🔐 optional: role check
+    // if (!["HR", "ADMIN"].includes(user.role)) {
+    //   return res.status(403).json({ message: "Unauthorized access" });
+    // }
+
+    const { status, letter_type, employee_id } = req.query;
+
+    const whereCondition: any = {
+      company_code: user.company_code,
+    };
+
+    if (status) {
+      whereCondition.status = status;
+    }
+
+    if (letter_type) {
+      whereCondition.letter_type = letter_type;
+    }
+
+    if (employee_id) {
+      whereCondition.employee_id = employee_id;
+    }
+
+    const requests = await LetterAccessRequest.findAll({
+      where: whereCondition,
+      order: [["requested_at", "DESC"]],
+    });
+
+    return res.status(200).json({
+      message: "Letter access requests fetched successfully",
+      count: requests.length,
+      data: requests,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Error fetching letter access requests",
+      error: err.message,
+    });
+  }
+};
+const getEmployeeLetterRequests = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const user: any = (req as any).user;
+
+    const { status, letter_type } = req.query;
+
+    const whereCondition: any = {
+      employee_id: user.id,
+      company_code: user.company_code,
+    };
+
+    if (status) {
+      whereCondition.status = status;
+    }
+
+    if (letter_type) {
+      whereCondition.letter_type = letter_type;
+    }
+
+    const requests = await LetterAccessRequest.findAll({
+      where: whereCondition,
+      order: [["requested_at", "DESC"]],
+    });
+
+    return res.status(200).json({
+      message: "My letter access requests fetched successfully",
+      count: requests.length,
+      data: requests,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Error fetching my letter requests",
+      error: err.message,
+    });
+  }
+};
 
 const actionLetterRequest = async (
   req: Request,
@@ -169,4 +254,4 @@ const downloadLetter = async (
 
 
 
-export { createOfferLetter ,requestLetterAccess,downloadLetter,actionLetterRequest};
+export { createOfferLetter ,requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest};
