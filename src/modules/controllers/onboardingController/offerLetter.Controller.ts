@@ -197,15 +197,76 @@ const actionLetterRequest = async (
 
 
 
+// const downloadLetter = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { letter_type } = req.params;
+//     const user: any = (req as any).user;
+
+//     // 1️⃣ check approval
+//     const approval = await LetterAccessRequest.findOne({
+//       where: {
+//         employee_id: user.id,
+//         company_code: user.company_code,
+//         letter_type,
+//         status: "Approved",
+//       },
+//     });
+
+//     if (!approval) {
+//       return res.status(403).json({ message: "Access not approved" });
+//     }
+
+//     // 2️⃣ get employee
+//     const employee = await Onboarding.findByPk(user.id);
+//     const encryptedUrl = (employee as any)?.[letter_type];
+
+//     if (!encryptedUrl) {
+//       return res.status(404).json({ message: "Letter not found" });
+//     }
+
+//     // 3️⃣ decrypt full public URL
+//     const fullUrl = decrypt(encryptedUrl);
+
+//     // 4️⃣ 🔑 extract ONLY KEY (this was missing)
+//     const bucket = process.env.WASABI_BUCKET_NAME!;
+//     const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+
+//     // example:
+//     // https://endpoint/bucket/documents/offer_letters/file.pdf
+//     // -> documents/offer_letters/file.pdf
+//     const fileKey = fullUrl.replace(`${endpoint}/${bucket}/`, "");
+
+//     // 5️⃣ generate presigned url (your function is correct)
+//     const presignedUrl = await generatePresignedGetUrl(fileKey);
+
+//     return res.status(200).json({ url: presignedUrl });
+//   } catch (err: any) {
+//     return res.status(500).json({
+//       message: "Error downloading letter",
+//       error: err.message,
+//     });
+//   }
+// };
+
 const downloadLetter = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
-    const { letter_type } = req.params;
+    const { letter_type, format } = req.params;
     const user: any = (req as any).user;
 
-    // 1️⃣ check approval
+    // 1️⃣ validate format
+    if (!format || !["pdf", "docx"].includes(format.toLowerCase())) {
+      return res.status(400).json({
+        message: "Invalid format. Allowed: pdf | docx",
+      });
+    }
+
+    // 2️⃣ check approval
     const approval = await LetterAccessRequest.findOne({
       where: {
         employee_id: user.id,
@@ -219,31 +280,46 @@ const downloadLetter = async (
       return res.status(403).json({ message: "Access not approved" });
     }
 
-    // 2️⃣ get employee
+    // 3️⃣ get employee
     const employee = await Onboarding.findByPk(user.id);
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
     const encryptedUrl = (employee as any)?.[letter_type];
 
     if (!encryptedUrl) {
       return res.status(404).json({ message: "Letter not found" });
     }
 
-    // 3️⃣ decrypt full public URL
+    // 4️⃣ decrypt url
     const fullUrl = decrypt(encryptedUrl);
 
-    // 4️⃣ 🔑 extract ONLY KEY (this was missing)
+    /**
+     * Example fullUrl:
+     * https://endpoint/bucket/letters/offer_letter/offer_letter.pdf
+     */
+
     const bucket = process.env.WASABI_BUCKET_NAME!;
     const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
 
-    // example:
-    // https://endpoint/bucket/documents/offer_letters/file.pdf
-    // -> documents/offer_letters/file.pdf
-    const fileKey = fullUrl.replace(`${endpoint}/${bucket}/`, "");
+    // 5️⃣ extract original key
+    const originalKey = fullUrl.replace(`${endpoint}/${bucket}/`, "");
 
-    // 5️⃣ generate presigned url (your function is correct)
-    const presignedUrl = await generatePresignedGetUrl(fileKey);
+    // 6️⃣ replace extension based on format
+    const baseKey = originalKey.replace(/\.pdf|\.docx$/i, "");
+    const finalKey = `${baseKey}.${format.toLowerCase()}`;
 
-    return res.status(200).json({ url: presignedUrl });
+    // 7️⃣ generate presigned url
+    const presignedUrl = await generatePresignedGetUrl(finalKey, 5 * 60);
+
+    return res.status(200).json({
+      message: `${letter_type} ${format.toUpperCase()} download link generated`,
+      url: presignedUrl,
+    });
   } catch (err: any) {
+    console.error("Download Letter Error:", err);
     return res.status(500).json({
       message: "Error downloading letter",
       error: err.message,
@@ -253,5 +329,5 @@ const downloadLetter = async (
 
 
 
-
-export { createOfferLetter ,requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest};
+export { createOfferLetter ,requestLetterAccess,getCompanyLetterRequests,
+  getEmployeeLetterRequests,downloadLetter,actionLetterRequest};

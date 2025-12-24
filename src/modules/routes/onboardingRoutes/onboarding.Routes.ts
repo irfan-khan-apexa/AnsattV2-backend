@@ -103,7 +103,13 @@ onboardingRouter.post("/requestLetterAccess", authenticateEmployee, requestLette
 onboardingRouter.get("/getemployeerequest", authenticateEmployee, getEmployeeLetterRequests);
 onboardingRouter.get("/getallrequest", authenticateCompanyMaster, getCompanyLetterRequests);
 onboardingRouter.post("/hr/letter/request/:id/action", authenticateCompanyMaster, actionLetterRequest);
-onboardingRouter.get("/letter/download/:letter_type", authenticateEmployee, downloadLetter);
+// onboardingRouter.get("/letter/download/:letter_type", authenticateEmployee, downloadLetter);
+onboardingRouter.get(
+  "/letter/download/:letter_type/:format",
+  authenticateEmployee,
+  downloadLetter
+);
+
 
 
 
