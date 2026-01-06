@@ -42,6 +42,8 @@ Role.init(
 
 
 
-Role.sync({alter:true});
+// Role.sync({alter:true});
+// sequelize.sync({ alter: false });
+
 
 export default Role;
