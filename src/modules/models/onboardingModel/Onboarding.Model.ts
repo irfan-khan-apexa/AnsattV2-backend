@@ -148,5 +148,5 @@ Onboarding.init(
   }
 );
 
-Onboarding.sync({alter:true});
+// Onboarding.sync({alter:true});
 export default Onboarding;
