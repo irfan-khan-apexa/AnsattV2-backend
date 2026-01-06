@@ -4,8 +4,10 @@ import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 // import { SuperMaster } from "../models/SuperMaster.model";
-import { Onboarding, SuperMaster } from "../../models/index";
+import { CompanySettings, Onboarding, SuperMaster } from "../../models/index";
 import { Company } from "../../models/index";
+import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
+
 
 const signupSuperMaster = async (
   req: Request,
@@ -121,9 +123,165 @@ const getEmployeesByCompanyCode = async (
 };
 
 // export default { loginSuperMaster };
+
+//setting
+
+const upsertCompanySettings = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const {
+      company_code,
+      company_name,
+      brand_color,
+      language,
+      module_access,
+    } = req.body;
+
+    const file = (req as any).file;
+
+    //  logo URL from Wasabi
+    const company_logo = file?.location || null;
+
+
+    if (!company_code || !company_name) {
+      return res
+        .status(400)
+        .json({ message: "company_code and company_name are required" });
+    }
+
+    const company = await Company.findOne({ where: { company_code } });
+    if (!company) {
+      return res.status(404).json({ message: "Company not found" });
+    }
+
+    const [settings, created] = await CompanySettings.upsert({
+      company_code,
+      company_name,
+      brand_color,
+      language,
+      module_access,
+           company_logo,
+    });
+
+    return res.status(200).json({
+      message: created ? "Settings created" : "Settings updated",
+      data: settings,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Error saving settings",
+      error: err.message,
+    });
+  }
+};
+
+
+
+// const getCompanySettings = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { company_code } = req.params;
+
+//     const settings = await CompanySettings.findOne({
+//       where: { company_code },
+//     });
+
+//     if (!settings) {
+//       return res.status(404).json({ message: "Settings not found" });
+//     }
+
+//     return res.status(200).json({ data: settings });
+//   } catch (err: any) {
+//     return res.status(500).json({
+//       message: "Error fetching settings",
+//       error: err.message,
+//     });
+//   }
+// };
+
+
+
+const getCompanySettings = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const { company_code } = req.params;
+
+    const settings: any = await CompanySettings.findOne({
+      where: { company_code },
+      raw: true,
+    });
+
+    if (!settings) {
+      return res.status(404).json({ message: "Settings not found" });
+    }
+
+    // 🔥 logo ke liye presigned url add karo (if exists)
+    if (settings.company_logo) {
+      const bucket = process.env.WASABI_BUCKET_NAME!;
+      const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+
+      // full url → key
+      const key = settings.company_logo.replace(
+        `${endpoint}/${bucket}/`,
+        ""
+      );
+
+      settings.company_logo_signed_url = await generatePresignedGetUrl(
+        key,
+        300 // 5 minutes
+      );
+    } else {
+      settings.company_logo_signed_url = null;
+    }
+
+    return res.status(200).json({ data: settings });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Error fetching settings",
+      error: err.message,
+    });
+  }
+};
+
+
+const deleteCompanySettings = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const { company_code } = req.params;
+
+    const settings = await CompanySettings.findOne({
+      where: { company_code },
+    });
+
+    if (!settings) {
+      return res.status(404).json({ message: "Settings not found" });
+    }
+
+    await settings.destroy();
+
+    return res.status(200).json({
+      message: "Company settings deleted successfully",
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Error deleting settings",
+      error: err.message,
+    });
+  }
+};
+
 export {
   signupSuperMaster,
   loginSuperMaster,
   getAllCompanies,
   getEmployeesByCompanyCode,
+  upsertCompanySettings,getCompanySettings,deleteCompanySettings
 };

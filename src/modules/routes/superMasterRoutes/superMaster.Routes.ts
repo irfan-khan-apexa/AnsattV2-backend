@@ -15,8 +15,10 @@ import {
   signupSuperMaster,
   getAllCompanies,
   getEmployeesByCompanyCode,
+  upsertCompanySettings,getCompanySettings,deleteCompanySettings,
 } from "../../controllers/index";
 import { authenticateSuperMaster } from "../../../middlewares/authMiddleware";
+import upload from "../../../middlewares/wasabiUpload";
 
 const superMasterRouter = Router();
 
@@ -32,4 +34,26 @@ superMasterRouter.get(
   authenticateSuperMaster,
   getEmployeesByCompanyCode
 );
+
+
+
+superMasterRouter.post(
+  "/super-master/company-settings",
+  authenticateSuperMaster,
+    upload.single("company_logo"),
+  upsertCompanySettings
+);
+
+superMasterRouter.get(
+  "/super-master/company-setting/:company_code",
+  authenticateSuperMaster,
+  getCompanySettings
+);
+superMasterRouter.delete(
+  "/super-master/company-setting/delete/:company_code",
+  authenticateSuperMaster,
+  deleteCompanySettings
+);
+
+
 export { superMasterRouter };

@@ -3,12 +3,15 @@ import {
   signupSuperMaster,
   getAllCompanies,
   getEmployeesByCompanyCode,
+  upsertCompanySettings,getCompanySettings,deleteCompanySettings
 } from "./superMasterController/superMaster.Controller";
 
 import {
   createCompany,
   loginCompany,
   getCompanyDashboard,
+  getMyCompanySettings,
+
 } from "./companyController/company.Controller";
 import {
   createEmployee,
@@ -22,31 +25,10 @@ import {
 import {
  createDepartment,getDepartments,getDepartmentById,updateDepartment,deleteDepartment
 } from "./departmentController/department.Controller";
+
 import {
-  createRole,
-  getAllRoles,
-  updateRole,
-  deleteRole,
-} from "./rolePermissionController/role.Controller";
-import {
-  createModule,
-  getAllModules,
-  updateModule,
-  deleteModule,
-} from "./rolePermissionController/module.Controller";
-// import {
-//   createRoleModulePermission,
-//   getRolePermissions,
-//   updateRoleModulePermission,
-//   deleteRoleModulePermission,
-// } from "./rolePermissionController/roleModulePermission.Controller";
-import {
-  createPermission,
-  listPermissions,
-  getPermission,
-  updatePermission,
-  deletePermission,
-} from "./rolePermissionController/permission.Controller";
+createRole,getRoles,getRoleById,updateRole,deleteRole,getPermissionRegistry
+} from "./roleController/roleController";
 
 import {
   createPolicy,
@@ -128,7 +110,8 @@ export {
   loginSuperMaster,
   createCompany,
   loginCompany,
-  getCompanyDashboard,
+  getCompanyDashboard,upsertCompanySettings,getCompanySettings,deleteCompanySettings,
+  getMyCompanySettings,
   createEmployee,
   getEmployees,
   updateEmployee,
@@ -138,23 +121,13 @@ export {
   getAllCompanies,
   getEmployeesByCompanyCode,
   createDepartment,getDepartments,getDepartmentById,updateDepartment,deleteDepartment,
-  createRole,
-  getAllRoles,
-  updateRole,
-  deleteRole,
-  createModule,
-  getAllModules,
-  updateModule,
-  deleteModule,
+ 
+  createRole,getRoles,getRoleById,updateRole,deleteRole,getPermissionRegistry,
   // createRoleModulePermission,
   // getRolePermissions,
   // updateRoleModulePermission,
   // deleteRoleModulePermission,
-  createPermission,
-  listPermissions,
-  getPermission,
-  updatePermission,
-  deletePermission,
+ 
   createPolicy,
   getAllPolicies,
   getPolicyById,
