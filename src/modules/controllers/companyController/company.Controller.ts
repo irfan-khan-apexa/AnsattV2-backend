@@ -37,11 +37,16 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { Company } from "../../models/index";
+import { Company ,CompanySettings} from "../../models/index";
 import {
   AuthenticatedRequest,
   CompanyRequest,
 } from "../../../middlewares/authMiddleware";
+import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
+
+
+
+
 
 function generateCompanyCode(name: string): string {
   const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -143,4 +148,89 @@ const getCompanyDashboard = async (
   }
 };
 
-export { createCompany, loginCompany, getCompanyDashboard };
+// const getMyCompanySettings = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const user: any = (req as any).user;
+//     const company_code = user.company_code;
+
+//     const settings = await CompanySettings.findOne({
+//       where: { company_code },
+//     });
+
+//     if (!settings) {
+//       return res.status(404).json({
+//         message: "Company settings not configured yet",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       data: settings,
+//     });
+//   } catch (err: any) {
+//     return res.status(500).json({
+//       message: "Error fetching company settings",
+//       error: err.message,
+//     });
+//   }
+// };
+
+const getMyCompanySettings = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const user: any = (req as any).user;
+    const company_code = user.company_code;
+
+    const settings: any = await CompanySettings.findOne({
+      where: { company_code },
+      raw: true,
+    });
+
+    if (!settings) {
+      return res.status(404).json({
+        message: "Company settings not configured yet",
+      });
+    }
+
+    // 🔥 add signed logo url (same as super admin)
+    if (settings.company_logo) {
+      const bucket = process.env.WASABI_BUCKET_NAME!;
+      const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+
+      // full url → key
+      const key = settings.company_logo.replace(
+        `${endpoint}/${bucket}/`,
+        ""
+      );
+
+      settings.company_logo_signed_url = await generatePresignedGetUrl(
+        key,
+        300 // 5 minutes
+      );
+    } else {
+      settings.company_logo_signed_url = null;
+    }
+
+    return res.status(200).json({
+      data: settings,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: "Error fetching company settings",
+      error: err.message,
+    });
+  }
+};
+
+
+
+// company setings
+
+
+
+
+export { createCompany, loginCompany, getCompanyDashboard ,getMyCompanySettings,};

@@ -3,6 +3,8 @@ import {
   createCompany,
   loginCompany,
   getCompanyDashboard,
+  getMyCompanySettings,
+  
 } from "../../controllers/index";
 import {
   authenticateSuperMaster,
@@ -22,5 +24,6 @@ companyRouter.get("/dashboard", authenticateCompanyMaster, getCompanyDashboard);
 // For either role:
 
 // app.get("/shared", authenticateRole(["super_master", "company_master"]), handlerFn);
+companyRouter.get("/getcompanysetting", authenticateCompanyMaster, getMyCompanySettings);
 
 export { companyRouter };

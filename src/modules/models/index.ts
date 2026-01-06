@@ -1,15 +1,13 @@
 import { SuperMaster } from "./superMasterModel/superMaster.Model";
 import { Company } from "./companyModel/company.Model";
+import { CompanySettings } from "./companyModel/companySettings.Model";
 import { Employee } from "./employeeModel/employee.Model";
 import { Department } from "./departmentModel/department.Model";
 import { OfferLetter } from "./onboardingModel/offerLetter.Model";
 import { Onboarding } from "./onboardingModel/Onboarding.Model";
 import { LetterAccessRequest} from "./onboardingModel/LetterAccessRequest.Model";
 import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
-import { Module } from "./roleModel/module.model";
-import { Role } from "./roleModel/role.model";
-import { RoleModulePermission } from "./roleModel/roleModulePermission.model";
-import { Permission } from "./roleModel/permission.model";
+import {Role} from "./roleModel/role.Model";
 import { Policy } from "./policyModel/policyModel";
 import { Leave } from "./leaveModel/leaveModel";
 import { LeaveMaster } from "./leaveModel/LeaveMasterModel";
@@ -24,11 +22,7 @@ import { ExitFeedback } from "./exitRequestModel/exitFeedback.Model";
 import { HrAnnouncement } from "./HrAnnouncementModel/HrAnnouncement.Model";
 import sequelize from "../../config/sequelize";
 
-Role.hasMany(RoleModulePermission, { foreignKey: "role_id" });
-RoleModulePermission.belongsTo(Role, { foreignKey: "role_id" });
 
-Module.hasMany(RoleModulePermission, { foreignKey: "module_id" });
-RoleModulePermission.belongsTo(Module, { foreignKey: "module_id" });
 
 // Onboarding belongs to Department
 // Onboarding.belongsTo(Department, { foreignKey: "department" });
@@ -54,14 +48,11 @@ RoleModulePermission.belongsTo(Module, { foreignKey: "module_id" });
 
 export {
   SuperMaster,
-  Company,
+  Company, CompanySettings,
   Employee,
   Department,
   OfferLetter,
-  Module,
   Role,
-  RoleModulePermission,
-  Permission,
   Policy,
   Leave,
   LeaveMaster,
