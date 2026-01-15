@@ -1,22 +1,21 @@
-// src/modules/settings/models/CompanySettings.Model.ts
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../../../config/sequelize";
 
 export interface CompanySettingsAttributes {
   id?: number;
   company_code: string;
-
   company_name: string;
   company_logo?: string | null;
   brand_color?: string | null;
   language?: string;
 
-  module_access?: Record<string, boolean>; // 🔥 feature flags
+  // 🔥 RBAC ROOT PERMISSIONS
+  permissions?: Record<string, string[]>;
 }
 
 export type CompanySettingsCreationAttributes = Optional<
   CompanySettingsAttributes,
-  "id" | "company_logo" | "brand_color" | "language" | "module_access"
+  "id" | "company_logo" | "brand_color" | "language" | "permissions"
 >;
 
 export class CompanySettings
@@ -29,7 +28,7 @@ export class CompanySettings
   public company_logo!: string | null;
   public brand_color!: string | null;
   public language!: string;
-  public module_access!: Record<string, boolean>;
+  public permissions!: Record<string, string[]>;
 }
 
 CompanySettings.init(
@@ -57,17 +56,18 @@ CompanySettings.init(
       allowNull: false,
       defaultValue: "en",
     },
-    module_access: {
+
+    // 🔥 ROOT PERMISSION LAYER
+    permissions: {
       type: DataTypes.JSON,
       allowNull: false,
       defaultValue: {
-        onboarding: true,
-        attendance: true,
-        payroll: false,
-        assets: true,
-        letters: true,
-        leaves: true,
-        reports: false,
+        onboarding: ["read", "create", "update", "delete"],
+        leaves: ["read", "create"],
+        assets: ["read", "create", "update"],
+        salary: [],
+        hrAnnouncement: ["read"],
+        roles: ["read", "create"],
       },
     },
   },
@@ -78,7 +78,6 @@ CompanySettings.init(
   }
 );
 
-// CompanySettings.sync({ alter: true });
-CompanySettings.sync();
 
+// CompanySettings.sync({ alter: true });
 export default CompanySettings;

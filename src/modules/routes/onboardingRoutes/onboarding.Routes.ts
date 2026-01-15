@@ -11,6 +11,7 @@ import {
   getAllTemplates,
   generateExitLetterById,
   bulkCreateOnboarding,
+  employeeLogin,
   requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest
 } from "../../controllers/index";
 import { authenticateCompanyMaster, authenticateEmployee } from "../../../middlewares/authMiddleware";
@@ -109,7 +110,7 @@ onboardingRouter.get(
   authenticateEmployee,
   downloadLetter
 );
-
+onboardingRouter.post("/employee-login", employeeLogin);
 
 
 

@@ -1,7 +1,9 @@
 import { Model, DataTypes } from "sequelize";
 import sequelize from "../../../config/sequelize";
 
-export class Role extends Model {}
+export class Role extends Model {
+  id: any;
+}
 
 Role.init(
   {

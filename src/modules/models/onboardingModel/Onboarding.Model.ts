@@ -7,7 +7,7 @@ export interface OnboardingAttributes {
   name: string;
   email: string;
   contact: string;
-  role: string;
+  role_id: number;
   designation: string;
   department: string;
   reporting_manager: string;
@@ -53,7 +53,7 @@ export class Onboarding
   public name!: string;
   public email!: string;
   public contact!: string;
-  public role!: string;
+  public role_id!: number;
   public designation!: string;
   public department!: string;
   public reporting_manager!: string;
@@ -99,7 +99,10 @@ Onboarding.init(
     name: DataTypes.STRING,
     email: DataTypes.STRING,
     contact: DataTypes.STRING,
-    role: DataTypes.STRING,
+    role_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
     designation: DataTypes.STRING,
     department: DataTypes.STRING,
     reporting_manager: DataTypes.STRING,
