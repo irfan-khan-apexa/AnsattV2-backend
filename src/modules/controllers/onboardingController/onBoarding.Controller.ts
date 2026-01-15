@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Onboarding } from "../../models/index";
+import { Onboarding, Role } from "../../models/index";
 import crypto from "crypto";
 import {
   AuthenticatedRequest,
@@ -20,6 +20,110 @@ import XLSX from "xlsx";
 const generateStrongPassword = (): string => {
   return crypto.randomBytes(10).toString("base64url"); // 10 bytes => 13-14 chars
 };
+
+// const createOnboarding = async (
+//   req: CompanyRequest,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const file = req.files as any;
+
+//     const passport_photo = file?.passport_photo?.[0]?.location
+//       ? encrypt(file.passport_photo[0].location)
+//       : undefined;
+
+//     const aadhar_photo = file?.aadhar_photo?.[0]?.location
+//       ? encrypt(file.aadhar_photo[0].location)
+//       : undefined;
+
+//     const pan_photo = file?.pan_photo?.[0]?.location
+//       ? encrypt(file.pan_photo[0].location)
+//       : undefined;
+
+//     const resume = file?.resume?.[0]?.location
+//       ? encrypt(file.resume[0].location)
+//       : undefined;
+
+//     const offer_letter = file?.offer_letter?.[0]?.location
+//       ? encrypt(file.offer_letter[0].location)
+//       : undefined;
+
+//     const joining_letter = file?.joining_letter?.[0]?.location
+//       ? encrypt(file.joining_letter[0].location)
+//       : undefined;
+
+//     const experience_letter = file?.experience_letter?.[0]?.location
+//       ? encrypt(file.experience_letter[0].location)
+//       : undefined;
+
+//     const {
+//       name,
+//       email,
+//       contact,
+//       role,
+//       designation,
+//       department,
+//       reporting_manager,
+//       joining_date,
+//       probation_period,
+//       pan_card,
+//       aadhar_card,
+//     } = req.body;
+
+//     const company_code = req.user.company_code;
+
+//     // ✅ Check for duplicate email
+//     const existingEmployee = await Onboarding.findOne({
+//       where: { email, company_code },
+//     });
+
+//     if (existingEmployee) {
+//       return res
+//         .status(400)
+//         .json({ message: "Employee with this email already exists" });
+//     }
+
+//     // ✅ Generate strong password
+//     const auto_password = generateStrongPassword();
+
+//     const newEmployee = await Onboarding.create({
+//       name,
+//       email,
+//       contact,
+//       role,
+//       designation,
+//       department,
+//       reporting_manager,
+//       joining_date,
+//       probation_period,
+//       company_code,
+//       auto_password,
+//       pan_card,
+//       aadhar_card,
+//       passport_photo,
+//       aadhar_photo,
+//       pan_photo,
+//       resume,
+//       offer_letter,
+//       joining_letter,
+//       experience_letter,
+//     });
+//     console.log("📦 req.body:", req.body);
+//     console.log("📅 joining_date:", req.body.joining_date);
+
+//     return res
+//       .status(201)
+//       .json({ message: "Onboarding created", data: newEmployee });
+//   } catch (error: any) {
+//     console.error("🔥 Error in createOnboarding:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "Failed to create onboarding", error: error.message });
+//   }
+// };
+
+// Get All
+
 
 const createOnboarding = async (
   req: CompanyRequest,
@@ -60,7 +164,7 @@ const createOnboarding = async (
       name,
       email,
       contact,
-      role,
+      role_id,
       designation,
       department,
       reporting_manager,
@@ -82,7 +186,13 @@ const createOnboarding = async (
         .status(400)
         .json({ message: "Employee with this email already exists" });
     }
+   const role = await Role.findOne({
+      where: { id: role_id, company_code },
+    });
 
+    if (!role) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
     // ✅ Generate strong password
     const auto_password = generateStrongPassword();
 
@@ -90,7 +200,7 @@ const createOnboarding = async (
       name,
       email,
       contact,
-      role,
+      role_id,
       designation,
       department,
       reporting_manager,
@@ -122,7 +232,6 @@ const createOnboarding = async (
   }
 };
 
-// Get All
 const getAllOnboardings = async (
   req: CompanyRequest,
   res: Response
@@ -535,7 +644,7 @@ const bulkCreateOnboarding = async (req: Request, res: Response):Promise<any> =>
           name,
           email,
           contact,
-          role,
+          role_id,
           designation,
           department,
           reporting_manager,
@@ -566,7 +675,7 @@ const bulkCreateOnboarding = async (req: Request, res: Response):Promise<any> =>
           name,
           email,
           contact,
-          role,
+          role_id,
           designation,
           department,
           reporting_manager,
@@ -600,8 +709,124 @@ const bulkCreateOnboarding = async (req: Request, res: Response):Promise<any> =>
   }
 };
 
+// const employeeLogin = async (req: Request, res: Response): Promise<any> => {
+//   const { email, password, company_code } = req.body;
 
+//   try {
+//     if (!email || !password || !company_code) {
+//       return res
+//         .status(400)
+//         .json({ message: "Email, password and company_code required" });
+//     }
 
+//     const user: any = await Onboarding.findOne({
+//       where: { email, company_code },
+//     });
+
+//     if (!user) {
+//       return res.status(404).json({ message: "Employee not found" });
+//     }
+
+//     // ⛔ direct password check (same as old)
+//     if (user.auto_password !== password) {
+//       return res.status(401).json({ message: "Invalid password" });
+//     }
+
+//     // 🔥 Load role
+//     const role: any = await Role.findByPk(user.role_id);
+//     if (!role) {
+//       return res.status(401).json({ message: "Role not found" });
+//     }
+
+//     const roleId = role.getDataValue("id");
+//     const permissions = role.getDataValue("permissions");
+
+//     // 🔥 Generate JWT (same style as old)
+//     const token = jwt.sign(
+//       {
+//         id: user.id,
+//         company_code: user.company_code,
+//         role_id: roleId,
+//         permissions, // 🔥 RBAC now active
+//       },
+//       process.env.JWT_SECRET || "your-secret-key",
+//       { expiresIn: "1d" }
+//     );
+
+//     return res.status(200).json({
+//       token,
+//       user: {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         company_code: user.company_code,
+//         role_id: roleId,
+//         permissions,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("loginEmployee error:", error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
+const employeeLogin = async (req: Request, res: Response): Promise<any> => {
+  const { company_code, password } = req.body;
+
+  try {
+    if (!company_code || !password) {
+      return res
+        .status(400)
+        .json({ message: "company_code and password are required" });
+    }
+
+    // 🔥 Find employee by company + auto_password
+    const user: any = await Onboarding.findOne({
+      where: {
+        company_code,
+        auto_password: password,
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // 🔥 Load role
+    const role: any = await Role.findByPk(user.role_id);
+    if (!role) {
+      return res.status(401).json({ message: "Role not found" });
+    }
+
+    const roleId = role.getDataValue("id");
+    const permissions = role.getDataValue("permissions");
+
+    // 🔐 Generate token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        company_code,
+        role_id: roleId,
+        permissions, // RBAC
+      },
+      process.env.JWT_SECRET || "your-secret-key",
+      { expiresIn: "1d" }
+    );
+
+    return res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        company_code: user.company_code,
+        role_id: roleId,
+        permissions,
+      },
+    });
+  } catch (error) {
+    console.error("loginEmployee error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 export {
   createOnboarding,
@@ -613,5 +838,6 @@ export {
   generateOfferLetterById,
   downloadOfferLetter,
   getAllTemplates,
-  bulkCreateOnboarding
+  bulkCreateOnboarding,
+  employeeLogin
 };

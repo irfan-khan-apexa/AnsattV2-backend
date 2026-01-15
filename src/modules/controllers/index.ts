@@ -67,7 +67,8 @@ import {
   generateOfferLetterById,
   downloadOfferLetter,
   getAllTemplates,
-  bulkCreateOnboarding
+  bulkCreateOnboarding,
+  employeeLogin
 } from "./onboardingController/onBoarding.Controller";
 import {
   createExitRequest,
@@ -148,7 +149,8 @@ export {
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
-  bulkCreateOnboarding,
+  bulkCreateOnboarding,employeeLogin,
+
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
