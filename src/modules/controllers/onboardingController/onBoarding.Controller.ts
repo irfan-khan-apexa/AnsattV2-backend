@@ -267,34 +267,120 @@ const getOnboardingById = async (
 };
 
 // Update
+// const updateOnboarding = async (
+//   req: CompanyRequest,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { id } = req.params;
+
+//     console.log("FILES:", req.files);
+//     console.log("BODY:", req.body);
+
+//     const record = await Onboarding.findOne({
+//       where: { id, company_code: req.user.company_code },
+//     });
+
+//     if (!record) {
+//       return res.status(404).json({ message: "Onboarding record not found" });
+//     }
+
+//     // 1) Update any normal fields coming in req.body
+//     // Use safe cast because req.body values may be strings for dates/nums
+//     await record.update(req.body || {});
+
+//     // 2) If files uploaded (multer-s3), save their S3 locations/keys to the record
+//     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+//     if (files && Object.keys(files).length > 0) {
+//       const updates: Partial<OnboardingAttributes> = {};
+
+//       // list all file-fields your route accepts and map them
+//       const fileFields = [
+//         "pan_photo",
+//         "aadhar_photo",
+//         "passport_photo",
+//         "resume",
+//         "offer_letter",
+//         "joining_letter",
+//         "experience_letter",
+//       ];
+
+//       fileFields.forEach((field) => {
+//         const fArr = (files as any)[field] as Express.Multer.File[] | undefined;
+//         if (fArr && fArr.length > 0) {
+//           // multer-s3 provides .location (full URL). fallback to .key if needed.
+//           const fileObj: any = fArr[0];
+//           updates[field as keyof OnboardingAttributes] = fileObj.location || fileObj.key || null;
+//         }
+//       });
+
+//       if (Object.keys(updates).length > 0) {
+//         await record.update(updates);
+//       }
+//     }
+
+//     // reload to get fresh values
+//     await record.reload();
+
+//     return res.status(200).json({
+//       message: "Onboarding updated successfully",
+//       data: record,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       message: "Failed to update onboarding",
+//       error: (error as Error).message,
+//     });
+//   }
+// };
 const updateOnboarding = async (
   req: CompanyRequest,
   res: Response
 ): Promise<any> => {
   try {
     const { id } = req.params;
+    const company_code = req.user.company_code;
 
     console.log("FILES:", req.files);
     console.log("BODY:", req.body);
 
+    // 🔍 Existing record
     const record = await Onboarding.findOne({
-      where: { id, company_code: req.user.company_code },
+      where: { id, company_code },
     });
 
     if (!record) {
       return res.status(404).json({ message: "Onboarding record not found" });
     }
 
-    // 1) Update any normal fields coming in req.body
-    // Use safe cast because req.body values may be strings for dates/nums
-    await record.update(req.body || {});
+    const {
+      role_id, // 👈 may come in update
+      ...restBody
+    } = req.body;
 
-    // 2) If files uploaded (multer-s3), save their S3 locations/keys to the record
+    // 🔥 SAME AS CREATE: validate role_id if provided
+    if (role_id) {
+      const role = await Role.findOne({
+        where: { id: role_id, company_code },
+      });
+
+      if (!role) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+    }
+
+    // 🔄 Update normal fields (including role_id if valid)
+    await record.update({
+      ...restBody,
+      ...(role_id ? { role_id } : {}),
+    });
+
+    // 📂 Handle file uploads (same logic, unchanged)
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+
     if (files && Object.keys(files).length > 0) {
       const updates: Partial<OnboardingAttributes> = {};
 
-      // list all file-fields your route accepts and map them
       const fileFields = [
         "pan_photo",
         "aadhar_photo",
@@ -303,14 +389,15 @@ const updateOnboarding = async (
         "offer_letter",
         "joining_letter",
         "experience_letter",
+        "exit_letter",
       ];
 
       fileFields.forEach((field) => {
-        const fArr = (files as any)[field] as Express.Multer.File[] | undefined;
+        const fArr = files[field];
         if (fArr && fArr.length > 0) {
-          // multer-s3 provides .location (full URL). fallback to .key if needed.
           const fileObj: any = fArr[0];
-          updates[field as keyof OnboardingAttributes] = fileObj.location || fileObj.key || null;
+          updates[field as keyof OnboardingAttributes] =
+            fileObj.location || fileObj.key || null;
         }
       });
 
@@ -319,17 +406,17 @@ const updateOnboarding = async (
       }
     }
 
-    // reload to get fresh values
     await record.reload();
 
     return res.status(200).json({
       message: "Onboarding updated successfully",
       data: record,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("🔥 Error in updateOnboarding:", error);
     return res.status(500).json({
       message: "Failed to update onboarding",
-      error: (error as Error).message,
+      error: error.message,
     });
   }
 };
@@ -769,21 +856,79 @@ const bulkCreateOnboarding = async (req: Request, res: Response):Promise<any> =>
 //     return res.status(500).json({ message: "Server error" });
 //   }
 // };
+// const employeeLogin = async (req: Request, res: Response): Promise<any> => {
+//   const { company_code, password } = req.body;
+
+//   try {
+//     if (!company_code || !password) {
+//       return res
+//         .status(400)
+//         .json({ message: "company_code and password are required" });
+//     }
+
+//     // 🔥 Find employee by company + auto_password
+//     const user: any = await Onboarding.findOne({
+//       where: {
+//         company_code,
+//         auto_password: password,
+//       },
+//     });
+
+//     if (!user) {
+//       return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     // 🔥 Load role
+//     const role: any = await Role.findByPk(user.role_id);
+//     if (!role) {
+//       return res.status(401).json({ message: "Role not found" });
+//     }
+
+//     const roleId = role.getDataValue("id");
+//     const permissions = role.getDataValue("permissions");
+
+//     // 🔐 Generate token
+//     const token = jwt.sign(
+//       {
+//         id: user.id,
+//         company_code,
+//         role_id: roleId,
+//         permissions, // RBAC
+//       },
+//       process.env.JWT_SECRET || "your-secret-key",
+//       { expiresIn: "1d" }
+//     );
+
+//     return res.status(200).json({
+//       token,
+//       user: {
+//         id: user.id,
+//         name: user.name,
+//         company_code: user.company_code,
+//         role_id: roleId,
+//         permissions,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("loginEmployee error:", error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
 const employeeLogin = async (req: Request, res: Response): Promise<any> => {
-  const { company_code, password } = req.body;
+  const { email, password } = req.body;
 
   try {
-    if (!company_code || !password) {
+    if (!email || !password) {
       return res
         .status(400)
-        .json({ message: "company_code and password are required" });
+        .json({ message: "email and password are required" });
     }
 
-    // 🔥 Find employee by company + auto_password
+    // 🔥 1. Find employee by email + password
     const user: any = await Onboarding.findOne({
       where: {
-        company_code,
-        auto_password: password,
+        email,
+        auto_password: password, // (same logic as your current system)
       },
     });
 
@@ -791,34 +936,46 @@ const employeeLogin = async (req: Request, res: Response): Promise<any> => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 🔥 Load role
-    const role: any = await Role.findByPk(user.role_id);
+    // 🔥 2. Load role using role_id from onboarding
+    const role: any = await Role.findOne({
+      where: {
+        id: user.role_id,
+        company_code: user.company_code, // 🔐 ensure same company
+      },
+      raw: true,
+    });
+
     if (!role) {
       return res.status(401).json({ message: "Role not found" });
     }
 
-    const roleId = role.getDataValue("id");
-    const permissions = role.getDataValue("permissions");
+    // 🔥 3. Parse role permissions (important)
+    const permissions =
+      typeof role.permissions === "string"
+        ? JSON.parse(role.permissions)
+        : role.permissions;
 
-    // 🔐 Generate token
+    // 🔐 4. Generate JWT
     const token = jwt.sign(
       {
         id: user.id,
-        company_code,
-        role_id: roleId,
-        permissions, // RBAC
+        company_code: user.company_code,
+        role_id: role.id,
+        permissions, // ✅ role-based permissions
       },
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "1d" }
     );
 
+    // ✅ 5. Final response
     return res.status(200).json({
       token,
       user: {
         id: user.id,
         name: user.name,
+        email: user.email,
         company_code: user.company_code,
-        role_id: roleId,
+        role_id: role.id,
         permissions,
       },
     });
@@ -827,6 +984,7 @@ const employeeLogin = async (req: Request, res: Response): Promise<any> => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 export {
   createOnboarding,
