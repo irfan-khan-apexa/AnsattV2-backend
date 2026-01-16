@@ -227,6 +227,62 @@ const getEmployeesByCompanyCode = async (
 //     });
 //   }
 // };
+// const upsertCompanySettings = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const {
+//       company_code,
+//       company_name,
+//       brand_color,
+//       language,
+//       permissions,
+//     } = req.body;
+
+//     const file = (req as any).file;
+
+//     if (!company_code || !company_name) {
+//       return res.status(400).json({
+//         message: "company_code and company_name are required",
+//       });
+//     }
+
+//     const company = await Company.findOne({ where: { company_code } });
+//     if (!company) {
+//       return res.status(404).json({ message: "Company not found" });
+//     }
+
+//     // 🔥 existing settings fetch
+//     const existingSettings = await CompanySettings.findOne({
+//       where: { company_code },
+//     });
+
+//     // 🔥 logo only update if new file uploaded
+//     const company_logo = file?.location
+//       ? file.location
+//       : existingSettings?.company_logo;
+
+//     const [settings] = await CompanySettings.upsert({
+//       company_code,
+//       company_name,
+//       brand_color,
+//       language,
+//       permissions,
+//       company_logo,
+//     });
+
+//     return res.status(200).json({
+//       message: "Company settings saved",
+//       data: settings,
+//     });
+//   } catch (err: any) {
+//     return res.status(500).json({
+//       message: "Error saving settings",
+//       error: err.message,
+//     });
+//   }
+// };
 const upsertCompanySettings = async (
   req: Request,
   res: Response
@@ -253,22 +309,28 @@ const upsertCompanySettings = async (
       return res.status(404).json({ message: "Company not found" });
     }
 
-    // 🔥 existing settings fetch
+    // 🔥 existing settings fetch (unchanged)
     const existingSettings = await CompanySettings.findOne({
       where: { company_code },
     });
 
-    // 🔥 logo only update if new file uploaded
+    // 🔥 logo only update if new file uploaded (unchanged)
     const company_logo = file?.location
       ? file.location
       : existingSettings?.company_logo;
+
+    // ✅ FIX: parse permissions if coming as string from form-data
+    const parsedPermissions =
+      typeof permissions === "string"
+        ? JSON.parse(permissions)
+        : permissions;
 
     const [settings] = await CompanySettings.upsert({
       company_code,
       company_name,
       brand_color,
       language,
-      permissions,
+      permissions: parsedPermissions, // ✅ FIXED
       company_logo,
     });
 
