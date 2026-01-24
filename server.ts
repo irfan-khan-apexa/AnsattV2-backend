@@ -56,6 +56,8 @@ const PORT = process.env.PORT || 5000;
 //     credentials: true,
 //   })
 // );
+
+
 const allowedOriginPatterns = [
   /^http:\/\/localhost:\d+$/,
   /^https:\/\/.*\.netlify\.app$/,
@@ -77,7 +79,7 @@ app.use(
   })
 );
 
-app.options("*", cors());
+// app.options("*", cors());
 
 
 // Middleware
