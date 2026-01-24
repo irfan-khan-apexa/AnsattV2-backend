@@ -35,27 +35,50 @@ const PORT = process.env.PORT || 5000;
 //   })
 // );
 
+// const allowedOriginPatterns = [
+//   /^http:\/\/localhost:\d+$/,
+//   /^https:\/\/your-frontend\.netlify\.app$/,
+//   /^https:\/\/.*\.expo\.app$/,
+// ];
+
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       if (
+//         !origin ||
+//         allowedOriginPatterns.some((pattern) => pattern.test(origin))
+//       ) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     credentials: true,
+//   })
+// );
 const allowedOriginPatterns = [
   /^http:\/\/localhost:\d+$/,
-  /^https:\/\/your-frontend\.netlify\.app$/,
+  /^https:\/\/.*\.netlify\.app$/,
   /^https:\/\/.*\.expo\.app$/,
+  /^https:\/\/.*\.lovable\.(app|dev|ai)$/, // covers all Lovable cases
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOriginPatterns.some((pattern) => pattern.test(origin))
-      ) {
+      if (!origin || allowedOriginPatterns.some(p => p.test(origin))) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true,
+    // JWT header auth use ho raha hai, cookies nahi
+    credentials: false,
   })
 );
+
+app.options("*", cors());
+
 
 // Middleware
 app.use(express.json());
