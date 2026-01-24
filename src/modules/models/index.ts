@@ -9,6 +9,7 @@ import { LetterAccessRequest} from "./onboardingModel/LetterAccessRequest.Model"
 import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
 import { Role } from "./roleModel/role.model";
 import { Policy } from "./policyModel/policyModel";
+import {AuditLog} from "./auditModel/auditLog.Model";
 import { Leave } from "./leaveModel/leaveModel";
 import { LeaveMaster } from "./leaveModel/LeaveMasterModel";
 import { LeaveTransaction } from "./leaveModel/LeaveTransactionModel";
@@ -67,5 +68,6 @@ export {
   Asset,
   AssetAssign,
   ExitFeedback,
-  HrAnnouncement
+  HrAnnouncement,
+  AuditLog
 };

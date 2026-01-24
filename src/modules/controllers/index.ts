@@ -104,6 +104,8 @@ createAsset,
 import {
 createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement
 } from "./hrAnnouncementController/hrAnnouncement.Controller";
+import {
+getCompanyAudit,getAllAudit} from "./auditController/audit.Controller";
 
 // All controllers exported as single object
 export {
@@ -180,6 +182,6 @@ export {
   getEmployeeAssets,
   getAssetHistory,
   getAllAssets, 
-
-  createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement
+  createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement,
+  getCompanyAudit,getAllAudit
 };
