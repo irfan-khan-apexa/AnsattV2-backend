@@ -62,24 +62,46 @@ const allowedOriginPatterns = [
   /^http:\/\/localhost:\d+$/,
   /^https:\/\/.*\.netlify\.app$/,
   /^https:\/\/.*\.expo\.app$/,
-  /^https:\/\/.*\.lovable\.(app|dev|ai)$/, // covers all Lovable cases
+  /^https:\/\/.*\.lovable\.(app|dev|ai)$/,
+];
+
+/**
+ * NEW: Exact Lovable frontend URLs (ADD ONLY, DO NOT REMOVE ANYTHING)
+ */
+const allowedExactOrigins = [
+  "https://id-preview--c929c7c4-1d7d-4d2b-b080-9e5ab54755af.lovable.app",
+  "https://c929c7c4-1d7d-4d2b-b080-9e5ab54755af.lovableproject.com",
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOriginPatterns.some(p => p.test(origin))) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      // Allow server-to-server calls / Postman
+      if (!origin) {
+        return callback(null, true);
       }
+
+      // 1️⃣ Exact match check (Lovable provided URLs)
+      if (allowedExactOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // 2️⃣ Regex-based pattern check (existing logic)
+      if (allowedOriginPatterns.some((pattern) => pattern.test(origin))) {
+        return callback(null, true);
+      }
+
+      // ❌ Block everything else
+      return callback(new Error("Not allowed by CORS"));
     },
-    // JWT header auth use ho raha hai, cookies nahi
+
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+
+    // JWT header based auth (no cookies)
     credentials: false,
   })
 );
-
-// app.options("*", cors());
 
 
 // Middleware
