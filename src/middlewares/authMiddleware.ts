@@ -100,6 +100,39 @@ export const authenticateEmployee = (
     return Promise.resolve(res.status(401).json({ message: "Invalid token" }));
   }
 };
+// export const authenticateUser = (
+//   req: AuthRequest,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<any> => {
+//   const token = req.headers.authorization?.split(" ")[1];
+
+//   if (!token) {
+//     return Promise.resolve(res.status(401).json({ message: "Token missing" }));
+//   }
+
+//   try {
+//     const decoded: any = jwt.verify(
+//       token,
+//       process.env.JWT_SECRET || "your-secret-key"
+//     );
+
+//     // ❗ basic validation
+//     if (!decoded.id || !decoded.company_code || !decoded.role) {
+//       return Promise.resolve(
+//         res.status(401).json({ message: "Invalid token payload" })
+//       );
+//     }
+
+//     req.user = decoded; // 🔥 ONE source of truth
+//     next();
+//     return Promise.resolve();
+//   } catch (err) {
+//     return Promise.resolve(res.status(401).json({ message: "Invalid token" }));
+//   }
+// };
+
+
 export const authenticateUser = (
   req: AuthRequest,
   res: Response,
@@ -117,20 +150,34 @@ export const authenticateUser = (
       process.env.JWT_SECRET || "your-secret-key"
     );
 
-    // ❗ basic validation
-    if (!decoded.id || !decoded.company_code || !decoded.role) {
+    // 🔥 MINIMUM REQUIRED (for both company & employee)
+    if (!decoded.id || !decoded.company_code) {
       return Promise.resolve(
         res.status(401).json({ message: "Invalid token payload" })
       );
     }
 
-    req.user = decoded; // 🔥 ONE source of truth
+    /**
+     * Normalize role
+     * - company_master / super_master → role exists
+     * - employee → role_id exists
+     */
+    if (!decoded.role && decoded.role_id) {
+      decoded.role = "employee"; // 👈 normalize
+    }
+
+    req.user = decoded;
     next();
     return Promise.resolve();
   } catch (err) {
     return Promise.resolve(res.status(401).json({ message: "Invalid token" }));
   }
 };
+
+
+
+
+
 // export const authenticateRole = (allowedRoles: string[]) => {
 //   return (
 //     req: AuthenticatedRequest,

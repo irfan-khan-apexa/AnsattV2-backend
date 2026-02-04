@@ -6,14 +6,14 @@ import {
   updatePolicy,
   deletePolicy,
 } from "../../controllers/index";
-import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
+import { authenticateUser } from "../../../middlewares/authMiddleware";
 
 const policyRouter = Router();
 
-policyRouter.post("/policies", authenticateCompanyMaster, createPolicy);
-policyRouter.get("/policies", authenticateCompanyMaster, getAllPolicies);
-policyRouter.get("/policies/:id", authenticateCompanyMaster, getPolicyById);
-policyRouter.put("/policies/:id", authenticateCompanyMaster, updatePolicy);
-policyRouter.delete("/policies/:id", authenticateCompanyMaster, deletePolicy);
+policyRouter.post("/policies", authenticateUser, createPolicy);
+policyRouter.get("/policies", authenticateUser, getAllPolicies);
+policyRouter.get("/policies/:id", authenticateUser, getPolicyById);
+policyRouter.put("/policies/:id", authenticateUser, updatePolicy);
+policyRouter.delete("/policies/:id", authenticateUser, deletePolicy);
 
 export { policyRouter };

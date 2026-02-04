@@ -9,6 +9,7 @@ import {
 import {
   authenticateSuperMaster,
   authenticateCompanyMaster,
+  authenticateUser
   // authenticateRole,
 } from "../../../middlewares/authMiddleware";
 
@@ -20,10 +21,10 @@ companyRouter.post("/login-company", loginCompany);
 
 // companyRouter.get("/dashboard", authenticateCompanyMaster, getCompanyDashboard);
 // Route (e.g. /api/company/dashboard)
-companyRouter.get("/dashboard", authenticateCompanyMaster, getCompanyDashboard);
+companyRouter.get("/dashboard", authenticateUser, getCompanyDashboard);
 // For either role:
 
 // app.get("/shared", authenticateRole(["super_master", "company_master"]), handlerFn);
-companyRouter.get("/getcompanysetting", authenticateCompanyMaster, getMyCompanySettings);
+companyRouter.get("/getcompanysetting", authenticateUser, getMyCompanySettings);
 
 export { companyRouter };

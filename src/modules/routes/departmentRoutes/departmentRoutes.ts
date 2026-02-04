@@ -6,10 +6,10 @@ import { authenticateCompanyMaster,authenticateUser } from "../../../middlewares
 
 const departmentRouter = Router();
 
-departmentRouter.post("/department", authenticateCompanyMaster, createDepartment);
+departmentRouter.post("/department", authenticateUser, createDepartment);
 departmentRouter.get("/department", authenticateUser, getDepartments);
-departmentRouter.get("/department/:id", authenticateCompanyMaster, getDepartmentById);
-departmentRouter.put("/department/:id", authenticateCompanyMaster, updateDepartment);
-departmentRouter.delete("/department/:id", authenticateCompanyMaster, deleteDepartment);
+departmentRouter.get("/department/:id", authenticateUser, getDepartmentById);
+departmentRouter.put("/department/:id", authenticateUser, updateDepartment);
+departmentRouter.delete("/department/:id", authenticateUser, deleteDepartment);
 
 export { departmentRouter };

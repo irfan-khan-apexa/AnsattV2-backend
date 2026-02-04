@@ -10,17 +10,17 @@ import {
   getFeedbacksForEmployee,
   getMyExitRequest
 } from "../../controllers/index";
-import { authenticateCompanyMaster ,authenticateEmployee} from "../../../middlewares/authMiddleware";
+import { authenticateCompanyMaster ,authenticateEmployee,authenticateUser} from "../../../middlewares/authMiddleware";
 
 const exitRouter = Router();
 
 // Create a new exit request
-exitRouter.post("/exit/exitrequest",authenticateEmployee, createExitRequest);
+exitRouter.post("/exit/exitrequest",authenticateUser, createExitRequest);
 
 // Get a specific exit request by ID
 exitRouter.get(
   "/exit/getbycompanyid",
-  authenticateCompanyMaster,
+  authenticateUser,
   getAllExitRequests
 );
 
@@ -32,22 +32,22 @@ exitRouter.get(
 // Employee can view his own exit request
 exitRouter.get(
   "/exit/myexitrequest",
-  authenticateEmployee,
+  authenticateUser,
   getMyExitRequest
 );
 
 
 
-exitRouter.put("/exit/:id", authenticateCompanyMaster, updateExitRequestStatus);
+exitRouter.put("/exit/:id", authenticateUser, updateExitRequestStatus);
 
 exitRouter.post(
   "/generate-exit-letter/:id",
-  authenticateCompanyMaster,
+  authenticateUser,
   generateExitLetterById
 );
 exitRouter.get(
   "/generate-exit-letter/:type/:id/:format",
-  authenticateCompanyMaster,
+  authenticateUser,
   downloadExitLetter
 );
 
@@ -56,12 +56,12 @@ exitRouter.get(
 
 exitRouter.post(
   "/exit/feedback",
-  authenticateEmployee,
+  authenticateUser,
   createExitFeedback
 );
 exitRouter.get(
   "/exit/feedback/:id",
-  authenticateCompanyMaster,
+  authenticateUser,
   getFeedbacksForEmployee
 );
 

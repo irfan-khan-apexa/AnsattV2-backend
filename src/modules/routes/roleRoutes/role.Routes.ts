@@ -9,7 +9,7 @@ import {
 } from "../../controllers/index";
 import {
   authenticateSuperMaster,
-  authenticateCompanyMaster,
+  authenticateUser,
 } from "../../../middlewares/authMiddleware";
 
 const roleRouter = Router();
@@ -17,16 +17,16 @@ const roleRouter = Router();
 /* permission structure (frontend use) */
 roleRouter.get(
   "/permissions",
-  authenticateCompanyMaster,
+  authenticateUser,
   getPermissionRegistry
 );
 
 /* COMPANY MASTER */
-roleRouter.post("/company/roles", authenticateCompanyMaster, createRole);
-roleRouter.get("/company/roles", authenticateCompanyMaster, getRoles);
-roleRouter.get("/company/roles/:id", authenticateCompanyMaster, getRoleById);
-roleRouter.put("/company/roles/:id", authenticateCompanyMaster, updateRole);
-roleRouter.delete("/company/roles/:id", authenticateCompanyMaster, deleteRole);
+roleRouter.post("/company/roles", authenticateUser, createRole);
+roleRouter.get("/company/roles", authenticateUser, getRoles);
+roleRouter.get("/company/roles/:id", authenticateUser, getRoleById);
+roleRouter.put("/company/roles/:id", authenticateUser, updateRole);
+roleRouter.delete("/company/roles/:id", authenticateUser, deleteRole);
 
 /* SUPER ADMIN */
 roleRouter.post("/super/roles", authenticateSuperMaster, createRole);

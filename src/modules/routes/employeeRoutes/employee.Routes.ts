@@ -10,6 +10,7 @@ import {
 import {
   authenticateCompanyMaster,
   authenticateEmployee,
+  authenticateUser
 } from "../../../middlewares/authMiddleware";
 
 const employeeRouter = Router();
@@ -18,25 +19,25 @@ const employeeRouter = Router();
 
 employeeRouter.post(
   "/create-employee",
-  authenticateCompanyMaster,
+  authenticateUser,
   createEmployee
 );
-employeeRouter.get("/get-employee", authenticateCompanyMaster, getEmployees);
+employeeRouter.get("/get-employee", authenticateUser, getEmployees);
 employeeRouter.put(
   "/update-employee/:id",
-  authenticateCompanyMaster,
+  authenticateUser,
   updateEmployee
 );
 employeeRouter.delete(
   "/delete-employee/:id",
-  authenticateCompanyMaster,
+  authenticateUser,
   deleteEmployee
 );
 employeeRouter.post("/login-employee", loginEmployee);
 
 employeeRouter.get(
   "/employee/modules",
-  authenticateEmployee,
+  authenticateUser,
   getEmployeeModules
 );
 
