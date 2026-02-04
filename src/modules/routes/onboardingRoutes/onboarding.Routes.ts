@@ -14,30 +14,30 @@ import {
   employeeLogin,
   requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest
 } from "../../controllers/index";
-import { authenticateCompanyMaster, authenticateEmployee } from "../../../middlewares/authMiddleware";
+import { authenticateUser, authenticateEmployee } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/wasabiUpload";
 
 const onboardingRouter = Router();
 
 // onboardingRouter.post(
 //   "/Onboarding",
-//   authenticateCompanyMaster,
+//   authenticateUser,
 //   createOnboarding
 // );
 
 onboardingRouter.get(
   "/Onboarding/templates",
-  // authenticateCompanyMaster,
+  // authenticateUser,
   getAllTemplates
 );
 onboardingRouter.get(
   "/Onboarding",
-  authenticateCompanyMaster,
+  authenticateUser,
   getAllOnboardings
 );
 onboardingRouter.get(
   "/Onboarding/:id",
-  authenticateCompanyMaster,
+  authenticateUser,
   getOnboardingById
 );
 onboardingRouter.put(
@@ -51,12 +51,12 @@ onboardingRouter.put(
     { name: "joining_letter", maxCount: 1 },
     { name: "experience_letter", maxCount: 1 },
   ]),
-  authenticateCompanyMaster,
+  authenticateUser,
   updateOnboarding
 );
 onboardingRouter.delete(
   "/Onboarding/:id",
-  authenticateCompanyMaster,
+  authenticateUser,
   deleteOnboarding
 );
 
@@ -71,43 +71,43 @@ onboardingRouter.post(
     { name: "joining_letter", maxCount: 1 },
     { name: "experience_letter", maxCount: 1 },
   ]),
-  authenticateCompanyMaster,
+  authenticateUser,
   createOnboarding
 );
 
 onboardingRouter.get(
   "/Onboarding/:id/presigned-url",
-  authenticateCompanyMaster,
+  authenticateUser,
   getAllPresignedUrls
 );
 
 onboardingRouter.post(
   "/Onboarding/:id/generate-offer-letter",
-  authenticateCompanyMaster,
+  authenticateUser,
   generateOfferLetterById
 );
 onboardingRouter.post(
   "/Onboarding/:id/generate-exit-letter",
-  authenticateCompanyMaster,
+  authenticateUser,
   generateExitLetterById
 );
 onboardingRouter.get(
   "/Onboarding/:id/offer-letter/download/:format",
-  authenticateCompanyMaster,
+  authenticateUser,
   downloadOfferLetter
 );
 
 
 onboardingRouter.post("/onboarding/bulk-import", upload.single("file"), bulkCreateOnboarding);
 
-onboardingRouter.post("/requestLetterAccess", authenticateEmployee, requestLetterAccess);
-onboardingRouter.get("/getemployeerequest", authenticateEmployee, getEmployeeLetterRequests);
-onboardingRouter.get("/getallrequest", authenticateCompanyMaster, getCompanyLetterRequests);
-onboardingRouter.post("/hr/letter/request/:id/action", authenticateCompanyMaster, actionLetterRequest);
-// onboardingRouter.get("/letter/download/:letter_type", authenticateEmployee, downloadLetter);
+onboardingRouter.post("/requestLetterAccess", authenticateUser, requestLetterAccess);
+onboardingRouter.get("/getemployeerequest", authenticateUser, getEmployeeLetterRequests);
+onboardingRouter.get("/getallrequest", authenticateUser, getCompanyLetterRequests);
+onboardingRouter.post("/hr/letter/request/:id/action", authenticateUser, actionLetterRequest);
+// onboardingRouter.get("/letter/download/:letter_type", authenticateUser, downloadLetter);
 onboardingRouter.get(
   "/letter/download/:letter_type/:format",
-  authenticateEmployee,
+  authenticateUser,
   downloadLetter
 );
 onboardingRouter.post("/employee-login", employeeLogin);

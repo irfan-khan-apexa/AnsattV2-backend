@@ -9,22 +9,22 @@ import {
   getAssetHistory,
   getAllAssets,
 } from "../../../modules/controllers/index";
-import { authenticateCompanyMaster } from "../../../middlewares/authMiddleware";
+import { authenticateCompanyMaster,authenticateUser } from "../../../middlewares/authMiddleware";
 
 const assetRouter = Router();
 
 // Assets
-assetRouter.post("/asset", authenticateCompanyMaster, createAsset);
-assetRouter.put("/asset/:id", authenticateCompanyMaster, updateAsset);
-assetRouter.delete("/asset/:id", authenticateCompanyMaster, deleteAsset);
+assetRouter.post("/asset", authenticateUser, createAsset);
+assetRouter.put("/asset/:id", authenticateUser, updateAsset);
+assetRouter.delete("/asset/:id", authenticateUser, deleteAsset);
 
 // Assign / Return
-assetRouter.post("/asset/:id/assign", authenticateCompanyMaster, assignAsset);
-assetRouter.post("/asset/:id/return", authenticateCompanyMaster, returnAsset);
+assetRouter.post("/asset/:id/assign", authenticateUser, assignAsset);
+assetRouter.post("/asset/:id/return", authenticateUser, returnAsset);
 
 // Fetch
-assetRouter.get("/asset/all", authenticateCompanyMaster, getAllAssets);
-assetRouter.get("/asset/employee/:employee_id", authenticateCompanyMaster, getEmployeeAssets);
-assetRouter.get("/asset/:id/history", authenticateCompanyMaster, getAssetHistory);
+assetRouter.get("/asset/all", authenticateUser, getAllAssets);
+assetRouter.get("/asset/employee/:employee_id", authenticateUser, getEmployeeAssets);
+assetRouter.get("/asset/:id/history", authenticateUser, getAssetHistory);
 
 export { assetRouter};
