@@ -21,6 +21,8 @@ import { Asset } from "./assetModel/Asset.Model";
 import { AssetAssign } from "./assetModel/AssetAssign.Model";
 import { ExitFeedback } from "./exitRequestModel/exitFeedback.Model";
 import { HrAnnouncement } from "./HrAnnouncementModel/HrAnnouncement.Model";
+import { JobPosting } from "./recruitmentModel/JobPosting.Model";
+import { JobApplication } from "./recruitmentModel/JobApplication.Model";
 import sequelize from "../../config/sequelize";
 
 
@@ -69,5 +71,6 @@ export {
   AssetAssign,
   ExitFeedback,
   HrAnnouncement,
-  AuditLog
+  AuditLog,
+  JobPosting,JobApplication
 };
