@@ -106,6 +106,16 @@ createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnounc
 } from "./hrAnnouncementController/hrAnnouncement.Controller";
 import {
 getCompanyAudit,getAllAudit} from "./auditController/audit.Controller";
+import {
+createJobPosting,
+  getAllJobs,
+  getJobById,
+  updateJob,
+  deleteJob,} from "./recruitmentController/JobPosting.Controller";
+import {
+  applyForJob,
+  getAllApplications,
+  updateApplicationStatus,} from "./recruitmentController/jobApplication.Controller";
 
 // All controllers exported as single object
 export {
@@ -183,5 +193,7 @@ export {
   getAssetHistory,
   getAllAssets, 
   createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement,
-  getCompanyAudit,getAllAudit
+  getCompanyAudit,getAllAudit,
+  createJobPosting,getAllJobs,getJobById,updateJob,deleteJob,
+  applyForJob,getAllApplications,updateApplicationStatus,
 };

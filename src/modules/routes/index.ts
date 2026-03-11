@@ -14,6 +14,8 @@ import { salaryRouter } from "./salaryRoutes/salary.Routes";
 import { assetRouter } from "./assetRoutes/asset.Routes";
 import { hrAnnouncementRouter } from "./hrAnnouncementRoutes/hrAnnouncement.Routes";
 import { auditRouter } from "./auditRoutes/audit.Routes";
+import { jobPostingRouter } from "./recruitmentRoutes/JobPosting.Routes";
+import { jobApplicationRouter } from "./recruitmentRoutes/jobApplication.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -30,6 +32,8 @@ router.use(salaryRouter);
 router.use(assetRouter);
 router.use(hrAnnouncementRouter);
 router.use(auditRouter);
+router.use(jobPostingRouter);
+router.use(jobApplicationRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({
