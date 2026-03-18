@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { JobApplication } from "../../models/index";
 import { encrypt, decrypt } from "../../../utils/encryption";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
-import { resumeQueue } from "../../../config/redis";
+// import { resumeQueue } from "../../../config/redis";
 
 const applyForJob = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -46,9 +46,9 @@ const applyForJob = async (req: Request, res: Response): Promise<any> => {
     });
 
     // push resume parsing job to queue
-    await resumeQueue.add("parse-resume", {
-      applicationId: application.id,
-    });
+    // await resumeQueue.add("parse-resume", {
+    //   applicationId: application.id,
+    // });
 
     console.log("Resume job pushed to queue");
 
