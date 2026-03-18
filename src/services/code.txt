@@ -1,0 +1,1023 @@
+// import { Worker } from "bullmq";
+// import { connection } from "../config/redis";
+// import { JobApplication, JobPosting } from "../modules/models/index";
+// import pdfParse from "pdf-parse";
+// import mammoth from "mammoth";
+// import axios from "axios";
+// import { decrypt } from "../utils/encryption";
+// import { generatePresignedGetUrl } from "../utils/generatePresignedUrl";
+
+// console.log("Resume Worker Started");
+
+// /* ---------------- Skill Dictionary ---------------- */
+
+// const SKILL_DICTIONARY: Record<string, string[]> = {
+//   "Node.js": ["nodejs", "node.js", "node js", "node"],
+//   "Docker": ["docker", "container", "containerization"],
+//   "AWS": ["aws", "amazon web services", "ec2", "s3"],
+//   "Redis": ["redis", "redis cache"],
+//   "Kubernetes": ["kubernetes", "k8s"],
+// };
+
+// /* ---------------- Normalize ---------------- */
+
+// function normalize(text: string) {
+//   return text
+//     .toLowerCase()
+//     .replace(/[^\w\s]/g, "")
+//     .replace(/\s+/g, " ");
+// }
+
+// /* ---------------- Extract Skills ---------------- */
+
+// function extractSkills(text: string) {
+
+//   const normalized = normalize(text);
+
+//   const found: string[] = [];
+
+//   Object.entries(SKILL_DICTIONARY).forEach(([skill, variants]) => {
+
+//     variants.forEach((v) => {
+
+//       if (normalized.includes(normalize(v))) {
+//         found.push(skill);
+//       }
+
+//     });
+
+//   });
+
+//   return [...new Set(found)];
+// }
+
+// /* ---------------- Experience ---------------- */
+
+// function extractExperience(text: string) {
+
+//   const match = text.match(/(\d+)\+?\s*(years|yrs)/i);
+
+//   return match ? parseInt(match[1]) : 0;
+// }
+
+// /* ---------------- Score ---------------- */
+
+// function calculateScore(
+//   foundSkills: string[],
+//   requiredSkills: string[],
+//   candidateExp: number,
+//   minExp: number,
+//   maxExp: number
+// ) {
+
+//   const skillMatch = foundSkills.filter((s) => requiredSkills.includes(s));
+
+//   const skillScore = requiredSkills.length
+//     ? (skillMatch.length / requiredSkills.length) * 60
+//     : 0;
+
+//   let expScore = 0;
+
+//   if (candidateExp >= minExp && candidateExp <= maxExp) {
+//     expScore = 25;
+//   } else if (candidateExp >= minExp) {
+//     expScore = 20;
+//   }
+
+//   const bonusScore = (foundSkills.length - skillMatch.length) * 3;
+
+//   return Math.min(Math.round(skillScore + expScore + bonusScore), 100);
+// }
+
+// /* ---------------- Worker ---------------- */
+
+// new Worker(
+//   "resume-processing",
+//   async (job) => {
+
+//     try {
+
+//       const { applicationId } = job.data;
+
+//       console.log("-----");
+//       console.log("Processing resume for application:", applicationId);
+
+//       const application: any = await JobApplication.findByPk(applicationId);
+
+//       if (!application) {
+//         console.log("Application not found");
+//         return;
+//       }
+
+//       const jobPost: any = await JobPosting.findByPk(application.job_id);
+
+//       if (!jobPost) {
+//         console.log("Job posting not found:", application.job_id);
+//         return;
+//       }
+
+//       const requiredSkills = jobPost.skills_required
+//         ? jobPost.skills_required.split(",").map((s: string) => s.trim())
+//         : [];
+
+//       console.log("Required skills:", requiredSkills);
+
+//       /* ---------------- Resume URL ---------------- */
+
+//       console.log("Decrypting resume URL...");
+
+//       const resumeUrl = decrypt(application.resume_url);
+
+//       console.log("Resume URL:", resumeUrl);
+
+//       const key = resumeUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
+
+//       console.log("S3 Key:", key);
+
+//       /* ---------------- Presigned URL ---------------- */
+
+//       const presignedUrl = await generatePresignedGetUrl(key, 300);
+
+//       console.log("Presigned URL generated");
+
+//       /* ---------------- Download Resume ---------------- */
+
+//       console.log("Downloading resume...");
+
+//       const response = await axios.get(presignedUrl, {
+//         responseType: "arraybuffer",
+//         timeout: 15000,
+//       });
+
+//       console.log("Resume downloaded, size:", response.data.length);
+
+//       let text = "";
+
+//       /* ---------------- PDF Parse ---------------- */
+
+//       if (resumeUrl.endsWith(".pdf")) {
+
+//         try {
+
+//           console.log("Parsing PDF...");
+
+//           const parsed = await pdfParse(response.data);
+
+//           text = parsed.text;
+
+//           console.log("PDF parsed successfully");
+
+//         } catch (err) {
+
+//           console.log("PDF parse failed:", err);
+
+//         }
+
+//       }
+
+//       /* ---------------- DOCX Parse ---------------- */
+
+//       if (resumeUrl.endsWith(".docx")) {
+
+//         try {
+
+//           console.log("Parsing DOCX...");
+
+//           const parsed = await mammoth.extractRawText({
+//             buffer: response.data,
+//           });
+
+//           text = parsed.value;
+
+//           console.log("DOCX parsed successfully");
+
+//         } catch (err) {
+
+//           console.log("DOCX parse failed:", err);
+
+//         }
+
+//       }
+
+//       if (!text) {
+
+//         console.log("No text extracted from resume");
+
+//         return;
+
+//       }
+
+//       console.log("Extracted text length:", text.length);
+
+//       /* ---------------- Skill Detection ---------------- */
+
+//       const foundSkills = extractSkills(text);
+
+//       console.log("Detected skills:", foundSkills);
+
+//       /* ---------------- Experience ---------------- */
+
+//       const experience = extractExperience(text);
+
+//       console.log("Detected experience:", experience);
+
+//       /* ---------------- Score ---------------- */
+
+//       const score = calculateScore(
+//         foundSkills,
+//         requiredSkills,
+//         experience,
+//         jobPost.experience_min,
+//         jobPost.experience_max
+//       );
+
+//       console.log("Calculated score:", score);
+
+//       /* ---------------- DB Update ---------------- */
+
+//       await application.update({
+//         parsed_skills: foundSkills.join(","),
+//         match_score: score,
+//       });
+
+//       console.log(`Application ${applicationId} processed. Score: ${score}`);
+//       console.log("-----");
+
+//     } catch (error) {
+
+//       console.error("Resume processing error:", error);
+
+//     }
+
+//   },
+//   {
+//     connection,
+//     concurrency: 5
+//   }
+// );  
+
+//////////////////////////////////////   /  / /   /  /  /  /  /  /  /  /  /  /  /  / / /  /  / /  / /  /  /
+//  ////////////  / /  /  /  / /  /  /  /  / /  /  / /  /  / /  / / / / /       /   /  /    /  /    /    /
+
+import { Worker } from "bullmq";
+import { connection } from "../config/redis";
+import { JobApplication, JobPosting } from "../modules/models/index";
+import pdfParse from "pdf-parse";
+import mammoth from "mammoth";
+import axios from "axios";
+import { decrypt } from "../utils/encryption";
+import { generatePresignedGetUrl } from "../utils/generatePresignedUrl";
+
+console.log("ATS Worker Started");
+
+/* ------------------------------------------------ */
+function section(title: string) {
+  console.log("\n==================================================");
+  console.log(title);
+  console.log("==================================================");
+}
+/* ------------------------------------------------ */
+
+/* ---------------- Skill Dictionary ---------------- */
+
+const SKILL_DICTIONARY: Record<string, string[]> = {
+  "Node.js": ["nodejs", "node.js", "node js", "node"],
+  "Docker": ["docker", "container", "containerization"],
+  "AWS": ["aws", "amazon web services", "ec2", "s3"],
+  "Redis": ["redis", "redis cache"],
+  "Kubernetes": ["kubernetes", "k8s"],
+};
+
+/* ---------------- Normalize ---------------- */
+
+function normalize(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+/* ---------------- Extract Skills (UNCHANGED) ---------------- */
+
+function extractSkills(text: string) {
+
+  const normalized = normalize(text);
+
+  const found: string[] = [];
+
+  Object.entries(SKILL_DICTIONARY).forEach(([skill, variants]) => {
+    variants.forEach((v) => {
+      if (normalized.includes(normalize(v))) {
+        found.push(skill);
+      }
+    });
+  });
+
+  return [...new Set(found)];
+}
+
+/* ------------------------------------------------ */
+/* EXPERIENCE */
+/* ------------------------------------------------ */
+
+function extractExperience(text: string) {
+
+  section("EXPERIENCE DETECTION");
+
+  const match = text.match(/(\d+)\+?\s*(years|yrs)/i);
+
+  const exp = match ? parseInt(match[1]) : 0;
+
+  console.log("Experience detected:", exp);
+
+  return exp;
+}
+
+/* ------------------------------------------------ */
+/* PROJECT IMPACT */
+/* ------------------------------------------------ */
+
+function detectProjectImpact(text: string) {
+
+  section("PROJECT IMPACT");
+
+  const verbs = [
+    "built","developed","implemented","designed",
+    "optimized","engineered","created","improved",
+    "integrated","automated","scaled","deployed",
+    "configured","managed","architected"
+  ];
+
+  const clean = normalize(text);
+
+  let score = 0;
+
+  verbs.forEach(v => {
+    if (clean.includes(v)) {
+      score += 3;
+    }
+  });
+
+  score = Math.min(score, 20);
+
+  console.log("Project impact score:", score);
+
+  return score;
+}
+
+/* ------------------------------------------------ */
+/* ATS SCORE */
+/* ------------------------------------------------ */
+
+function calculateScore(
+  foundSkills: string[],
+  requiredSkills: string[],
+  experience: number,
+  minExp: number,
+  maxExp: number,
+  projectImpact: number
+) {
+
+  section("ATS SCORE CALCULATION");
+
+  const skillMatch =
+    foundSkills.filter(s => requiredSkills.includes(s));
+
+  const skillScore =
+    requiredSkills.length
+      ? (skillMatch.length / requiredSkills.length) * 50
+      : 0;
+
+  let expScore = 0;
+
+  if (experience >= minExp && experience <= maxExp) {
+    expScore = 25;
+  }
+  else if (experience > maxExp) {
+    expScore = 20;
+  }
+  else if (experience >= minExp * 0.5) {
+    expScore = 10;
+  }
+
+  const extraScore =
+    Math.min((foundSkills.length - skillMatch.length) * 2, 15);
+
+  const finalScore =
+    Math.min(
+      Math.round(skillScore + expScore + extraScore + projectImpact),
+      100
+    );
+
+  console.log("Skill score:", Math.round(skillScore));
+  console.log("Experience score:", expScore);
+  console.log("Extra score:", extraScore);
+  console.log("Project score:", projectImpact);
+  console.log("Final ATS score:", finalScore);
+
+  return finalScore;
+}
+
+/* ------------------------------------------------ */
+/* RANKING */
+/* ------------------------------------------------ */
+
+async function rankCandidates(jobId: number) {
+
+  section("RANKING CANDIDATES");
+
+  const candidates =
+    await JobApplication.findAll({
+      where: { job_id: jobId },
+      order: [
+        ["match_score", "DESC"],
+        ["createdAt", "ASC"]
+      ]
+    });
+
+  let rank = 1;
+
+  for (const c of candidates as any[]) {
+
+    await c.update({ rank });
+
+    console.log(
+      `Candidate ${c.id} → Rank ${rank} (Score ${c.match_score})`
+    );
+
+    rank++;
+
+  }
+}
+
+/* ------------------------------------------------ */
+/* WORKER */
+/* ------------------------------------------------ */
+
+new Worker(
+
+"resume-processing",
+
+async (job) => {
+
+try {
+
+section("PROCESSING APPLICATION");
+
+const { applicationId } = job.data;
+
+console.log("Application ID:", applicationId);
+
+/* APPLICATION */
+
+const application: any =
+await JobApplication.findByPk(applicationId);
+
+if (!application) {
+console.log("Application not found");
+return;
+}
+
+/* JOB */
+
+const jobPost: any =
+await JobPosting.findByPk(application.job_id);
+
+if (!jobPost) {
+console.log("Job posting not found");
+return;
+}
+
+console.log("Job title:", jobPost.job_title);
+
+/* REQUIRED SKILLS */
+
+const requiredSkills =
+jobPost.skills_required
+? jobPost.skills_required.split(",").map((s:string)=>s.trim())
+: [];
+
+section("JD SKILL EXTRACTION");
+
+console.log("JD skill count:", requiredSkills.length);
+console.log("JD skills:", requiredSkills);
+
+/* RESUME DOWNLOAD */
+
+section("RESUME DOWNLOAD");
+
+const resumeUrl = decrypt(application.resume_url);
+
+console.log("Resume URL:", resumeUrl);
+
+const key =
+resumeUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
+
+const presignedUrl =
+await generatePresignedGetUrl(key,300);
+
+console.log("Presigned URL generated");
+
+const response =
+await axios.get(presignedUrl,{
+responseType:"arraybuffer",
+timeout:15000
+});
+
+console.log("Resume downloaded:",response.data.length);
+
+/* PARSE */
+
+section("RESUME PARSING");
+
+let text = "";
+
+if(resumeUrl.endsWith(".pdf")){
+
+console.log("Parsing PDF");
+
+const parsed = await pdfParse(response.data);
+
+text = parsed.text;
+
+}
+
+if(resumeUrl.endsWith(".docx")){
+
+console.log("Parsing DOCX");
+
+const parsed =
+await mammoth.extractRawText({
+buffer:response.data
+});
+
+text = parsed.value;
+
+}
+
+if(!text){
+console.log("No text extracted");
+return;
+}
+
+console.log("Resume text length:",text.length);
+
+/* SKILLS */
+
+section("RESUME SKILL EXTRACTION");
+
+const foundSkills = extractSkills(text);
+
+console.log("Resume skill count:",foundSkills.length);
+console.log("Top resume skills:",foundSkills);
+
+/* EXPERIENCE */
+
+const experience =
+extractExperience(text);
+
+/* PROJECT */
+
+const projectImpact =
+detectProjectImpact(text);
+
+/* SCORE */
+
+const score =
+calculateScore(
+foundSkills,
+requiredSkills,
+experience,
+jobPost.experience_min,
+jobPost.experience_max,
+projectImpact
+);
+
+/* SAVE */
+
+section("SAVE RESULT");
+
+await application.update({
+parsed_skills:foundSkills.join(","),
+match_score:score
+});
+
+console.log("Score saved");
+
+/* RANK */
+
+await rankCandidates(application.job_id);
+
+section("APPLICATION PROCESSED");
+
+console.log("Application",applicationId,"completed");
+
+}
+catch(error){
+
+console.error("ATS worker error:",error);
+
+}
+
+},
+
+{
+connection,
+concurrency:5
+}
+
+);
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+import { Worker } from "bullmq";
+import { connection } from "../config/redis";
+import { JobApplication, JobPosting } from "../modules/models/index";
+import pdfParse from "pdf-parse";
+import mammoth from "mammoth";
+import axios from "axios";
+import { decrypt } from "../utils/encryption";
+import { generatePresignedGetUrl } from "../utils/generatePresignedUrl";
+
+console.log("ATS Worker Started");
+
+/* ------------------------------------------------ */
+function section(title: string) {
+  console.log("\n==================================================");
+  console.log(title);
+  console.log("==================================================");
+}
+/* ------------------------------------------------ */
+
+
+/* ---------------- Normalize ---------------- */
+
+function normalize(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+/* ---------------- Extract Skills (UNCHANGED) ---------------- */
+
+function extractSkills(text: string, requiredSkills: string[]) {
+
+  section("SKILL MATCHING");
+
+  const normalizedText = normalize(text);
+
+  const matched: string[] = [];
+
+  requiredSkills.forEach(skill => {
+
+    const skillNormalized = normalize(skill);
+
+    if (normalizedText.includes(skillNormalized)) {
+      matched.push(skill);
+    }
+
+  });
+
+  console.log("Matched skill count:", matched.length);
+  console.log("Matched skills:", matched);
+
+  return matched;
+}
+
+/* ------------------------------------------------ */
+/* EXPERIENCE */
+/* ------------------------------------------------ */
+
+function extractExperience(text: string) {
+
+  section("EXPERIENCE DETECTION");
+
+  const match = text.match(/(\d+)\+?\s*(years|yrs)/i);
+
+  const exp = match ? parseInt(match[1]) : 0;
+
+  console.log("Experience detected:", exp);
+
+  return exp;
+}
+
+/* ------------------------------------------------ */
+/* PROJECT IMPACT */
+/* ------------------------------------------------ */
+
+function detectProjectImpact(text: string) {
+
+  section("PROJECT IMPACT");
+
+  const verbs = [
+    "built","developed","implemented","designed",
+    "optimized","engineered","created","improved",
+    "integrated","automated","scaled","deployed",
+    "configured","managed","architected"
+  ];
+
+  const clean = normalize(text);
+
+  let score = 0;
+
+  verbs.forEach(v => {
+    if (clean.includes(v)) {
+      score += 3;
+    }
+  });
+
+  score = Math.min(score, 20);
+
+  console.log("Project impact score:", score);
+
+  return score;
+}
+
+/* ------------------------------------------------ */
+/* ATS SCORE */
+/* ------------------------------------------------ */
+
+function calculateScore(
+  foundSkills: string[],
+  requiredSkills: string[],
+  experience: number,
+  minExp: number,
+  maxExp: number,
+  projectImpact: number
+) {
+
+  section("ATS SCORE CALCULATION");
+
+  const skillMatch =
+    foundSkills.filter(s => requiredSkills.includes(s));
+
+  /* ---------------- SKILL SCORE (40%) ---------------- */
+
+  const skillScore =
+    requiredSkills.length
+      ? (skillMatch.length / requiredSkills.length) * 40
+      : 0;
+
+  /* ---------------- EXPERIENCE SCORE (20%) ---------------- */
+
+  let expScore = 0;
+
+  if (experience >= minExp && experience <= maxExp) {
+    expScore = 20;
+  }
+  else if (experience > maxExp) {
+    expScore = 16;
+  }
+  else if (experience >= minExp * 0.5) {
+    expScore = 8;
+  }
+
+  /* ---------------- EXTRA SCORE (15%) ---------------- */
+
+  const extraScore =
+    Math.min((foundSkills.length - skillMatch.length) * 2, 15);
+
+  /* ---------------- PROJECT SCORE (25%) ---------------- */
+
+  const projectScore =
+    Math.min(projectImpact, 25);
+
+  /* ---------------- FINAL SCORE ---------------- */
+
+  const finalScore =
+    Math.min(
+      Math.round(
+        skillScore +
+        expScore +
+        extraScore +
+        projectScore
+      ),
+      100
+    );
+
+  console.log("Skill score:", Math.round(skillScore));
+  console.log("Experience score:", expScore);
+  console.log("Extra score:", extraScore);
+  console.log("Project score:", projectScore);
+  console.log("Final ATS score:", finalScore);
+
+  return finalScore;
+}
+
+/* ------------------------------------------------ */
+/* RANKING */
+/* ------------------------------------------------ */
+
+async function rankCandidates(jobId: number) {
+
+  section("RANKING CANDIDATES");
+
+  const candidates =
+    await JobApplication.findAll({
+      where: { job_id: jobId },
+      order: [
+        ["match_score", "DESC"],
+        ["createdAt", "ASC"]
+      ]
+    });
+
+  let rank = 1;
+
+  for (const c of candidates as any[]) {
+
+    await c.update({ rank });
+
+    console.log(
+      `Candidate ${c.id} → Rank ${rank} (Score ${c.match_score})`
+    );
+
+    rank++;
+
+  }
+}
+
+/* ------------------------------------------------ */
+/* WORKER */
+/* ------------------------------------------------ */
+
+new Worker(
+
+"resume-processing",
+
+async (job) => {
+
+try {
+
+section("PROCESSING APPLICATION");
+
+const { applicationId } = job.data;
+
+console.log("Application ID:", applicationId);
+
+/* APPLICATION */
+
+const application: any =
+await JobApplication.findByPk(applicationId);
+
+if (!application) {
+console.log("Application not found");
+return;
+}
+
+/* JOB */
+
+const jobPost: any =
+await JobPosting.findByPk(application.job_id);
+
+if (!jobPost) {
+console.log("Job posting not found");
+return;
+}
+
+console.log("Job title:", jobPost.job_title);
+
+/* REQUIRED SKILLS */
+
+const requiredSkills =
+jobPost.skills_required
+? jobPost.skills_required.split(",").map((s:string)=>s.trim())
+: [];
+
+section("JD SKILL EXTRACTION");
+
+console.log("JD skill count:", requiredSkills.length);
+console.log("JD skills:", requiredSkills);
+
+/* RESUME DOWNLOAD */
+
+section("RESUME DOWNLOAD");
+
+const resumeUrl = decrypt(application.resume_url);
+
+console.log("Resume URL:", resumeUrl);
+
+const key =
+resumeUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
+
+const presignedUrl =
+await generatePresignedGetUrl(key,300);
+
+console.log("Presigned URL generated");
+
+const response =
+await axios.get(presignedUrl,{
+responseType:"arraybuffer",
+timeout:15000
+});
+
+console.log("Resume downloaded:",response.data.length);
+
+/* PARSE */
+
+section("RESUME PARSING");
+
+let text = "";
+
+if(resumeUrl.endsWith(".pdf")){
+
+console.log("Parsing PDF");
+
+const parsed = await pdfParse(response.data);
+
+text = parsed.text;
+
+}
+
+if(resumeUrl.endsWith(".docx")){
+
+console.log("Parsing DOCX");
+
+const parsed =
+await mammoth.extractRawText({
+buffer:response.data
+});
+
+text = parsed.value;
+
+}
+
+if(!text){
+console.log("No text extracted");
+return;
+}
+
+console.log("Resume text length:",text.length);
+
+/* SKILLS */
+
+section("RESUME SKILL EXTRACTION");
+
+const foundSkills = extractSkills(text, requiredSkills);
+
+console.log("Resume skill count:",foundSkills.length);
+console.log("Top resume skills:",foundSkills);
+
+/* EXPERIENCE */
+
+const experience =
+extractExperience(text);
+
+/* PROJECT */
+
+const projectImpact =
+detectProjectImpact(text);
+
+/* SCORE */
+
+const score =
+calculateScore(
+foundSkills,
+requiredSkills,
+experience,
+jobPost.experience_min,
+jobPost.experience_max,
+projectImpact
+);
+
+/* SAVE */
+
+section("SAVE RESULT");
+
+await application.update({
+parsed_skills:foundSkills.join(","),
+match_score:score
+});
+
+console.log("Score saved");
+
+/* RANK */
+
+await rankCandidates(application.job_id);
+
+section("APPLICATION PROCESSED");
+
+console.log("Application",applicationId,"completed");
+
+}
+catch(error){
+
+console.error("ATS worker error:",error);
+
+}
+
+},
+
+{
+connection,
+concurrency:5
+}
+
+);

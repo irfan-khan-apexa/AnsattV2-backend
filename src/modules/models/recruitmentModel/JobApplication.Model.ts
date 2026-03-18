@@ -4,7 +4,6 @@ import sequelize from "../../../config/sequelize";
 export interface JobApplicationAttributes {
   id?: number;
   company_code: string;
-
   job_id: number;
 
   name: string;
@@ -14,11 +13,13 @@ export interface JobApplicationAttributes {
   resume_url?: string;
   cover_letter?: string;
 
+  parsed_skills?: string;
+  match_score?: number;
+
+  rank?: number;
+
   status?: string;
-
   rejected_at?: Date;
-
-  deleted_at?: Date;
 }
 
 export class JobApplication
@@ -27,7 +28,6 @@ export class JobApplication
 {
   public id!: number;
   public company_code!: string;
-
   public job_id!: number;
 
   public name!: string;
@@ -37,14 +37,17 @@ export class JobApplication
   public resume_url!: string;
   public cover_letter!: string;
 
+  public parsed_skills!: string;
+  public match_score!: number;
+
+  public rank!: number;
+
   public status!: string;
-
   public rejected_at!: Date;
-
-  public deleted_at!: Date;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  public readonly deletedAt!: Date; // Sequelize ka default
 }
 
 JobApplication.init(
@@ -70,8 +73,16 @@ JobApplication.init(
     phone: DataTypes.STRING,
 
     resume_url: DataTypes.TEXT,
-
     cover_letter: DataTypes.TEXT,
+
+    parsed_skills: DataTypes.TEXT,
+
+    match_score: DataTypes.FLOAT,
+
+    rank: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
 
     status: {
       type: DataTypes.STRING,
@@ -79,8 +90,6 @@ JobApplication.init(
     },
 
     rejected_at: DataTypes.DATE,
-
-    deleted_at: DataTypes.DATE,
   },
   {
     sequelize,
@@ -89,5 +98,7 @@ JobApplication.init(
     paranoid: true,
   }
 );
-JobApplication.sync();
+
+// JobApplication.sync({ alter: true });
+
 export default JobApplication;
