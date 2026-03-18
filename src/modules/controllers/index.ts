@@ -116,6 +116,14 @@ import {
   applyForJob,
   getAllApplications,
   updateApplicationStatus,} from "./recruitmentController/jobApplication.Controller";
+import {
+  createInterview,
+  getAllInterviews,
+  getByApplication,
+  updateInterview,
+  deleteInterview,} from "./recruitmentController/interview.Controller";
+  import {
+ submitFeedback,getAllFeedbacks,getFeedbackByApplicationId} from "./recruitmentController/interviewFeedback.Controller";
 
 // All controllers exported as single object
 export {
@@ -196,4 +204,9 @@ export {
   getCompanyAudit,getAllAudit,
   createJobPosting,getAllJobs,getJobById,updateJob,deleteJob,
   applyForJob,getAllApplications,updateApplicationStatus,
+  createInterview,
+  getAllInterviews,
+  getByApplication,
+  updateInterview,
+  deleteInterview,submitFeedback,getAllFeedbacks,getFeedbackByApplicationId,
 };

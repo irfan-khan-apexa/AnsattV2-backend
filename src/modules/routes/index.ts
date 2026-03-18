@@ -16,6 +16,8 @@ import { hrAnnouncementRouter } from "./hrAnnouncementRoutes/hrAnnouncement.Rout
 import { auditRouter } from "./auditRoutes/audit.Routes";
 import { jobPostingRouter } from "./recruitmentRoutes/JobPosting.Routes";
 import { jobApplicationRouter } from "./recruitmentRoutes/jobApplication.Routes";
+import { interviewRouter } from "./recruitmentRoutes/interview.Routes";
+import { interviewFeedbackRouter } from "./recruitmentRoutes/interviewFeedback.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -34,6 +36,8 @@ router.use(hrAnnouncementRouter);
 router.use(auditRouter);
 router.use(jobPostingRouter);
 router.use(jobApplicationRouter);
+router.use(interviewRouter);
+router.use(interviewFeedbackRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({

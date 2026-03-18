@@ -23,6 +23,8 @@ import { ExitFeedback } from "./exitRequestModel/exitFeedback.Model";
 import { HrAnnouncement } from "./HrAnnouncementModel/HrAnnouncement.Model";
 import { JobPosting } from "./recruitmentModel/JobPosting.Model";
 import { JobApplication } from "./recruitmentModel/JobApplication.Model";
+import { Interview } from "./recruitmentModel/Interview.Model";
+import { InterviewFeedback } from "./recruitmentModel/InterviewFeedback.Model";
 import sequelize from "../../config/sequelize";
 
 
@@ -72,5 +74,5 @@ export {
   ExitFeedback,
   HrAnnouncement,
   AuditLog,
-  JobPosting,JobApplication
+  JobPosting,JobApplication,Interview,InterviewFeedback
 };

@@ -81,6 +81,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./src/loaders/database";
 import { router } from "./src/modules/routes/index";
+import "./src/services/resumeWorker"; 
 
 dotenv.config();
 
@@ -195,6 +196,25 @@ app.use(
   }
 );
 
+
+
+
+// import redis from "./src/config/redis";
+
+// export async function cacheJob(jobId: string, data: any) {
+//   await redis.set(`job:${jobId}`, JSON.stringify(data), "EX", 300);
+// }
+
+// export async function getCachedJob(jobId: string) {
+//   const data = await redis.get(`job:${jobId}`);
+//   return data ? JSON.parse(data) : null;
+// }
+
+
+
+
+
+
 /**
  * ======================================================
  * 8️⃣ START SERVER
@@ -203,3 +223,5 @@ app.use(
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
+

@@ -24,6 +24,11 @@ jobPostingRouter.get(
 );
 
 jobPostingRouter.get(
+  "/getall-job-postings",
+  getAllJobs
+);
+
+jobPostingRouter.get(
   "/job-postings/:id",
   authenticateUser,
   getJobById
