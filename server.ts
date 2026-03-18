@@ -81,7 +81,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./src/loaders/database";
 import { router } from "./src/modules/routes/index";
-import "./src/services/resumeWorker"; 
+// import "./src/services/resumeWorker"; 
 
 dotenv.config();
 
