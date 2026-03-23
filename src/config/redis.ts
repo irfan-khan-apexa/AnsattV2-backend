@@ -21,3 +21,28 @@
 // export const resumeQueue = new Queue("resume-processing", {
 //   connection,
 // });
+
+
+//for production
+import Redis from "ioredis";
+import { Queue } from "bullmq";
+
+const redisUrl = process.env.REDIS_URL as string;
+
+// Redis client (for caching)
+export const redis = new Redis(redisUrl);
+
+redis.on("connect", () => {
+  console.log("Redis Connected");
+});
+
+redis.on("error", (err) => {
+  console.error("Redis Error:", err);
+});
+
+// BullMQ queue (IMPORTANT CHANGE)
+export const resumeQueue = new Queue("resume-processing", {
+  connection: {
+    url: redisUrl,
+  },
+});
