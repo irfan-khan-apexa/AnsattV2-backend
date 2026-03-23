@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { connection } from "../config/redis";
+// import { redis} from "../config/redis";
 import { JobApplication, JobPosting } from "../modules/models/index";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
