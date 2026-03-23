@@ -66,7 +66,7 @@ import { resumeQueue } from "../../../config/redis";
 //   }
 // };
 
- const applyForJob = async (req: Request, res: Response): Promise<any> => {
+const applyForJob = async (req: Request, res: Response): Promise<any> => {
   try {
     const { job_id, company_code, name, email, phone } = req.body;
 
@@ -75,28 +75,6 @@ import { resumeQueue } from "../../../config/redis";
     const resume_url = file?.resume?.[0]?.location
       ? encrypt(file.resume[0].location)
       : undefined;
-
-    // 6 month rejection rule
-    const existing = await JobApplication.findOne({
-      where: {
-        email,
-        job_id,
-        company_code,
-        status: "rejected",
-      },
-    });
-
-    if (existing && existing.rejected_at) {
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-      if (existing.rejected_at > sixMonthsAgo) {
-        return res.status(400).json({
-          message:
-            "You cannot reapply for this job until 6 months after rejection.",
-        });
-      }
-    }
 
     const application = await JobApplication.create({
       company_code,
@@ -107,7 +85,7 @@ import { resumeQueue } from "../../../config/redis";
       resume_url,
     });
 
-    // ✅ IMPORTANT — job push
+    // ✅ QUEUE PUSH (FIXED)
     await resumeQueue.add("resume-processing", {
       applicationId: application.id,
     });

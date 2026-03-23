@@ -456,7 +456,6 @@ if (!redisUrl) {
   throw new Error("REDIS_URL is not defined");
 }
 
-// helper
 function section(title: string) {
   console.log("\n==================================================");
   console.log(title);
@@ -489,10 +488,16 @@ new Worker(
         return;
       }
 
-      // ✅ FIX: decrypt resume URL
+      // ✅ FIX: decrypt
       const resumeUrl = decrypt(application.resume_url);
 
-      console.log("Resume URL:", resumeUrl);
+      console.log("🔓 Decrypted Resume URL:", resumeUrl);
+
+      // ❌ अगर decrypt fail हुआ तो यहीं पकड़ लो
+      if (!resumeUrl || !resumeUrl.startsWith("http")) {
+        console.log("❌ Invalid decrypted URL");
+        return;
+      }
 
       // presigned URL
       const key =
@@ -501,12 +506,14 @@ new Worker(
       const presignedUrl =
         await generatePresignedGetUrl(key, 300);
 
-      console.log("Presigned URL generated");
+      console.log("✅ Presigned URL generated");
 
       const response = await axios.get(presignedUrl, {
         responseType: "arraybuffer",
         timeout: 15000,
       });
+
+      console.log("✅ Resume downloaded");
 
       let text = "";
 
@@ -531,7 +538,6 @@ new Worker(
 
       console.log("Resume text length:", text.length);
 
-      // simple score
       const score = Math.min(text.length % 100, 100);
 
       await application.update({
