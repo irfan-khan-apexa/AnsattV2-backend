@@ -29,18 +29,22 @@ import { Queue } from "bullmq";
 
 const redisUrl = process.env.REDIS_URL as string;
 
+if (!redisUrl) {
+  throw new Error("REDIS_URL is not defined");
+}
+
 // Redis client (for caching)
 export const redis = new Redis(redisUrl);
 
 redis.on("connect", () => {
-  console.log("Redis Connected");
+  console.log("✅ Redis Connected");
 });
 
 redis.on("error", (err) => {
-  console.error("Redis Error:", err);
+  console.error("❌ Redis Error:", err);
 });
 
-// BullMQ queue (IMPORTANT CHANGE)
+// BullMQ queue
 export const resumeQueue = new Queue("resume-processing", {
   connection: {
     url: redisUrl,

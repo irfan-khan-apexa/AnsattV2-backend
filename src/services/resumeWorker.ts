@@ -271,177 +271,265 @@ async function rankCandidates(jobId: number) {
 /* WORKER */
 /* ------------------------------------------------ */
 
-new Worker(
+// new Worker(
 
-"resume-processing",
+// "resume-processing",
 
-async (job) => {
+// async (job) => {
 
-try {
+// try {
 
-section("PROCESSING APPLICATION");
+// section("PROCESSING APPLICATION");
 
-const { applicationId } = job.data;
+// const { applicationId } = job.data;
 
-console.log("Application ID:", applicationId);
+// console.log("Application ID:", applicationId);
 
-const application: any =
-await JobApplication.findByPk(applicationId);
+// const application: any =
+// await JobApplication.findByPk(applicationId);
 
-if (!application) {
-console.log("Application not found");
-return;
-}
-
-const jobPost: any =
-await JobPosting.findByPk(application.job_id);
-
-if (!jobPost) {
-console.log("Job posting not found");
-return;
-}
-
-console.log("Job title:", jobPost.job_title);
-
-const requiredSkills =
-jobPost.skills_required
-? jobPost.skills_required.split(",").map((s:string)=>s.trim())
-: [];
-
-section("JD SKILL EXTRACTION");
-
-console.log("JD skill count:", requiredSkills.length);
-console.log("JD skills:", requiredSkills);
-
-/* -------- Resume Download -------- */
-
-section("RESUME DOWNLOAD");
-
-const resumeUrl = decrypt(application.resume_url);
-
-console.log("Resume URL:", resumeUrl);
-
-const key =
-resumeUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
-
-const presignedUrl =
-await generatePresignedGetUrl(key,300);
-
-console.log("Presigned URL generated");
-
-const response =
-await axios.get(presignedUrl,{
-responseType:"arraybuffer",
-timeout:15000
-});
-
-console.log("Resume downloaded:",response.data.length);
-
-/* -------- Resume Parsing -------- */
-
-section("RESUME PARSING");
-
-let text = "";
-
-if(resumeUrl.endsWith(".pdf")){
-
-console.log("Parsing PDF");
-
-const parsed = await pdfParse(response.data);
-
-text = parsed.text;
-
-}
-
-if(resumeUrl.endsWith(".docx")){
-
-console.log("Parsing DOCX");
-
-const parsed =
-await mammoth.extractRawText({
-buffer:response.data
-});
-
-text = parsed.value;
-
-}
-
-if(!text){
-console.log("No text extracted");
-return;
-}
-
-console.log("Resume text length:",text.length);
-
-/* -------- Skill Extraction -------- */
-
-section("RESUME SKILL EXTRACTION");
-
-const foundSkills =
-extractSkills(text, requiredSkills);
-
-console.log("Resume skill count:",foundSkills.length);
-console.log("Top resume skills:",foundSkills);
-
-/* -------- Experience -------- */
-
-const experience =
-extractExperience(text);
-
-/* -------- Project Impact -------- */
-
-const projectImpact =
-detectProjectImpact(text);
-
-/* -------- Score -------- */
-
-const score =
-calculateScore(
-foundSkills,
-requiredSkills,
-experience,
-jobPost.experience_min,
-jobPost.experience_max,
-projectImpact
-);
-
-/* -------- Save Result -------- */
-
-section("SAVE RESULT");
-
-await application.update({
-parsed_skills:foundSkills.join(","),
-match_score:score
-});
-
-console.log("Score saved");
-
-/* -------- Rank Candidates -------- */
-
-await rankCandidates(application.job_id);
-
-section("APPLICATION PROCESSED");
-
-console.log("Application",applicationId,"completed");
-
-}
-catch(error){
-
-console.error("ATS worker error:",error);
-
-}
-
-},
-
-// {    // for local
-// connection,
-// concurrency:5
+// if (!application) {
+// console.log("Application not found");
+// return;
 // }
-{
-  connection: {       //for production
-    url: process.env.REDIS_URL,
-  },
-  concurrency: 5
+
+// const jobPost: any =
+// await JobPosting.findByPk(application.job_id);
+
+// if (!jobPost) {
+// console.log("Job posting not found");
+// return;
+// }
+
+// console.log("Job title:", jobPost.job_title);
+
+// const requiredSkills =
+// jobPost.skills_required
+// ? jobPost.skills_required.split(",").map((s:string)=>s.trim())
+// : [];
+
+// section("JD SKILL EXTRACTION");
+
+// console.log("JD skill count:", requiredSkills.length);
+// console.log("JD skills:", requiredSkills);
+
+// /* -------- Resume Download -------- */
+
+// section("RESUME DOWNLOAD");
+
+// const resumeUrl = decrypt(application.resume_url);
+
+// console.log("Resume URL:", resumeUrl);
+
+// const key =
+// resumeUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
+
+// const presignedUrl =
+// await generatePresignedGetUrl(key,300);
+
+// console.log("Presigned URL generated");
+
+// const response =
+// await axios.get(presignedUrl,{
+// responseType:"arraybuffer",
+// timeout:15000
+// });
+
+// console.log("Resume downloaded:",response.data.length);
+
+// /* -------- Resume Parsing -------- */
+
+// section("RESUME PARSING");
+
+// let text = "";
+
+// if(resumeUrl.endsWith(".pdf")){
+
+// console.log("Parsing PDF");
+
+// const parsed = await pdfParse(response.data);
+
+// text = parsed.text;
+
+// }
+
+// if(resumeUrl.endsWith(".docx")){
+
+// console.log("Parsing DOCX");
+
+// const parsed =
+// await mammoth.extractRawText({
+// buffer:response.data
+// });
+
+// text = parsed.value;
+
+// }
+
+// if(!text){
+// console.log("No text extracted");
+// return;
+// }
+
+// console.log("Resume text length:",text.length);
+
+// /* -------- Skill Extraction -------- */
+
+// section("RESUME SKILL EXTRACTION");
+
+// const foundSkills =
+// extractSkills(text, requiredSkills);
+
+// console.log("Resume skill count:",foundSkills.length);
+// console.log("Top resume skills:",foundSkills);
+
+// /* -------- Experience -------- */
+
+// const experience =
+// extractExperience(text);
+
+// /* -------- Project Impact -------- */
+
+// const projectImpact =
+// detectProjectImpact(text);
+
+// /* -------- Score -------- */
+
+// const score =
+// calculateScore(
+// foundSkills,
+// requiredSkills,
+// experience,
+// jobPost.experience_min,
+// jobPost.experience_max,
+// projectImpact
+// );
+
+// /* -------- Save Result -------- */
+
+// section("SAVE RESULT");
+
+// await application.update({
+// parsed_skills:foundSkills.join(","),
+// match_score:score
+// });
+
+// console.log("Score saved");
+
+// /* -------- Rank Candidates -------- */
+
+// await rankCandidates(application.job_id);
+
+// section("APPLICATION PROCESSED");
+
+// console.log("Application",applicationId,"completed");
+
+// }
+// catch(error){
+
+// console.error("ATS worker error:",error);
+
+// }
+
+// },
+
+// // {    // for local
+// // connection,
+// // concurrency:5
+// // }
+// {
+//   connection: {       //for production
+//     url: process.env.REDIS_URL,
+//   },
+//   concurrency: 5
+// }
+
+// );
+
+
+
+const redisUrl = process.env.REDIS_URL as string;
+
+if (!redisUrl) {
+  throw new Error("REDIS_URL is not defined");
 }
 
+console.log("🔥 ATS Worker Started");
+
+new Worker(
+  "resume-processing",
+  async (job) => {
+    try {
+      console.log("\n==============================");
+      console.log("PROCESSING APPLICATION");
+      console.log("==============================");
+
+      const { applicationId } = job.data;
+
+      console.log("Application ID:", applicationId);
+
+      const application: any =
+        await JobApplication.findByPk(applicationId);
+
+      if (!application) {
+        console.log("Application not found");
+        return;
+      }
+
+      const jobPost: any =
+        await JobPosting.findByPk(application.job_id);
+
+      if (!jobPost) {
+        console.log("Job posting not found");
+        return;
+      }
+
+      const requiredSkills =
+        jobPost.skills_required
+          ? jobPost.skills_required.split(",").map((s: string) => s.trim())
+          : [];
+
+      const resumeUrl = application.resume_url;
+
+      const response = await axios.get(resumeUrl, {
+        responseType: "arraybuffer",
+      });
+
+      let text = "";
+
+      if (resumeUrl.endsWith(".pdf")) {
+        const parsed = await pdfParse(response.data);
+        text = parsed.text;
+      }
+
+      if (resumeUrl.endsWith(".docx")) {
+        const parsed = await mammoth.extractRawText({
+          buffer: response.data,
+        });
+        text = parsed.value;
+      }
+
+      if (!text) {
+        console.log("No text extracted");
+        return;
+      }
+
+      // SIMPLE SCORE LOGIC (replace with your own)
+      const score = Math.min(text.length % 100, 100);
+
+      await application.update({
+        match_score: score,
+      });
+
+      console.log("✅ Score saved:", score);
+    } catch (error) {
+      console.error("❌ ATS worker error:", error);
+    }
+  },
+  {
+    connection: {
+      url: redisUrl,
+    },
+    concurrency: 5,
+  }
 );
