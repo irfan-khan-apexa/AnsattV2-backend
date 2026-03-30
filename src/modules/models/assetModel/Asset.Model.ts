@@ -53,7 +53,7 @@ Asset.init(
   { sequelize, tableName: "assets", timestamps: true }
 );
 
-// Asset.sync();
+Asset.sync();
 
 
 export default Asset;

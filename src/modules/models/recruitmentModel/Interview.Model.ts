@@ -122,5 +122,6 @@ Interview.init(
 );
 
 // Interview.sync({ alter: true });
+Interview.sync();
 
 export default Interview;

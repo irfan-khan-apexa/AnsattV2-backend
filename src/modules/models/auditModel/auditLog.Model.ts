@@ -34,6 +34,6 @@ AuditLog.init(
 );
 
 // AuditLog.sync({ alter: true });
-// AuditLog.sync();
+AuditLog.sync();
 
 export default AuditLog;

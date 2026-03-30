@@ -62,6 +62,6 @@ LetterAccessRequest.init(
   }
 );
 
-// LetterAccessRequest.sync();
+LetterAccessRequest.sync();
 
 export default LetterAccessRequest;

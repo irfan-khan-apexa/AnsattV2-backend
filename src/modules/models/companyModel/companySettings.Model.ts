@@ -80,4 +80,5 @@ CompanySettings.init(
 
 
 // CompanySettings.sync({ alter: true });
+CompanySettings.sync();
 export default CompanySettings;

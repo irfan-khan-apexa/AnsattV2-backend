@@ -440,6 +440,11 @@
 
 // );
 
+
+// for production 
+
+
+
 import { Worker } from "bullmq";
 import { JobApplication, JobPosting } from "../modules/models/index";
 import pdfParse from "pdf-parse";

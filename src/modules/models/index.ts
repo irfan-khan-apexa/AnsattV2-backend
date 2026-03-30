@@ -25,6 +25,7 @@ import { JobPosting } from "./recruitmentModel/JobPosting.Model";
 import { JobApplication } from "./recruitmentModel/JobApplication.Model";
 import { Interview } from "./recruitmentModel/Interview.Model";
 import { InterviewFeedback } from "./recruitmentModel/InterviewFeedback.Model";
+import { GoalSetting } from "./pmsModel/goalSetting.Model"
 import sequelize from "../../config/sequelize";
 
 
@@ -74,5 +75,6 @@ export {
   ExitFeedback,
   HrAnnouncement,
   AuditLog,
-  JobPosting,JobApplication,Interview,InterviewFeedback
+  JobPosting,JobApplication,Interview,InterviewFeedback,
+  GoalSetting
 };

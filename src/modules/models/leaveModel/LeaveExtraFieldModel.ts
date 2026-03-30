@@ -30,6 +30,6 @@ LeaveExtraField.init(
   }
 );
 
-// LeaveExtraField.sync();
+LeaveExtraField.sync();
 
 export { LeaveExtraField };

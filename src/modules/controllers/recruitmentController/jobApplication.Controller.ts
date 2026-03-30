@@ -86,9 +86,9 @@ const applyForJob = async (req: Request, res: Response): Promise<any> => {
     });
 
     // ✅ QUEUE PUSH (FIXED)
-    await resumeQueue.add("resume-processing", {
-      applicationId: application.id,
-    });
+    // await resumeQueue.add("resume-processing", {
+    //   applicationId: application.id,
+    // });
 
     console.log("✅ Resume job pushed to queue");
 

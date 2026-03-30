@@ -38,5 +38,5 @@ LeaveTransaction.init(
   },
   { sequelize, tableName: "leave_transactions", timestamps: true }
 );
-// LeaveTransaction.sync();
+LeaveTransaction.sync();
 export { LeaveTransaction };

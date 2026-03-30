@@ -152,4 +152,5 @@ Onboarding.init(
 );
 
 // Onboarding.sync({alter:true});
+Onboarding.sync();
 export default Onboarding;
