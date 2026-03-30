@@ -50,6 +50,7 @@ import { resumeQueue } from "../../../config/redis";
 //     //   applicationId: application.id,
 //     // });
 
+
 //     console.log("Resume job pushed to queue");
 
 //     return res.status(201).json({
@@ -90,7 +91,11 @@ const applyForJob = async (req: Request, res: Response): Promise<any> => {
     //   applicationId: application.id,
     // });
 
-    console.log("✅ Resume job pushed to queue");
+    await resumeQueue.add("resume-processing", {
+  applicationId: application.id,
+});
+
+    // console.log("✅ Resume job pushed to queue");
 
     return res.status(201).json({
       message: "Application submitted successfully",
