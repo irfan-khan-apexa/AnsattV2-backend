@@ -56,5 +56,5 @@ OfferLetter.init(
   }
 );
 
-// OfferLetter.sync();
+OfferLetter.sync();
 export default OfferLetter;

@@ -124,6 +124,13 @@ import {
   deleteInterview,} from "./recruitmentController/interview.Controller";
   import {
  submitFeedback,getAllFeedbacks,getFeedbackByApplicationId} from "./recruitmentController/interviewFeedback.Controller";
+  import {
+  createGoal,
+  getGoals,
+  getGoalsByEmployeeCycle,
+  getGoalById,
+  updateGoal,
+  deleteGoal,} from "./pmsController/goalSetting.Controller";
 
 // All controllers exported as single object
 export {
@@ -209,4 +216,10 @@ export {
   getByApplication,
   updateInterview,
   deleteInterview,submitFeedback,getAllFeedbacks,getFeedbackByApplicationId,
+    createGoal,
+  getGoals,
+  getGoalsByEmployeeCycle,
+  getGoalById,
+  updateGoal,
+  deleteGoal,
 };

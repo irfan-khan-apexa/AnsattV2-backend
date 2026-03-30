@@ -131,5 +131,5 @@ JobPosting.init(
     paranoid: true,
   }
 );
-// JobPosting.sync();
+JobPosting.sync();
 export default JobPosting;

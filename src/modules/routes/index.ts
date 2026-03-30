@@ -18,6 +18,7 @@ import { jobPostingRouter } from "./recruitmentRoutes/JobPosting.Routes";
 import { jobApplicationRouter } from "./recruitmentRoutes/jobApplication.Routes";
 import { interviewRouter } from "./recruitmentRoutes/interview.Routes";
 import { interviewFeedbackRouter } from "./recruitmentRoutes/interviewFeedback.Routes";
+import { goalRouter } from "./pmsRoutes/goalSetting.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -26,7 +27,6 @@ router.use(departmentRouter);
 router.use(employeeRouter);
 router.use(onboardingRouter);
 router.use(roleRouter);
-
 router.use(policyRouter);
 router.use(leaveRouter);
 router.use(exitRouter);
@@ -38,6 +38,7 @@ router.use(jobPostingRouter);
 router.use(jobApplicationRouter);
 router.use(interviewRouter);
 router.use(interviewFeedbackRouter);
+router.use(goalRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({
