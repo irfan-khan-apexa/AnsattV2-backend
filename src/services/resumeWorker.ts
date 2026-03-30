@@ -477,8 +477,25 @@ new Worker(
 
       const { applicationId } = job.data;
 
-      const application: any =
-        await JobApplication.findByPk(applicationId);
+      // const application: any =
+      //   await JobApplication.findByPk(applicationId);
+
+       const application: any =
+       await JobApplication.findByPk(applicationId, {
+       attributes: [
+      "id",
+      "company_code",
+      "job_id",
+      "name",
+      "email",
+      "phone",
+      "resume_url",
+      "status",
+      "createdAt",
+      "updatedAt"
+    ],
+  });
+
 
       if (!application) {
         console.log("Application not found");
