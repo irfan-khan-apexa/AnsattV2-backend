@@ -22,8 +22,8 @@ const generatePresignedGetUrl = async (key: string, expiresInSeconds = 60) => {
     Key: key,
   });
 
-  return await getSignedUrl(wasabiClient, command, {
-    expiresIn: expiresInSeconds,
-  });
+  // return await getSignedUrl(wasabiClient, command, {
+  //   expiresIn: expiresInSeconds,
+  // });
 };
 export { generatePresignedGetUrl };
