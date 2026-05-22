@@ -1,4 +1,3 @@
-// utils/generatePresignedUrl.ts
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -16,14 +15,18 @@ const wasabiClient = new S3Client({
   forcePathStyle: true,
 });
 
-const generatePresignedGetUrl = async (key: string, expiresInSeconds = 60) => {
+const generatePresignedGetUrl = async (
+  key: string,
+  expiresInSeconds = 60
+): Promise<string> => {
   const command = new GetObjectCommand({
     Bucket: process.env.WASABI_BUCKET_NAME!,
     Key: key,
   });
 
-  // return await getSignedUrl(wasabiClient, command, {
-  //   expiresIn: expiresInSeconds,
-  // });
+  return await getSignedUrl(wasabiClient, command, {
+    expiresIn: expiresInSeconds,
+  });
 };
+
 export { generatePresignedGetUrl };
