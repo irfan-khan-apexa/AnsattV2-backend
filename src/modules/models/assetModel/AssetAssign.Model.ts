@@ -50,6 +50,6 @@ AssetAssign.init(
   { sequelize, tableName: "asset_assigns", timestamps: true }
 );
 
-AssetAssign.sync();
+// AssetAssign.sync();
 
 export default AssetAssign;

@@ -109,5 +109,5 @@ GoalSetting.init(
     timestamps: true,
   }
 );
-GoalSetting.sync();
+// GoalSetting.sync();
 export  {GoalSetting} ;

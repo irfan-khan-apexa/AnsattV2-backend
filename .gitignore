@@ -35,6 +35,9 @@ coverage/
 .nyc_output/
 test-results/
 
+# Temporary generated files
+tmp/
+
 # Build
 dist/
 build/

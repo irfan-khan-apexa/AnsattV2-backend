@@ -13,17 +13,22 @@
 // );
 
 // export default sequelize;
+import dotenv from "dotenv";
+dotenv.config();
 
 import { Sequelize } from "sequelize";
-import { config } from "./config"; // adjust path if needed
+
+console.log("DB_NAME:", process.env.DB_NAME);
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_PORT:", process.env.DB_PORT);
 
 const sequelize = new Sequelize(
-  config.db.name,
-  config.db.user,
-  config.db.pass,
+  process.env.DB_NAME!,
+  process.env.DB_USER!,
+  process.env.DB_PASS!,
   {
-    host: config.db.host,
-    port: Number(process.env.DB_PORT), // still needs this from env
+    host: process.env.DB_HOST!,
+    port: Number(process.env.DB_PORT),
     dialect: "mysql",
     logging: false,
     dialectOptions:
@@ -31,7 +36,7 @@ const sequelize = new Sequelize(
         ? {
             ssl: {
               require: true,
-              rejectUnauthorized: false, // Aiven's SSL sometimes requires this
+              rejectUnauthorized: false,
             },
           }
         : {},

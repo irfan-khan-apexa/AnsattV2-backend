@@ -18,7 +18,7 @@ const createEmployee = async (
     const company_code = req.user.company_code;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Check required fields
+   
     if (!name || !email || !role || !password) {
       return res.status(400).json({ message: "Missing required fields" });
     }
@@ -106,12 +106,12 @@ const loginEmployee = async (req: Request, res: Response): Promise<any> => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    // ⛔ No bcrypt — just direct comparison
+  
     if (user.auto_password !== password) {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    // Generate token
+    
     const token = jwt.sign(
       {
         id: user.id,
@@ -145,7 +145,7 @@ const getEmployeeModules = async (
   try {
     const userRole = req.user.role;
 
-    // Normalize role (e.g., developer -> Developer)
+   
     const normalizedRole =
       userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
 

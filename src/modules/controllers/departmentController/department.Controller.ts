@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { Department, Onboarding } from "../../models/index";
 import { audit } from "../../../helpers/audit.helper";
 
-/* ================= CREATE DEPARTMENT ================= */
 const createDepartment = async (req: Request, res: Response): Promise<any> => {
   try {
     const { name, HrId } = req.body;
@@ -54,7 +53,6 @@ const createDepartment = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-/* ================= GET ALL (NO AUDIT) ================= */
 const getDepartments = async (req: Request, res: Response): Promise<any> => {
   try {
     const companyCode = (req as any).user.company_code;
@@ -68,7 +66,6 @@ const getDepartments = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-/* ================= GET BY ID (NO AUDIT) ================= */
 const getDepartmentById = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
@@ -91,7 +88,6 @@ const getDepartmentById = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-/* ================= UPDATE DEPARTMENT ================= */
 const updateDepartment = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
@@ -125,7 +121,7 @@ const updateDepartment = async (req: Request, res: Response): Promise<any> => {
 
     await department.save();
 
-    //  AUDIT
+    
     await audit(req, {
       module: "department",
       action: "update",
@@ -141,7 +137,7 @@ const updateDepartment = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-/* ================= DELETE DEPARTMENT ================= */
+
 const deleteDepartment = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
@@ -161,7 +157,7 @@ const deleteDepartment = async (req: Request, res: Response): Promise<any> => {
 
     await department.destroy();
 
-    // 🔥 AUDIT
+
     await audit(req, {
       module: "department",
       action: "delete",

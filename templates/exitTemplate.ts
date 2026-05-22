@@ -1,39 +1,49 @@
-export const exitLetterTemplate = ({
-name,
-designation,
-department,
-joining_date,
-exit_date,
-company_name,
-}: {
-name: string;
-designation: string;
-department?: string;
-joining_date: string;
-exit_date: string;
-company_name: string;
-}) => {
-return `
-${company_name}
+export const exitLetterTemplate = (
+  data: {
+    name: string;
+    designation: string;
+    department: string;
+    joining_date: string;
+    exit_date: string;
+    company_name: string;
+  }
+) => {
+  return `
+
+EXIT / RELIEVING LETTER
+
+
+${data.company_name}
+
+Human Resources Department
+
 Date: ${new Date().toLocaleDateString()}
 
+
 To,
-${name}
+${data.name}
+
 
 Subject: Exit / Relieving Letter
 
-Dear ${name},
 
-This is to certify that you were employed with ${company_name} as a ${designation}${
-department ? ` in the ${department} department` : ""
-} from ${joining_date} to ${exit_date}.
+Dear ${data.name},
 
-During your tenure, your performance was satisfactory, and your conduct was professional.
+This is to certify that you were employed with ${data.company_name} as a ${data.designation} in the ${data.department} department from ${data.joining_date} to ${data.exit_date}.
 
-We thank you for your services and wish you success in your future endeavors.
+During your tenure with the organization, your performance and professional conduct were found to be satisfactory.
 
-Sincerely,
+All responsibilities and duties assigned to you have been formally relieved effective from your last working day.
+
+We sincerely thank you for your contributions to the organization and wish you success and prosperity in your future endeavors.
+
+
+Warm Regards,
+
 HR Department
-${company_name}
+${data.company_name}
+
+Authorized Signatory
+
 `;
 };

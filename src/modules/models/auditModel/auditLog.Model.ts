@@ -29,11 +29,11 @@ AuditLog.init(
     sequelize,
     tableName: "audit_logs",
     timestamps: true,
-    updatedAt: false, // 🔥 NEVER allow update
+    updatedAt: false, // NEVER allow update
   }
 );
 
 // AuditLog.sync({ alter: true });
-AuditLog.sync();
+// AuditLog.sync();
 
 export default AuditLog;

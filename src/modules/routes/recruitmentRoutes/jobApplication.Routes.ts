@@ -5,7 +5,7 @@ import {
   updateApplicationStatus,
 } from "../../controllers/index";
 
-import upload from "../../../middlewares/wasabiUpload";
+import upload from "../../../middlewares/fileUpload";
 import { authenticateUser } from "../../../middlewares/authMiddleware";
 
 const jobApplicationRouter = Router();

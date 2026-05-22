@@ -113,6 +113,6 @@ InterviewFeedback.init(
   }
 );
 
-InterviewFeedback.sync();
+// InterviewFeedback.sync();
 
 export default InterviewFeedback;

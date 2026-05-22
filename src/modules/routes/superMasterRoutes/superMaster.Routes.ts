@@ -18,7 +18,7 @@ import {
   upsertCompanySettings,getCompanySettings,deleteCompanySettings,
 } from "../../controllers/index";
 import { authenticateSuperMaster } from "../../../middlewares/authMiddleware";
-import upload from "../../../middlewares/wasabiUpload";
+import upload from "../../../middlewares/fileUpload";
 
 const superMasterRouter = Router();
 

@@ -1,19 +1,79 @@
-export const executiveSalaryTemplate = ({ employee, salary }: any): string => {
+export const executiveSalaryTemplate = ({
+  employee,
+  salary,
+}: any): string => {
   return `
-  company executive
-${employee.company_code} - Salary Slip
-Employee: ${employee.name}
-Designation: ${employee.designation}
-Month: ${salary.month}
+================================================================================
+                               EXECUTIVE SALARY SLIP
+================================================================================
 
-Basic: ${salary.basic}
-HRA: ${salary.hra}
-Allowances: ${salary.allowances}
-Bonus: ${salary.bonus}
-Deductions: ${salary.deductions}
+                            COMPANY EXECUTIVE
+                         ${employee.company_code}
 
-Net Salary: ${salary.net_salary}
+================================================================================
+                             EMPLOYEE DETAILS
+================================================================================
 
-This is a system generated salary slip.
-  `;
+Employee Name      : ${employee.name}
+
+Employee ID        : ${employee.employee_id || "N/A"}
+
+Designation        : ${employee.designation}
+
+Department         : ${employee.department || "N/A"}
+
+Salary Month       : ${salary.month}
+
+Payment Status     : Paid
+
+================================================================================
+                              EARNINGS DETAILS
+================================================================================
+
+Basic Salary       : ₹ ${salary.basic}
+
+House Rent Allow.  : ₹ ${salary.hra}
+
+Allowances         : ₹ ${salary.allowances}
+
+Bonus              : ₹ ${salary.bonus}
+
+--------------------------------------------------------------------------------
+
+Total Earnings     : ₹ ${
+    Number(salary.basic || 0) +
+    Number(salary.hra || 0) +
+    Number(salary.allowances || 0) +
+    Number(salary.bonus || 0)
+  }
+
+================================================================================
+                             DEDUCTION DETAILS
+================================================================================
+
+Total Deductions   : ₹ ${salary.deductions}
+
+================================================================================
+                               NET SALARY
+================================================================================
+
+Net Salary Payable : ₹ ${salary.net_salary}
+
+================================================================================
+                                  NOTE
+================================================================================
+
+This is a system-generated salary slip and does not require a physical signature.
+
+Generated On       : ${new Date().toLocaleDateString()}
+
+================================================================================
+                           AUTHORIZED SIGNATORY
+================================================================================
+
+
+HR Department
+${employee.company_code}
+
+`;
 };

@@ -1,80 +1,397 @@
-// services/generateSalarySlip.ts
+// src/services/generateSalarySlip.ts
+
 import PDFDocument from "pdfkit";
-import { Document, Packer, Paragraph, TextRun } from "docx";
+
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+} from "docx";
+
 import fs from "fs";
 import path from "path";
-import wasabiS3 from "../config/wasabi";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+
 import { encrypt } from "../utils/encryption";
-import templates from "../../templates"; // central templates import
 
-function selectTemplateByName(name: string) {
-  const key = name?.toLowerCase();
-  const template = Object.entries(templates).find(
-    ([tplName]) => tplName.toLowerCase() === key
-  );
-  return template ? template[1] : null;
-}
+import templates from "../../templates";
 
-export const createSalarySlip = async (
-  salary: any,
-  employee: any,
-  templateName: string
-) => {
-  const filename = `SalarySlip-${employee.name}-${salary.month}-${Date.now()}`;
-  const tmpDir = path.join(__dirname, "..", "..", "tmp");
-  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+// ✅ NEW STORAGE SERVICE
+import {
+  uploadToCentralStorage,
+} from "./uploadfileService";
 
-  const pdfPath = path.join(tmpDir, `${filename}.pdf`);
-  const docxPath = path.join(tmpDir, `${filename}.docx`);
+// ================= TEMPLATE SELECTOR =================
+function selectTemplateByName(
+  name?: string
+) {
+  if (!name) return null;
 
-  // ✅ Pick template dynamically
-  const templateFn =
-    selectTemplateByName(templateName) || templates["standardSalaryTemplate"];
-  const content = templateFn({ employee, salary });
+  const key = name
+    .trim()
+    .toLowerCase();
 
-  // PDF
-  const pdfDoc = new PDFDocument();
-  pdfDoc.pipe(fs.createWriteStream(pdfPath));
-  pdfDoc.fontSize(12).text(content, { align: "left" });
-  pdfDoc.end();
-
-  // DOCX
-  const doc = new Document({
-    sections: [
-      {
-        children: content.split("\n").map(
-          (line) =>
-            new Paragraph({
-              children: [new TextRun(line.trim())],
-            })
-        ),
-      },
-    ],
-  });
-  const buffer = await Packer.toBuffer(doc);
-  fs.writeFileSync(docxPath, buffer);
-
-  // Upload both
-  const urls: { pdf?: string; docx?: string } = {};
-  for (const format of ["pdf", "docx"] as const) {
-    const filePath = format === "pdf" ? pdfPath : docxPath;
-    const key = `documents/salary_slips/${filename}.${format}`;
-    const fileBuffer = fs.readFileSync(filePath);
-
-    await wasabiS3.send(
-      new PutObjectCommand({
-        Bucket: process.env.WASABI_BUCKET_NAME!,
-        Key: key,
-        Body: fileBuffer,
-        ACL: "public-read",
-      })
+  const exact =
+    Object.entries(
+      templates
+    ).find(
+      ([tplName]) =>
+        tplName.toLowerCase() ===
+        key
     );
 
-    const publicUrl = `${process.env.WASABI_ENDPOINT}/${process.env.WASABI_BUCKET_NAME}/${key}`;
-    urls[format] = encrypt(publicUrl);
-    fs.unlinkSync(filePath);
+  if (exact) return exact[1];
+
+  const aliasMap: Record<
+    string,
+    string
+  > = {
+    standard:
+      "standardSalaryTemplate",
+
+    executive:
+      "executiveSalaryTemplate",
+  };
+
+  if (
+    aliasMap[key] &&
+    templates[
+      aliasMap[key]
+    ]
+  ) {
+    return templates[
+      aliasMap[key]
+    ];
   }
 
-  return urls;
-};
+  return null;
+}
+
+// ================= MAIN FUNCTION =================
+export const createSalarySlip =
+  async (
+    salary: any,
+    employee: any,
+    templateName: string
+  ) => {
+    console.log(
+      "🚀 createSalarySlip START"
+    );
+
+    const filename = `SalarySlip-${
+      employee.name
+    }-${
+      salary.month
+    }-${Date.now()}`;
+
+    console.log(
+      "📄 Filename:",
+      filename
+    );
+
+    // ================= TMP DIR =================
+    const tmpDir = path.join(
+      __dirname,
+      "..",
+      "..",
+      "tmp"
+    );
+
+    if (
+      !fs.existsSync(tmpDir)
+    ) {
+      fs.mkdirSync(tmpDir, {
+        recursive: true,
+      });
+    }
+
+    const pdfPath = path.join(
+      tmpDir,
+      `${filename}.pdf`
+    );
+
+    const docxPath = path.join(
+      tmpDir,
+      `${filename}.docx`
+    );
+
+    console.log(
+      "📄 PDF PATH:",
+      pdfPath
+    );
+
+    console.log(
+      "📄 DOCX PATH:",
+      docxPath
+    );
+
+    // ================= TEMPLATE =================
+    console.log(
+      "📄 Selecting template..."
+    );
+
+    const templateFn =
+      selectTemplateByName(
+        templateName
+      ) ||
+      templates[
+        "standardSalaryTemplate"
+      ];
+
+    console.log(
+      "✅ Template selected"
+    );
+
+    const content =
+      templateFn({
+        employee,
+        salary,
+      });
+
+    console.log(
+      "✅ Template generated"
+    );
+
+    // ================= PDF =================
+    try {
+      console.log(
+        "📄 Generating PDF..."
+      );
+
+      const pdfDoc =
+        new PDFDocument({
+          autoFirstPage: true,
+        });
+
+      const pdfStream =
+        fs.createWriteStream(
+          pdfPath
+        );
+
+      pdfDoc.pipe(pdfStream);
+
+      pdfDoc
+        .fontSize(12)
+        .text(content, {
+          align: "left",
+        });
+
+      pdfDoc.end();
+
+      await new Promise<void>(
+        (
+          resolve,
+          reject
+        ) => {
+          pdfStream.on(
+            "finish",
+            () => {
+              console.log(
+                "✅ PDF generated"
+              );
+
+              resolve();
+            }
+          );
+
+          pdfStream.on(
+            "error",
+            (err) => {
+              reject(err);
+            }
+          );
+        }
+      );
+    } catch (err: any) {
+      console.log(
+        "❌ PDF ERROR"
+      );
+
+      throw new Error(
+        "PDF generation failed: " +
+          err.message
+      );
+    }
+
+    // ================= DOCX =================
+    try {
+      console.log(
+        "📄 Generating DOCX..."
+      );
+
+      const doc =
+        new Document({
+          sections: [
+            {
+              children:
+                content
+                  .split("\n")
+                  .map(
+                    (line) =>
+                      new Paragraph(
+                        {
+                          children:
+                            [
+                              new TextRun(
+                                line.trim()
+                              ),
+                            ],
+                        }
+                      )
+                  ),
+            },
+          ],
+        });
+
+      const buffer =
+        await Packer.toBuffer(
+          doc
+        );
+
+      fs.writeFileSync(
+        docxPath,
+        buffer
+      );
+
+      console.log(
+        "✅ DOCX generated"
+      );
+    } catch (err: any) {
+      console.log(
+        "❌ DOCX ERROR"
+      );
+
+      throw new Error(
+        "DOCX generation failed: " +
+          err.message
+      );
+    }
+
+    // ================= UPLOAD =================
+    const urls: {
+      pdf?: string;
+      docx?: string;
+    } = {};
+
+    try {
+      // ================= PDF =================
+      console.log(
+        "☁️ Uploading PDF..."
+      );
+
+      const pdfBuffer =
+        fs.readFileSync(
+          pdfPath
+        );
+
+      const uploadedPdf =
+        await uploadToCentralStorage(
+          {
+            buffer:
+              pdfBuffer,
+
+            originalname: `${filename}.pdf`,
+
+            mimetype:
+              "application/pdf",
+          } as any
+        );
+
+      console.log(
+        "✅ PDF Uploaded:",
+        uploadedPdf
+      );
+
+      urls.pdf = encrypt(
+        uploadedPdf.fileId
+      );
+
+      console.log(
+        "🔐 PDF encrypted"
+      );
+
+      try {
+        fs.unlinkSync(
+          pdfPath
+        );
+      } catch {}
+
+      // ================= DOCX =================
+      try {
+        console.log(
+          "☁️ Uploading DOCX..."
+        );
+
+        const docxBuffer =
+          fs.readFileSync(
+            docxPath
+          );
+
+        const uploadedDocx =
+          await uploadToCentralStorage(
+            {
+              buffer:
+                docxBuffer,
+
+              originalname: `${filename}.docx`,
+
+              mimetype:
+                "application/octet-stream",
+            } as any
+          );
+
+        console.log(
+          "✅ DOCX Uploaded:",
+          uploadedDocx
+        );
+
+        urls.docx =
+          encrypt(
+            uploadedDocx.fileId
+          );
+
+        console.log(
+          "🔐 DOCX encrypted"
+        );
+
+        try {
+          fs.unlinkSync(
+            docxPath
+          );
+        } catch {}
+      } catch (
+        docxError: any
+      ) {
+        console.log(
+          "⚠️ DOCX upload failed but continuing..."
+        );
+
+        console.log(
+          docxError.message
+        );
+      }
+
+      console.log(
+        "✅ Salary Slip Upload Completed"
+      );
+    } catch (err: any) {
+      console.log(
+        "❌ UPLOAD ERROR"
+      );
+
+      console.log(err);
+
+      throw new Error(
+        "Salary slip upload failed: " +
+          err.message
+      );
+    }
+
+    console.log(
+      "🎉 createSalarySlip FINISHED"
+    );
+
+    return urls;
+  };
+
+export default createSalarySlip;

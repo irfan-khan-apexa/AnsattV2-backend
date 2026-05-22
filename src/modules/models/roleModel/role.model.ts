@@ -45,7 +45,7 @@ Role.init(
 
 
 // Role.sync({alter:true});
-Role.sync();
+// Role.sync();
 // sequelize.sync({ alter: false });
 
 

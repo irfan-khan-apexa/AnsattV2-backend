@@ -57,7 +57,7 @@ CompanySettings.init(
       defaultValue: "en",
     },
 
-    // 🔥 ROOT PERMISSION LAYER
+    //  ROOT PERMISSION LAYER
     permissions: {
       type: DataTypes.JSON,
       allowNull: false,
@@ -80,5 +80,5 @@ CompanySettings.init(
 
 
 // CompanySettings.sync({ alter: true });
-CompanySettings.sync();
+// CompanySettings.sync();
 export default CompanySettings;
