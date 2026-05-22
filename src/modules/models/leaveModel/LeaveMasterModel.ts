@@ -34,6 +34,6 @@ LeaveMaster.init(
   }
 );
 
-LeaveMaster.sync();
+// LeaveMaster.sync();
 
 export { LeaveMaster };

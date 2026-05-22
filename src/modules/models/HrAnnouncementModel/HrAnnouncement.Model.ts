@@ -62,6 +62,6 @@ HrAnnouncement.init(
   }
 );
 
-HrAnnouncement.sync();
+// HrAnnouncement.sync();
 
 export default HrAnnouncement;

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Asset, AssetAssign, Onboarding } from "../../models/index";
 import { CompanyRequest } from "../../../middlewares/authMiddleware";
 import Sequelize from "sequelize";
+import { audit } from "../../../helpers/audit.helper"; // ✅ added
 
 const createAsset = async (req: CompanyRequest, res: Response): Promise<any> => {
   try {
@@ -31,6 +32,14 @@ const createAsset = async (req: CompanyRequest, res: Response): Promise<any> => 
       generated_by: req.user.id,
     });
 
+    // 🔥 AUDIT
+    await audit(req, {
+      module: "asset",
+      action: "create",
+      record_id: asset.id,
+      new_value: asset,
+    });
+
     return res.status(201).json({ message: "Asset created", data: asset });
   } catch (err: any) {
     return res.status(500).json({ message: "Error creating asset", error: err.message });
@@ -46,7 +55,19 @@ const updateAsset = async (req: CompanyRequest, res: Response): Promise<any> => 
     const asset = await Asset.findOne({ where: { id, company_code } });
     if (!asset) return res.status(404).json({ message: "Asset not found" });
 
+    const oldAsset = asset.toJSON(); // ✅ added
+
     await asset.update(updates);
+
+    // 🔥 AUDIT
+    await audit(req, {
+      module: "asset",
+      action: "update",
+      record_id: asset.id,
+      old_value: oldAsset,
+      new_value: asset,
+    });
+
     return res.status(200).json({ message: "Asset updated", data: asset });
   } catch (err: any) {
     return res.status(500).json({ message: "Error updating asset", error: err.message });
@@ -65,7 +86,18 @@ const deleteAsset = async (req: CompanyRequest, res: Response): Promise<any> => 
       return res.status(400).json({ message: "Cannot delete an assigned asset. Return first." });
     }
 
+    const oldAsset = asset.toJSON(); // ✅ added
+
     await asset.destroy();
+
+    // 🔥 AUDIT
+    await audit(req, {
+      module: "asset",
+      action: "delete",
+      record_id: oldAsset.id,
+      old_value: oldAsset,
+    });
+
     return res.status(200).json({ message: "Asset deleted" });
   } catch (err: any) {
     return res.status(500).json({ message: "Error deleting asset", error: err.message });
@@ -105,13 +137,20 @@ const assignAsset = async (req: CompanyRequest, res: Response): Promise<any> => 
     asset.status = "assigned";
     await asset.save();
 
+    // 🔥 AUDIT
+    await audit(req, {
+      module: "asset",
+      action: "assign",
+      record_id: asset.id,
+      new_value: { asset, assignment },
+    });
+
     return res.status(200).json({ message: "Asset issued", data: { asset, assignment } });
   } catch (err: any) {
     return res.status(500).json({ message: "Error assigning asset", error: err.message });
   }
 };
 
-/** Return asset */
 const returnAsset = async (req: CompanyRequest, res: Response): Promise<any> => {
   try {
     const { id } = req.params; // asset id
@@ -125,7 +164,6 @@ const returnAsset = async (req: CompanyRequest, res: Response): Promise<any> => 
       return res.status(400).json({ message: "Asset is not currently assigned" });
     }
 
-    // Find latest open assignment for this asset and employee
     const assignment = await AssetAssign.findOne({
       where: { asset_id: asset.id, company_code, status: "issued" },
       order: [["issued_at", "DESC"]],
@@ -147,13 +185,20 @@ const returnAsset = async (req: CompanyRequest, res: Response): Promise<any> => 
     if (condition_on_return) asset.condition = condition_on_return;
     await asset.save();
 
+    // 🔥 AUDIT
+    await audit(req, {
+      module: "asset",
+      action: "unassign",
+      record_id: asset.id,
+      new_value: { asset, assignment },
+    });
+
     return res.status(200).json({ message: "Asset returned", data: { asset, assignment } });
   } catch (err: any) {
     return res.status(500).json({ message: "Error returning asset", error: err.message });
   }
 };
 
-/** Get assets assigned to an employee (current) */
 const getEmployeeAssets = async (req: CompanyRequest, res: Response): Promise<any> => {
   try {
     const employee_id = Number(req.params.employee_id);
@@ -176,8 +221,6 @@ const getEmployeeAssets = async (req: CompanyRequest, res: Response): Promise<an
   }
 };
 
-
-/** Get full assignment history for an asset */
 const getAssetHistory = async (req: CompanyRequest, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
@@ -194,7 +237,6 @@ const getAssetHistory = async (req: CompanyRequest, res: Response): Promise<any>
   }
 };
 
-/** Get all assets for company with optional filters */
 const getAllAssets = async (req: CompanyRequest, res: Response): Promise<any> => {
   try {
     const company_code = req.user.company_code;

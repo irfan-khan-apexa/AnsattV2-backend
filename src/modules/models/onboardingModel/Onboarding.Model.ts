@@ -133,7 +133,7 @@ Onboarding.init(
 
     deleted_at: DataTypes.DATE,
 
-    // ✅ New fields
+    // New fields
     presigned_url_cache: {
       type: DataTypes.JSON, // use JSON if you're using MySQL
       allowNull: true,
@@ -152,5 +152,5 @@ Onboarding.init(
 );
 
 // Onboarding.sync({alter:true});
-Onboarding.sync();
+// Onboarding.sync();
 export default Onboarding;

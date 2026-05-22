@@ -24,5 +24,5 @@ LeaveActionToken.init(
   { sequelize, modelName: "LeaveActionToken" }
 );
 
-LeaveActionToken.sync();
+// LeaveActionToken.sync();
 export { LeaveActionToken };

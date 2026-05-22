@@ -100,6 +100,6 @@ JobApplication.init(
 );
 
 // JobApplication.sync({ alter: true });
-JobApplication.sync();
+// JobApplication.sync();
 
 export default JobApplication;

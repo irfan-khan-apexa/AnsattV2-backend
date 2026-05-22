@@ -1,51 +1,80 @@
 import { Router } from "express";
+
 import {
   createSalary,
   getEmployeeSlips,
   downloadSlip,
-  bulkUploadSalaryAdvanced,
-  exportSalaryData,
   updateSalary,
   deleteSalary,
-  getAllSalaries
+  getAllSalaries,
+  bulkUploadSalaryAdvanced,
+  exportSalaryData,
 } from "../../../modules/controllers/index";
-import { authenticateUser } from "../../../middlewares/authMiddleware";
-import upload from "../../../config/multer";
 
-const salaryRouter = Router();
+import {
+  authenticateUser,
+} from "../../../middlewares/authMiddleware";
 
-salaryRouter.post("/salary", authenticateUser, createSalary);
-salaryRouter.get("/salary/all", authenticateUser, getAllSalaries);
+import upload from "../../../middlewares/fileUpload";
+
+const salaryRouter =
+  Router();
+
+// ================= CREATE =================
+salaryRouter.post(
+  "/salary",
+  authenticateUser,
+  createSalary
+);
+
+// ================= GET ALL =================
+salaryRouter.get(
+  "/salary/all",
+  authenticateUser,
+  getAllSalaries
+);
+
+// ================= GET EMPLOYEE SLIPS =================
 salaryRouter.get(
   "/salary/:employee_id",
   authenticateUser,
   getEmployeeSlips
 );
+
+// ================= DOWNLOAD =================
 salaryRouter.get(
   "/salary/:id/download/:format",
   authenticateUser,
   downloadSlip
 );
+
+// ================= UPDATE =================
+salaryRouter.put(
+  "/salary/:id",
+  authenticateUser,
+  updateSalary
+);
+
+// ================= DELETE =================
+salaryRouter.delete(
+  "/salary/:id",
+  authenticateUser,
+  deleteSalary
+);
+
+// ================= BULK UPLOAD =================
 salaryRouter.post(
-  "/salary/bulk-advanced",
+  "/salary/bulk-upload",
   authenticateUser,
   upload.single("file"),
   bulkUploadSalaryAdvanced
 );
-salaryRouter.post(
-  "/salary/export-bulk",
+
+// ================= EXPORT =================
+salaryRouter.get(
+  "/salary/export/excel",
   authenticateUser,
   exportSalaryData
-);
-salaryRouter.put(
-  "/salary/:id",
-  authenticateUser,
- updateSalary
-);
-salaryRouter.delete(
-  "/salary/:id",
-  authenticateUser,
- deleteSalary
 );
 
 export { salaryRouter };

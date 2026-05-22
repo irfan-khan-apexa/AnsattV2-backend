@@ -196,7 +196,7 @@ const getMyCompanySettings = async (
       });
     }
 
-    // 🔥 add signed logo url (same as super admin)
+    
     if (settings.company_logo) {
       const bucket = process.env.WASABI_BUCKET_NAME!;
       const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
@@ -209,7 +209,7 @@ const getMyCompanySettings = async (
 
       settings.company_logo_signed_url = await generatePresignedGetUrl(
         key,
-        300 // 5 minutes
+        300 
       );
     } else {
       settings.company_logo_signed_url = null;
