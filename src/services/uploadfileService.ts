@@ -16,39 +16,75 @@ export const uploadToCentralStorage = async (
   try {
     const formData = new FormData();
 
-   formData.append(
-  "file",
-  file.buffer,
-  {
-    filename:
-      file.originalname,
+    // ✅ SAFE MIME TYPES
+    let contentType =
+      "application/octet-stream";
 
-    contentType:
-      file.mimetype,
-  }
-);
-console.log(
-  "📤 SENDING FILE:",
-  {
-    name: file.originalname,
-    type: file.mimetype,
-    size: file.buffer?.length,
-  }
-);
+    if (
+      file.originalname
+        .toLowerCase()
+        .endsWith(".pdf")
+    ) {
+      contentType =
+        "application/pdf";
+    }
 
-    const response = await axios.post(
-      `${BASE_URL}/api/v1/files/upload`,
-      formData,
+    if (
+      file.originalname
+        .toLowerCase()
+        .endsWith(".docx")
+    ) {
+      contentType =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    }
+
+    formData.append(
+      "file",
+      file.buffer,
       {
-        headers: {
-          ...formData.getHeaders(),
+        filename:
+          file.originalname,
 
-          Authorization: `Bearer ${AUTH_TOKEN}`,
-        },
-
-        maxBodyLength: Infinity,
+        contentType,
       }
     );
+
+    console.log(
+      "📤 SENDING FILE:",
+      {
+        name:
+          file.originalname,
+
+        type:
+          contentType,
+
+        size:
+          file.buffer?.length,
+      }
+    );
+
+    const response =
+      await axios.post(
+        `${BASE_URL}/api/v1/files/upload`,
+        formData,
+        {
+          headers: {
+            // ✅ THIS AUTOMATICALLY SETS:
+            // multipart/form-data
+            ...formData.getHeaders(),
+
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+          },
+
+          timeout: 30000,
+
+          maxContentLength:
+            Infinity,
+
+          maxBodyLength:
+            Infinity,
+        }
+      );
 
     return response.data.data;
 
@@ -64,73 +100,82 @@ console.log(
   } catch (error: any) {
     console.error(
       "UPLOAD ERROR:",
-      error.response?.data || error.message
+      error.response?.data ||
+        error.message
     );
 
     throw new Error(
-      error.response?.data?.message ||
+      error.response?.data
+        ?.message ||
         "File upload failed"
     );
   }
 };
 
 // ================= SIGNED URL =================
-export const getSignedUrl = async (
-  fileId: string,
-  expiresInMinutes: number = 60
-) => {
-  try {
-    const response = await axios.post(
-      `${BASE_URL}/api/v1/files/signed-url`,
-      {
-        fileId,
-        expiresInMinutes,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${AUTH_TOKEN}`,
-        },
-      }
-    );
+export const getSignedUrl =
+  async (
+    fileId: string,
+    expiresInMinutes: number = 60
+  ) => {
+    try {
+      const response =
+        await axios.post(
+          `${BASE_URL}/api/v1/files/signed-url`,
+          {
+            fileId,
+            expiresInMinutes,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${AUTH_TOKEN}`,
+            },
+          }
+        );
 
-    return response.data.data.url;
-  } catch (error: any) {
-    console.error(
-      "SIGNED URL ERROR:",
-      error.response?.data || error.message
-    );
+      return response.data.data
+        .url;
+    } catch (error: any) {
+      console.error(
+        "SIGNED URL ERROR:",
+        error.response?.data ||
+          error.message
+      );
 
-    throw new Error(
-      error.response?.data?.message ||
-        "Failed to generate signed URL"
-    );
-  }
-};
+      throw new Error(
+        error.response?.data
+          ?.message ||
+          "Failed to generate signed URL"
+      );
+    }
+  };
 
 // ================= DELETE FILE =================
-export const deleteFile = async (
-  fileId: string
-) => {
-  try {
-    const response = await axios.delete(
-      `${BASE_URL}/api/v1/files/${fileId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${AUTH_TOKEN}`,
-        },
-      }
-    );
+export const deleteFile =
+  async (fileId: string) => {
+    try {
+      const response =
+        await axios.delete(
+          `${BASE_URL}/api/v1/files/${fileId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${AUTH_TOKEN}`,
+            },
+          }
+        );
 
-    return response.data;
-  } catch (error: any) {
-    console.error(
-      "DELETE FILE ERROR:",
-      error.response?.data || error.message
-    );
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        "DELETE FILE ERROR:",
+        error.response?.data ||
+          error.message
+      );
 
-    throw new Error(
-      error.response?.data?.message ||
-        "Failed to delete file"
-    );
-  }
-};
+      throw new Error(
+        error.response?.data
+          ?.message ||
+          "Failed to delete file"
+      );
+    }
+  };

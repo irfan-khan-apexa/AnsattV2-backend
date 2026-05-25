@@ -784,7 +784,7 @@ const downloadExitLetter = async (
     );
 
     // ✅ PRODUCTION FLOW
-    return res.redirect(
+    return res.json(
       signedUrl
     );
   } catch (error: any) {

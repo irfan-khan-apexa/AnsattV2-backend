@@ -1,5 +1,3 @@
-// src/services/generateOfferLetter.ts
-
 import PDFDocument from "pdfkit";
 
 import fs from "fs";
@@ -136,11 +134,13 @@ export const createOfferLetter =
   ): Promise<{
     pdf?: string;
   }> => {
+
     console.log(
       "🚀 createOfferLetter START"
     );
 
     try {
+
       const name =
         employee?.name ||
         "Unknown";
@@ -150,10 +150,15 @@ export const createOfferLetter =
         name
       );
 
-      const filename = `OfferLetter-${name.replace(
-        /\s+/g,
-        "_"
-      )}-${Date.now()}`;
+      // ✅ SAFE FILENAME
+      const safeName =
+        name.replace(
+          /\s+/g,
+          "_"
+        );
+
+      const filename =
+        `OfferLetter-${safeName}-${Date.now()}`;
 
       console.log(
         "📄 Filename:",
@@ -231,20 +236,10 @@ export const createOfferLetter =
           "generateOfferContent"
         ];
 
-      console.log(
-        "🧩 Raw Template:",
-        rawTemplate
-      );
-
       const templateFn =
         resolveTemplateToFn(
           rawTemplate
         );
-
-      console.log(
-        "🧩 Template Function:",
-        templateFn
-      );
 
       if (!templateFn) {
         throw new Error(
@@ -257,15 +252,19 @@ export const createOfferLetter =
         "";
 
       try {
+
         if (
           employee.joining_date instanceof
           Date
         ) {
+
           joiningDateStr =
             employee.joining_date
               .toISOString()
               .split("T")[0];
+
         } else {
+
           joiningDateStr =
             new Date(
               employee.joining_date
@@ -273,7 +272,9 @@ export const createOfferLetter =
               .toISOString()
               .split("T")[0];
         }
+
       } catch {
+
         joiningDateStr =
           String(
             employee.joining_date
@@ -304,7 +305,7 @@ export const createOfferLetter =
         });
 
       console.log(
-        "✅ STEP B: TEMPLATE GENERATED"
+        "✅ TEMPLATE GENERATED"
       );
 
       console.log(
@@ -314,8 +315,9 @@ export const createOfferLetter =
 
       // ================= PDF =================
       try {
+
         console.log(
-          "📄 STEP C: PDF START"
+          "📄 GENERATING PDF..."
         );
 
         const pdfDoc =
@@ -343,11 +345,13 @@ export const createOfferLetter =
             resolve,
             reject
           ) => {
+
             pdfStream.on(
               "finish",
               () => {
+
                 console.log(
-                  "✅ STEP D: PDF DONE"
+                  "✅ PDF GENERATED"
                 );
 
                 resolve();
@@ -357,12 +361,9 @@ export const createOfferLetter =
             pdfStream.on(
               "error",
               (err) => {
-                console.log(
-                  "❌ PDF STREAM ERROR"
-                );
 
                 console.log(
-                  err
+                  "❌ PDF STREAM ERROR"
                 );
 
                 reject(err);
@@ -370,12 +371,12 @@ export const createOfferLetter =
             );
           }
         );
+
       } catch (err: any) {
+
         console.log(
           "❌ PDF ERROR"
         );
-
-        console.log(err);
 
         throw new Error(
           "PDF generation failed: " +
@@ -389,12 +390,9 @@ export const createOfferLetter =
       } = {};
 
       try {
-        console.log(
-          "☁️ STEP G: UPLOAD START"
-        );
 
         console.log(
-          "📤 UPLOADING PDF"
+          "☁️ UPLOADING PDF..."
         );
 
         const fileBuffer =
@@ -413,7 +411,8 @@ export const createOfferLetter =
               buffer:
                 fileBuffer,
 
-              originalname: `${filename}.pdf`,
+              originalname:
+                `${filename}.pdf`,
 
               mimetype:
                 "application/pdf",
@@ -421,7 +420,7 @@ export const createOfferLetter =
           );
 
         console.log(
-          "✅ UPLOADED:",
+          "✅ PDF UPLOADED:",
           uploaded
         );
 
@@ -433,17 +432,21 @@ export const createOfferLetter =
           "🔐 ENCRYPTED FILE ID SAVED"
         );
 
+        // ✅ CLEANUP
         try {
+
           fs.unlinkSync(
             pdfPath
           );
 
           console.log(
-            "🗑️ PDF temp deleted"
+            "🗑️ TEMP PDF DELETED"
           );
+
         } catch (
           deleteError
         ) {
+
           console.log(
             "⚠️ TEMP DELETE ERROR"
           );
@@ -454,9 +457,11 @@ export const createOfferLetter =
         }
 
         console.log(
-          "✅ STEP H: UPLOAD DONE"
+          "✅ OFFER LETTER UPLOAD DONE"
         );
+
       } catch (err: any) {
+
         console.log(
           "❌ UPLOAD ERROR"
         );
@@ -474,7 +479,9 @@ export const createOfferLetter =
       );
 
       return urls;
+
     } catch (mainError: any) {
+
       console.log(
         "❌ MAIN createOfferLetter ERROR"
       );
