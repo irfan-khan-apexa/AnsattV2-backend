@@ -941,7 +941,7 @@ const downloadSlip = async (
       "🚀 Redirecting..."
     );
 
-    return res.redirect(
+    return res.json(
       signedUrl
     );
   } catch (err: any) {

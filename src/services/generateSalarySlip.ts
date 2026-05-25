@@ -335,8 +335,8 @@ export const createSalarySlip =
 
               originalname: `${filename}.docx`,
 
-              mimetype:
-                "application/octet-stream",
+             mimetype:
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             } as any
           );
 

@@ -2033,7 +2033,7 @@ const downloadOfferLetter = async (
 
     // ✅ PRODUCTION BEST PRACTICE
     // redirect directly to signed URL
-    return res.redirect(
+    return res.json(
       signedUrl
     );
   } catch (error: any) {
