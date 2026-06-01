@@ -16,7 +16,7 @@ import { encrypt } from "../utils/encryption";
 
 import templates from "../../templates";
 
-// ✅ NEW STORAGE SERVICE
+// ✅ STORAGE SERVICE
 import {
   uploadToCentralStorage,
 } from "./uploadfileService";
@@ -73,7 +73,11 @@ export const createSalarySlip =
     salary: any,
     employee: any,
     templateName: string
-  ) => {
+  ): Promise<{
+    pdf?: string;
+    docx?: string;
+  }> => {
+
     console.log(
       "🚀 createSalarySlip START"
     );
@@ -154,6 +158,7 @@ export const createSalarySlip =
 
     // ================= PDF =================
     try {
+
       console.log(
         "📄 Generating PDF..."
       );
@@ -183,9 +188,11 @@ export const createSalarySlip =
           resolve,
           reject
         ) => {
+
           pdfStream.on(
             "finish",
             () => {
+
               console.log(
                 "✅ PDF generated"
               );
@@ -197,12 +204,15 @@ export const createSalarySlip =
           pdfStream.on(
             "error",
             (err) => {
+
               reject(err);
             }
           );
         }
       );
+
     } catch (err: any) {
+
       console.log(
         "❌ PDF ERROR"
       );
@@ -215,6 +225,7 @@ export const createSalarySlip =
 
     // ================= DOCX =================
     try {
+
       console.log(
         "📄 Generating DOCX..."
       );
@@ -232,9 +243,13 @@ export const createSalarySlip =
                         {
                           children:
                             [
-                              new TextRun(
-                                line.trim()
-                              ),
+                              new TextRun({
+                                text:
+                                  line.trim(),
+
+                                size:
+                                  24,
+                              }),
                             ],
                         }
                       )
@@ -256,7 +271,9 @@ export const createSalarySlip =
       console.log(
         "✅ DOCX generated"
       );
+
     } catch (err: any) {
+
       console.log(
         "❌ DOCX ERROR"
       );
@@ -274,6 +291,7 @@ export const createSalarySlip =
     } = {};
 
     try {
+
       // ================= PDF =================
       console.log(
         "☁️ Uploading PDF..."
@@ -290,7 +308,8 @@ export const createSalarySlip =
             buffer:
               pdfBuffer,
 
-            originalname: `${filename}.pdf`,
+            originalname:
+              `${filename}.pdf`,
 
             mimetype:
               "application/pdf",
@@ -310,71 +329,92 @@ export const createSalarySlip =
         "🔐 PDF encrypted"
       );
 
-      try {
-        fs.unlinkSync(
-          pdfPath
-        );
-      } catch {}
-
       // ================= DOCX =================
+      console.log(
+        "☁️ Uploading DOCX..."
+      );
+
+      const docxBuffer =
+        fs.readFileSync(
+          docxPath
+        );
+
+      const uploadedDocx =
+        await uploadToCentralStorage(
+          {
+            buffer:
+              docxBuffer,
+
+            originalname:
+              `${filename}.docx`,
+
+            mimetype:
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          } as any
+        );
+
+      console.log(
+        "✅ DOCX Uploaded:",
+        uploadedDocx
+      );
+
+      urls.docx =
+        encrypt(
+          uploadedDocx.fileId
+        );
+
+      console.log(
+        "🔐 DOCX encrypted"
+      );
+
+      // ================= CLEANUP =================
       try {
-        console.log(
-          "☁️ Uploading DOCX..."
-        );
 
-        const docxBuffer =
-          fs.readFileSync(
+        if (
+          fs.existsSync(
+            pdfPath
+          )
+        ) {
+
+          fs.unlinkSync(
+            pdfPath
+          );
+        }
+
+        if (
+          fs.existsSync(
             docxPath
-          );
+          )
+        ) {
 
-        const uploadedDocx =
-          await uploadToCentralStorage(
-            {
-              buffer:
-                docxBuffer,
-
-              originalname: `${filename}.docx`,
-
-             mimetype:
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            } as any
-          );
-
-        console.log(
-          "✅ DOCX Uploaded:",
-          uploadedDocx
-        );
-
-        urls.docx =
-          encrypt(
-            uploadedDocx.fileId
-          );
-
-        console.log(
-          "🔐 DOCX encrypted"
-        );
-
-        try {
           fs.unlinkSync(
             docxPath
           );
-        } catch {}
-      } catch (
-        docxError: any
-      ) {
+        }
+
         console.log(
-          "⚠️ DOCX upload failed but continuing..."
+          "🗑️ TEMP FILES DELETED"
+        );
+
+      } catch (
+        deleteError
+      ) {
+
+        console.log(
+          "⚠️ TEMP DELETE ERROR"
         );
 
         console.log(
-          docxError.message
+          deleteError
         );
       }
 
       console.log(
         "✅ Salary Slip Upload Completed"
       );
+
     } catch (err: any) {
+
       console.log(
         "❌ UPLOAD ERROR"
       );
