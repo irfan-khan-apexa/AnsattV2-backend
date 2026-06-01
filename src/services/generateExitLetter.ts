@@ -33,7 +33,11 @@ export const createLetter =
     employee: any,
 
     company_name: string
-  ) => {
+  ): Promise<{
+    pdf?: string;
+    docx?: string;
+  }> => {
+
     console.log(
       "🚀 createLetter START"
     );
@@ -57,30 +61,40 @@ export const createLetter =
     );
 
     // ================= TMP DIR =================
-    const tmpDir = path.join(
-      __dirname,
-      "..",
-      "..",
-      "tmp"
-    );
+    const tmpDir =
+      path.join(
+        __dirname,
+        "..",
+        "..",
+        "tmp"
+      );
 
     if (
-      !fs.existsSync(tmpDir)
+      !fs.existsSync(
+        tmpDir
+      )
     ) {
-      fs.mkdirSync(tmpDir, {
-        recursive: true,
-      });
+
+      fs.mkdirSync(
+        tmpDir,
+        {
+          recursive:
+            true,
+        }
+      );
     }
 
-    const pdfPath = path.join(
-      tmpDir,
-      `${filename}.pdf`
-    );
+    const pdfPath =
+      path.join(
+        tmpDir,
+        `${filename}.pdf`
+      );
 
-    const docxPath = path.join(
-      tmpDir,
-      `${filename}.docx`
-    );
+    const docxPath =
+      path.join(
+        tmpDir,
+        `${filename}.docx`
+      );
 
     console.log(
       "📄 PDF PATH:",
@@ -95,39 +109,51 @@ export const createLetter =
     // ================= TEMPLATE =================
     let content = "";
 
-    if (type === "exit") {
+    if (
+      type ===
+      "exit"
+    ) {
+
       console.log(
         "📄 Using Exit Template"
       );
 
       content =
-        exitLetterTemplate({
-          name:
-            employee.name,
+        exitLetterTemplate(
+          {
+            name:
+              employee.name,
 
-          designation:
-            employee.designation,
+            designation:
+              employee.designation,
 
-          department:
-            employee.department,
+            department:
+              employee.department,
 
-          joining_date:
-            new Date(
-              employee.joining_date
-            )
-              .toISOString()
-              .split("T")[0],
+            joining_date:
+              new Date(
+                employee.joining_date
+              )
+                .toISOString()
+                .split(
+                  "T"
+                )[0],
 
-          exit_date:
-            new Date(
-              employee.exit_date
-            )
-              .toISOString()
-              .split("T")[0],
+            exit_date:
+              new Date(
+                employee.exit_date
+              )
+                .toISOString()
+                .split(
+                  "T"
+                )[0],
 
-          company_name,
-        });
+            company_name,
+          }
+        );
+
     } else {
+
       console.log(
         "📄 Using Experience Template"
       );
@@ -149,7 +175,9 @@ export const createLetter =
                 employee.joining_date
               )
                 .toISOString()
-                .split("T")[0],
+                .split(
+                  "T"
+                )[0],
 
             exit_date:
               employee.exit_date
@@ -157,7 +185,9 @@ export const createLetter =
                     employee.exit_date
                   )
                     .toISOString()
-                    .split("T")[0]
+                    .split(
+                      "T"
+                    )[0]
                 : "",
 
             company_name,
@@ -175,13 +205,15 @@ export const createLetter =
 
     // ================= PDF =================
     try {
+
       console.log(
         "📄 Generating PDF..."
       );
 
       const pdfDoc =
         new PDFDocument({
-          autoFirstPage: true,
+          autoFirstPage:
+            true,
         });
 
       const pdfStream =
@@ -189,12 +221,15 @@ export const createLetter =
           pdfPath
         );
 
-      pdfDoc.pipe(pdfStream);
+      pdfDoc.pipe(
+        pdfStream
+      );
 
       pdfDoc
         .fontSize(12)
         .text(content, {
-          align: "left",
+          align:
+            "left",
         });
 
       pdfDoc.end();
@@ -204,9 +239,11 @@ export const createLetter =
           resolve,
           reject
         ) => {
+
           pdfStream.on(
             "finish",
             () => {
+
               console.log(
                 "✅ PDF Generated"
               );
@@ -218,12 +255,19 @@ export const createLetter =
           pdfStream.on(
             "error",
             (err) => {
-              reject(err);
+
+              reject(
+                err
+              );
             }
           );
         }
       );
-    } catch (err: any) {
+
+    } catch (
+      err: any
+    ) {
+
       console.log(
         "❌ PDF ERROR"
       );
@@ -236,6 +280,7 @@ export const createLetter =
 
     // ================= DOCX =================
     try {
+
       console.log(
         "📄 Generating DOCX..."
       );
@@ -246,15 +291,25 @@ export const createLetter =
             {
               children:
                 content
-                  .split("\n")
+                  .split(
+                    "\n"
+                  )
                   .map(
-                    (line) =>
+                    (
+                      line
+                    ) =>
                       new Paragraph(
                         {
                           children:
                             [
                               new TextRun(
-                                line.trim()
+                                {
+                                  text:
+                                    line.trim(),
+
+                                  size:
+                                    24,
+                                }
                               ),
                             ],
                         }
@@ -277,7 +332,11 @@ export const createLetter =
       console.log(
         "✅ DOCX Generated"
       );
-    } catch (err: any) {
+
+    } catch (
+      err: any
+    ) {
+
       console.log(
         "❌ DOCX ERROR"
       );
@@ -288,13 +347,15 @@ export const createLetter =
       );
     }
 
-    // ================= UPLOAD =================
+    // ================= URLS =================
     const urls: {
       pdf?: string;
       docx?: string;
     } = {};
 
+    // ================= UPLOAD =================
     try {
+
       // ================= PDF =================
       console.log(
         "☁️ Uploading PDF..."
@@ -311,7 +372,8 @@ export const createLetter =
             buffer:
               pdfBuffer,
 
-            originalname: `${filename}.pdf`,
+            originalname:
+              `${filename}.pdf`,
 
             mimetype:
               "application/pdf",
@@ -323,84 +385,108 @@ export const createLetter =
         uploadedPdf
       );
 
-      urls.pdf = encrypt(
-        uploadedPdf.fileId
-      );
+      // ✅ RAW FILE ID
+      urls.pdf =
+        uploadedPdf.fileId;
 
       console.log(
-        "🔐 PDF encrypted"
+        "✅ RAW PDF FILE ID SAVED"
       );
 
-      try {
-        fs.unlinkSync(
-          pdfPath
-        );
-      } catch {}
-
       // ================= DOCX =================
-      try {
-        console.log(
-          "☁️ Uploading DOCX..."
+      console.log(
+        "☁️ Uploading DOCX..."
+      );
+
+      const docxBuffer =
+        fs.readFileSync(
+          docxPath
         );
 
-        const docxBuffer =
-          fs.readFileSync(
-            docxPath
-          );
+      const uploadedDocx =
+        await uploadToCentralStorage(
+          {
+            buffer:
+              docxBuffer,
 
-        const uploadedDocx =
-          await uploadToCentralStorage(
-            {
-              buffer:
-                docxBuffer,
-
-              originalname: `${filename}.docx`,
+            originalname:
+              `${filename}.docx`,
 
             mimetype:
-                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            } as any
-          );
-
-        console.log(
-          "✅ DOCX Uploaded:",
-          uploadedDocx
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          } as any
         );
 
-        urls.docx =
-          encrypt(
-            uploadedDocx.fileId
+      console.log(
+        "✅ DOCX Uploaded:",
+        uploadedDocx
+      );
+
+      // ✅ RAW FILE ID
+      urls.docx =
+        uploadedDocx.fileId;
+
+      console.log(
+        "✅ RAW DOCX FILE ID SAVED"
+      );
+
+      // ================= CLEANUP =================
+      try {
+
+        if (
+          fs.existsSync(
+            pdfPath
+          )
+        ) {
+
+          fs.unlinkSync(
+            pdfPath
           );
+        }
 
-        console.log(
-          "🔐 DOCX encrypted"
-        );
+        if (
+          fs.existsSync(
+            docxPath
+          )
+        ) {
 
-        try {
           fs.unlinkSync(
             docxPath
           );
-        } catch {}
-      } catch (
-        docxError: any
-      ) {
+        }
+
         console.log(
-          "⚠️ DOCX upload failed but continuing..."
+          "🗑️ TEMP FILES DELETED"
+        );
+
+      } catch (
+        deleteError
+      ) {
+
+        console.log(
+          "⚠️ TEMP DELETE ERROR"
         );
 
         console.log(
-          docxError.message
+          deleteError
         );
       }
 
       console.log(
         "✅ Upload Completed"
       );
-    } catch (err: any) {
+
+    } catch (
+      err: any
+    ) {
+
       console.log(
         "❌ UPLOAD ERROR"
       );
 
-      console.log(err);
+      console.log(
+        err
+      );
 
       throw new Error(
         "Letter upload failed: " +

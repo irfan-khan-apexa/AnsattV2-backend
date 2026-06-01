@@ -3,6 +3,13 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+} from "docx";
+
 import { encrypt } from "../utils/encryption";
 
 import offerTemplates from "../../templates";
@@ -25,21 +32,24 @@ type TemplateContext = {
 function selectTemplateByName(
   name?: string
 ) {
-  if (!name) return undefined;
+  if (!name)
+    return undefined;
 
   const key = name
     .trim()
     .toLowerCase();
 
-  const exact = Object.entries(
-    offerTemplates
-  ).find(
-    ([tplName]) =>
-      tplName.toLowerCase() ===
-      key
-  );
+  const exact =
+    Object.entries(
+      offerTemplates
+    ).find(
+      ([tplName]) =>
+        tplName.toLowerCase() ===
+        key
+    );
 
-  if (exact) return exact[1];
+  if (exact)
+    return exact[1];
 
   const aliasMap: Record<
     string,
@@ -66,15 +76,17 @@ function selectTemplateByName(
     ];
   }
 
-  const substr = Object.entries(
-    offerTemplates
-  ).find(([tplName]) =>
-    tplName
-      .toLowerCase()
-      .includes(key)
-  );
+  const substr =
+    Object.entries(
+      offerTemplates
+    ).find(([tplName]) =>
+      tplName
+        .toLowerCase()
+        .includes(key)
+    );
 
-  if (substr) return substr[1];
+  if (substr)
+    return substr[1];
 
   return undefined;
 }
@@ -87,7 +99,8 @@ function resolveTemplateToFn(
       ctx: TemplateContext
     ) => string)
   | null {
-  if (!maybeTpl) return null;
+  if (!maybeTpl)
+    return null;
 
   if (
     typeof maybeTpl ===
@@ -133,6 +146,7 @@ export const createOfferLetter =
     templateName: string
   ): Promise<{
     pdf?: string;
+    docx?: string;
   }> => {
 
     console.log(
@@ -166,12 +180,13 @@ export const createOfferLetter =
       );
 
       // ================= TMP DIR =================
-      const tmpDir = path.join(
-        __dirname,
-        "..",
-        "..",
-        "tmp"
-      );
+      const tmpDir =
+        path.join(
+          __dirname,
+          "..",
+          "..",
+          "tmp"
+        );
 
       console.log(
         "📁 TMP DIR:",
@@ -179,25 +194,44 @@ export const createOfferLetter =
       );
 
       if (
-        !fs.existsSync(tmpDir)
+        !fs.existsSync(
+          tmpDir
+        )
       ) {
+
         console.log(
           "📁 Creating tmp directory..."
         );
 
-        fs.mkdirSync(tmpDir, {
-          recursive: true,
-        });
+        fs.mkdirSync(
+          tmpDir,
+          {
+            recursive:
+              true,
+          }
+        );
       }
 
-      const pdfPath = path.join(
-        tmpDir,
-        `${filename}.pdf`
-      );
+      const pdfPath =
+        path.join(
+          tmpDir,
+          `${filename}.pdf`
+        );
+
+      const docxPath =
+        path.join(
+          tmpDir,
+          `${filename}.docx`
+        );
 
       console.log(
         "📄 PDF PATH:",
         pdfPath
+      );
+
+      console.log(
+        "📄 DOCX PATH:",
+        docxPath
       );
 
       // ================= VALIDATION =================
@@ -322,7 +356,8 @@ export const createOfferLetter =
 
         const pdfDoc =
           new PDFDocument({
-            autoFirstPage: true,
+            autoFirstPage:
+              true,
           });
 
         const pdfStream =
@@ -330,12 +365,15 @@ export const createOfferLetter =
             pdfPath
           );
 
-        pdfDoc.pipe(pdfStream);
+        pdfDoc.pipe(
+          pdfStream
+        );
 
         pdfDoc
           .fontSize(12)
           .text(content, {
-            align: "left",
+            align:
+              "left",
           });
 
         pdfDoc.end();
@@ -366,7 +404,9 @@ export const createOfferLetter =
                   "❌ PDF STREAM ERROR"
                 );
 
-                reject(err);
+                reject(
+                  err
+                );
               }
             );
           }
@@ -384,11 +424,73 @@ export const createOfferLetter =
         );
       }
 
-      // ================= UPLOAD =================
+      // ================= DOCX =================
+      try {
+
+        console.log(
+          "📄 GENERATING DOCX..."
+        );
+
+        const doc =
+          new Document({
+            sections: [
+              {
+                properties:
+                  {},
+
+                children: [
+                  new Paragraph({
+                    children:
+                      [
+                        new TextRun(
+                          {
+                            text:
+                              content,
+
+                            size:
+                              24,
+                          }
+                        ),
+                      ],
+                  }),
+                ],
+              },
+            ],
+          });
+
+        const docxBuffer =
+          await Packer.toBuffer(
+            doc
+          );
+
+        fs.writeFileSync(
+          docxPath,
+          docxBuffer
+        );
+
+        console.log(
+          "✅ DOCX GENERATED"
+        );
+
+      } catch (err: any) {
+
+        console.log(
+          "❌ DOCX ERROR"
+        );
+
+        throw new Error(
+          "DOCX generation failed: " +
+            err.message
+        );
+      }
+
+      // ================= URLS =================
       const urls: {
         pdf?: string;
+        docx?: string;
       } = {};
 
+      // ================= UPLOAD PDF =================
       try {
 
         console.log(
@@ -401,11 +503,11 @@ export const createOfferLetter =
           );
 
         console.log(
-          "📦 FILE BUFFER SIZE:",
+          "📦 PDF BUFFER SIZE:",
           fileBuffer.length
         );
 
-        const uploaded =
+        const uploadedPdf =
           await uploadToCentralStorage(
             {
               buffer:
@@ -421,19 +523,103 @@ export const createOfferLetter =
 
         console.log(
           "✅ PDF UPLOADED:",
-          uploaded
+          uploadedPdf
         );
 
-        urls.pdf = encrypt(
-          uploaded.fileId
+        urls.pdf =
+          encrypt(
+            uploadedPdf.fileId
+          );
+
+        console.log(
+          "🔐 ENCRYPTED PDF FILE ID SAVED"
+        );
+
+      } catch (err: any) {
+
+        console.log(
+          "❌ PDF UPLOAD ERROR"
         );
 
         console.log(
-          "🔐 ENCRYPTED FILE ID SAVED"
+          err
         );
 
-        // ✅ CLEANUP
-        try {
+        throw new Error(
+          "PDF upload failed: " +
+            err.message
+        );
+      }
+
+      // ================= UPLOAD DOCX =================
+      try {
+
+        console.log(
+          "☁️ UPLOADING DOCX..."
+        );
+
+        const docxBuffer =
+          fs.readFileSync(
+            docxPath
+          );
+
+        console.log(
+          "📦 DOCX BUFFER SIZE:",
+          docxBuffer.length
+        );
+
+        const uploadedDocx =
+          await uploadToCentralStorage(
+            {
+              buffer:
+                docxBuffer,
+
+              originalname:
+                `${filename}.docx`,
+
+              mimetype:
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            } as any
+          );
+
+        console.log(
+          "✅ DOCX UPLOADED:",
+          uploadedDocx
+        );
+
+        urls.docx =
+          encrypt(
+            uploadedDocx.fileId
+          );
+
+        console.log(
+          "🔐 ENCRYPTED DOCX FILE ID SAVED"
+        );
+
+      } catch (err: any) {
+
+        console.log(
+          "❌ DOCX UPLOAD ERROR"
+        );
+
+        console.log(
+          err
+        );
+
+        throw new Error(
+          "DOCX upload failed: " +
+            err.message
+        );
+      }
+
+      // ================= CLEANUP =================
+      try {
+
+        if (
+          fs.existsSync(
+            pdfPath
+          )
+        ) {
 
           fs.unlinkSync(
             pdfPath
@@ -442,37 +628,39 @@ export const createOfferLetter =
           console.log(
             "🗑️ TEMP PDF DELETED"
           );
+        }
 
-        } catch (
-          deleteError
+        if (
+          fs.existsSync(
+            docxPath
+          )
         ) {
 
-          console.log(
-            "⚠️ TEMP DELETE ERROR"
+          fs.unlinkSync(
+            docxPath
           );
 
           console.log(
-            deleteError
+            "🗑️ TEMP DOCX DELETED"
           );
         }
 
-        console.log(
-          "✅ OFFER LETTER UPLOAD DONE"
-        );
-
-      } catch (err: any) {
+      } catch (
+        deleteError
+      ) {
 
         console.log(
-          "❌ UPLOAD ERROR"
+          "⚠️ TEMP DELETE ERROR"
         );
 
-        console.log(err);
-
-        throw new Error(
-          "File upload failed: " +
-            err.message
+        console.log(
+          deleteError
         );
       }
+
+      console.log(
+        "✅ OFFER LETTER UPLOAD DONE"
+      );
 
       console.log(
         "🎉 createOfferLetter FINISHED"
@@ -480,13 +668,17 @@ export const createOfferLetter =
 
       return urls;
 
-    } catch (mainError: any) {
+    } catch (
+      mainError: any
+    ) {
 
       console.log(
         "❌ MAIN createOfferLetter ERROR"
       );
 
-      console.log(mainError);
+      console.log(
+        mainError
+      );
 
       throw mainError;
     }
