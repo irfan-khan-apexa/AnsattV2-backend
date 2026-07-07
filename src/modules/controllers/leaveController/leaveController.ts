@@ -902,21 +902,68 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
 
     const employee = await Onboarding.findByPk(employeeId);
 
+    if (!employee) {
+      return res.status(404).json({
+        message: "Employee not found",
+      });
+    }
+
     const sd = new Date(startDate);
     const ed = new Date(endDate);
 
+    if (isNaN(sd.getTime()) || isNaN(ed.getTime())) {
+      return res.status(400).json({
+        message: "Invalid dates",
+      });
+    }
+
     const calculatedDays =
       Math.ceil((ed.getTime() - sd.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Leave Balance
+    const balanceData = await calculateLeaveBalance(
+      employeeId,
+      companyCode
+    );
+
+    const leaveCategory = balanceData.leaves.find(
+      (item: any) => item.category === category
+    );
+
+    if (!leaveCategory) {
+      return res.status(400).json({
+        message: "Invalid leave category",
+      });
+    }
+
+    const availableBalance = leaveCategory.balance;
+
+    const paidLeaveDays = Math.min(calculatedDays, availableBalance);
+
+    const lwpDays = Math.max(calculatedDays - availableBalance, 0);
 
     const leave = await LeaveTransaction.create({
       companyCode,
       employeeId,
       employeeName: (employee as any).name,
-      category,
+
+      category: category.trim(),
+
       startDate,
       endDate,
+
       noOfDays: calculatedDays,
+
+      paidDays: paidLeaveDays,
+
+      paidLeaveDays,
+
+      lwpDays,
+
+      isLwp: lwpDays > 0,
+
       reason,
+
       status: "Pending",
     });
 
@@ -927,9 +974,16 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
       new_value: leave.toJSON(),
     });
 
-    return res.json({ leave });
+    return res.json({
+      message: "Leave applied successfully",
+      leave,
+    });
   } catch (err) {
-    return res.status(500).json({ message: "Error" });
+    console.log(err);
+
+    return res.status(500).json({
+      message: "Error applying leave",
+    });
   }
 };
 
@@ -965,43 +1019,63 @@ const handleLeaveAction = async (req: Request, res: Response): Promise<any> => {
 };
 
 // ================= APPROVE =================
-const approveLeave = async (req: Request, res: Response): Promise<any> => {
+const approveLeave = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   const leave = await LeaveTransaction.findByPk(req.params.id);
 
-  const oldData = leave?.toJSON();
+  if (!leave) {
+    return res.status(404).json({
+      message: "Leave not found",
+    });
+  }
 
-  leave!.status = "Approved";
-  await leave?.save();
+  const oldData = leave.toJSON();
+
+  leave.status = "Approved";
+
+  await leave.save();
 
   await audit(req, {
     module: "leave",
     action: "approve",
-    record_id: leave?.id,
+    record_id: leave.id,
     old_value: oldData,
-    new_value: leave?.toJSON(),
+    new_value: leave.toJSON(),
   });
 
-  res.json(leave);
+  return res.json(leave);
 };
 
 // ================= REJECT =================
-const rejectLeave = async (req: Request, res: Response): Promise<any> => {
+const rejectLeave = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   const leave = await LeaveTransaction.findByPk(req.params.id);
 
-  const oldData = leave?.toJSON();
+  if (!leave) {
+    return res.status(404).json({
+      message: "Leave not found",
+    });
+  }
 
-  leave!.status = "Rejected";
-  await leave?.save();
+  const oldData = leave.toJSON();
+
+  leave.status = "Rejected";
+
+  await leave.save();
 
   await audit(req, {
     module: "leave",
     action: "reject",
-    record_id: leave?.id,
+    record_id: leave.id,
     old_value: oldData,
-    new_value: leave?.toJSON(),
+    new_value: leave.toJSON(),
   });
 
-  res.json(leave);
+  return res.json(leave);
 };
 
 // ================= CATEGORY =================
@@ -1130,17 +1204,113 @@ const getAllEmployeesLeaveBalance = async (req: any, res: Response): Promise<any
 };
 
 // ================= FINANCIAL =================
-const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
-  const fy = await FinancialYear.create(req.body);
+const setFinancialYear = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const companyCode =
+      (req as any).user?.company_code ||
+      (req as any).user?.companyCode;
 
-  await audit(req, {
-    module: "leave",
-    action: "create",
-    record_id: fy.id,
-    new_value: fy.toJSON(),
-  });
+    const { startDate, endDate } = req.body;
 
-  res.json(fy);
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Start Date and End Date are required.",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start >= end) {
+      return res.status(400).json({
+        success: false,
+        message: "End Date must be greater than Start Date.",
+      });
+    }
+
+    // Check overlapping Financial Year
+    const existingFY = await FinancialYear.findOne({
+      where: {
+        companyCode,
+        [Op.or]: [
+          {
+            startDate: {
+              [Op.between]: [startDate, endDate],
+            },
+          },
+          {
+            endDate: {
+              [Op.between]: [startDate, endDate],
+            },
+          },
+          {
+            [Op.and]: [
+              {
+                startDate: {
+                  [Op.lte]: startDate,
+                },
+              },
+              {
+                endDate: {
+                  [Op.gte]: endDate,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    if (existingFY) {
+      return res.status(400).json({
+        success: false,
+        message: "Financial Year already exists for this duration.",
+      });
+    }
+
+    // Make previous FY inactive
+    await FinancialYear.update(
+      {
+        isActive: false,
+      },
+      {
+        where: {
+          companyCode,
+          isActive: true,
+        },
+      }
+    );
+
+    // Create new active FY
+    const fy = await FinancialYear.create({
+      companyCode,
+      startDate,
+      endDate,
+      isActive: true,
+    });
+
+    await audit(req, {
+      module: "leave",
+      action: "create",
+      record_id: fy.id,
+      new_value: fy.toJSON(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Financial Year created successfully.",
+      data: fy,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create Financial Year.",
+    });
+  }
 };
 
 const getFinancialYear = async (req: Request, res: Response): Promise<any> => {
