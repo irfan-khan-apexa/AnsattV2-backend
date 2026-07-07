@@ -3,7 +3,8 @@ import {
   signupSuperMaster,
   getAllCompanies,
   getEmployeesByCompanyCode,
-  upsertCompanySettings,getCompanySettings,deleteCompanySettings
+  upsertCompanySettings,getCompanySettings,deleteCompanySettings,
+  resetCompanyMasterPassword
 } from "./superMasterController/superMaster.Controller";
 
 import {
@@ -139,7 +140,7 @@ export {
   createCompany,
   loginCompany,
   getCompanyDashboard,upsertCompanySettings,getCompanySettings,deleteCompanySettings,
-  getMyCompanySettings,
+  getMyCompanySettings,resetCompanyMasterPassword,
   createEmployee,
   getEmployees,
   updateEmployee,

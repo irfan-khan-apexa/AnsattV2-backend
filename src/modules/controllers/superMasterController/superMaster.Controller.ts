@@ -505,8 +505,17 @@ const signupSuperMaster = async (
 ): Promise<any> => {
   const { name, email, password } = req.body;
 
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!email || !emailRegex.test(email.trim())) {
+    return res.status(400).json({
+      message: "Please enter a valid email address.",
+    });
+  }
+
   try {
-    const existing = await SuperMaster.findOne({ where: { email } });
+    const existing = await SuperMaster.findOne({ where: { email: email.trim() } });
 
     if (existing) {
       return res.status(400).json({ message: "Email already registered" });
@@ -516,11 +525,10 @@ const signupSuperMaster = async (
 
     const newUser = await SuperMaster.create({
       name,
-      email,
+      email: email.trim(),
       password: hashedPassword,
     });
 
-    // 🔥 AUDIT
     await audit(req, {
       module: "super_master",
       action: "create",
@@ -532,7 +540,11 @@ const signupSuperMaster = async (
 
     return res.status(201).json({
       message: "Super master registered successfully",
-      user: { id: plainUser.id, name: plainUser.name, email: plainUser.email },
+      user: {
+        id: plainUser.id,
+        name: plainUser.name,
+        email: plainUser.email,
+      },
     });
   } catch (err) {
     console.error("Signup Error:", err);
@@ -752,6 +764,54 @@ const deleteCompanySettings = async (
     });
   }
 };
+const resetCompanyMasterPassword = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const { company_code, new_password } = req.body;
+
+  try {
+    if (!company_code || !new_password) {
+      return res.status(400).json({
+        message: "company_code and new_password are required",
+      });
+    }
+
+    const company = await Company.findOne({
+      where: { company_code },
+    });
+
+    if (!company) {
+      return res.status(404).json({
+        message: "Company not found",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    await company.update({
+      password: hashedPassword,
+    });
+
+    await audit(req, {
+      module: "company",
+      action: "reset_password",
+      record_id: company.id,
+      new_value: {
+        company_code: company.company_code,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Company master password reset successfully.",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
 
 export {
   signupSuperMaster,
@@ -761,4 +821,5 @@ export {
   upsertCompanySettings,
   getCompanySettings,
   deleteCompanySettings,
+  resetCompanyMasterPassword
 };
