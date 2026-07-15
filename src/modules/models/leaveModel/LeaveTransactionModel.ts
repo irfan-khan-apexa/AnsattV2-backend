@@ -13,7 +13,6 @@ class LeaveTransaction extends Model {
 
   // LWP
   public paidDays!: number;
-  public paidLeaveDays!: number;
   public lwpDays!: number;
   public isLwp!: boolean;
 
@@ -75,12 +74,7 @@ LeaveTransaction.init(
       defaultValue: 0,
     },
 
-    // Paid Leave Days
-    paidLeaveDays: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
-      defaultValue: 0,
-    },
+   
 
     // LWP Days
     lwpDays: {
