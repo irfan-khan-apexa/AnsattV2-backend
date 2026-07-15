@@ -16,6 +16,7 @@ import {
   getAllCompanies,
   getEmployeesByCompanyCode,
   upsertCompanySettings,getCompanySettings,deleteCompanySettings,
+  resetCompanyMasterPassword
 } from "../../controllers/index";
 import { authenticateSuperMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/fileUpload";
@@ -54,6 +55,10 @@ superMasterRouter.delete(
   authenticateSuperMaster,
   deleteCompanySettings
 );
-
+superMasterRouter.put(
+  "/company/reset-password",
+  authenticateSuperMaster,
+  resetCompanyMasterPassword
+);
 
 export { superMasterRouter };

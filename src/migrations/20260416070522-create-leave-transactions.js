@@ -11,7 +11,7 @@ module.exports = {
 
       companyCode: {
         type: Sequelize.STRING,
-        allowNull: true, // as per model
+        allowNull: true,
       },
 
       employeeId: {
@@ -42,6 +42,28 @@ module.exports = {
       noOfDays: {
         type: Sequelize.INTEGER.UNSIGNED,
         allowNull: false,
+      },
+
+      // ==========================
+      // LWP Fields
+      // ==========================
+
+      paidDays: {
+        type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0,
+      },
+
+      lwpDays: {
+        type: Sequelize.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0,
+      },
+
+      isLwp: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
 
       reason: {
@@ -88,10 +110,11 @@ module.exports = {
       },
     });
 
-    // 🔥 indexes (important for filtering)
+    // Indexes
     await queryInterface.addIndex("leave_transactions", ["companyCode"]);
     await queryInterface.addIndex("leave_transactions", ["employeeId"]);
     await queryInterface.addIndex("leave_transactions", ["status"]);
+    await queryInterface.addIndex("leave_transactions", ["isLwp"]);
   },
 
   async down(queryInterface) {
