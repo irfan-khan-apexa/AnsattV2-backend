@@ -54,8 +54,8 @@ export const calculateLeaveBalance = async (
     );
 
     // Pending + Approved Paid Leave
-    const paidLeave =
-      (await LeaveTransaction.sum("paidLeaveDays", {
+ const paidLeave =
+  (await LeaveTransaction.sum("paidDays", {
         where: {
           companyCode,
           employeeId,

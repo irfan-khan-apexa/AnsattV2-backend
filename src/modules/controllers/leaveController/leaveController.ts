@@ -892,11 +892,16 @@ import * as crypto from "crypto";
 import { audit } from "../../../helpers/audit.helper";
 
 // ================= APPLY =================
-const applyLeave = async (req: Request, res: Response): Promise<any> => {
+const applyLeave = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const employeeId = (req as any).user?.id;
+
     const companyCode =
-      (req as any).user?.company_code || (req as any).user?.companyCode;
+      (req as any).user?.company_code ||
+      (req as any).user?.companyCode;
 
     const { category, startDate, endDate, reason } = req.body;
 
@@ -917,8 +922,17 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
       });
     }
 
+    if (sd > ed) {
+      return res.status(400).json({
+        message: "Start date cannot be greater than end date",
+      });
+    }
+
     const calculatedDays =
-      Math.ceil((ed.getTime() - sd.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      Math.ceil(
+        (ed.getTime() - sd.getTime()) /
+          (1000 * 60 * 60 * 24)
+      ) + 1;
 
     // Leave Balance
     const balanceData = await calculateLeaveBalance(
@@ -927,7 +941,9 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
     );
 
     const leaveCategory = balanceData.leaves.find(
-      (item: any) => item.category === category
+      (item: any) =>
+        item.category.trim().toLowerCase() ===
+        category.trim().toLowerCase()
     );
 
     if (!leaveCategory) {
@@ -938,9 +954,15 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
 
     const availableBalance = leaveCategory.balance;
 
-    const paidLeaveDays = Math.min(calculatedDays, availableBalance);
+    const paidDays = Math.min(
+      calculatedDays,
+      availableBalance
+    );
 
-    const lwpDays = Math.max(calculatedDays - availableBalance, 0);
+    const lwpDays = Math.max(
+      calculatedDays - availableBalance,
+      0
+    );
 
     const leave = await LeaveTransaction.create({
       companyCode,
@@ -954,9 +976,7 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
 
       noOfDays: calculatedDays,
 
-      paidDays: paidLeaveDays,
-
-      paidLeaveDays,
+      paidDays,
 
       lwpDays,
 
@@ -974,7 +994,7 @@ const applyLeave = async (req: Request, res: Response): Promise<any> => {
       new_value: leave.toJSON(),
     });
 
-    return res.json({
+    return res.status(201).json({
       message: "Leave applied successfully",
       leave,
     });
