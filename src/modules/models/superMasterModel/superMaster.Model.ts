@@ -13,10 +13,16 @@ interface SuperMasterAttributes {
 }
 
 interface SuperMasterCreationAttributes
-  extends Optional<SuperMasterAttributes, "id" | "created_at" | "updated_at"> {}
+  extends Optional<
+    SuperMasterAttributes,
+    "id" | "created_at" | "updated_at"
+  > {}
 
 class SuperMaster
-  extends Model<SuperMasterAttributes, SuperMasterCreationAttributes>
+  extends Model<
+    SuperMasterAttributes,
+    SuperMasterCreationAttributes
+  >
   implements SuperMasterAttributes
 {
   public id!: number;
@@ -34,10 +40,12 @@ SuperMaster.init(
       autoIncrement: true,
       primaryKey: true,
     },
+
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
     },
+
     email: {
       type: DataTypes.STRING(100),
       allowNull: false,
@@ -46,14 +54,17 @@ SuperMaster.init(
         isEmail: true,
       },
     },
+
     password: {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+
     updated_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -64,16 +75,13 @@ SuperMaster.init(
     tableName: "super_masters",
     timestamps: false,
 
-    defaultScope: {
-      attributes: { exclude: ["password"] },
-    },
-
     hooks: {
       beforeCreate: async (user: any) => {
         if (user.password) {
           user.password = await bcrypt.hash(user.password, 10);
         }
       },
+
       beforeUpdate: async (user: any) => {
         if (user.changed("password")) {
           user.password = await bcrypt.hash(user.password, 10);

@@ -886,7 +886,7 @@ import {
   LeaveActionToken,
 } from "../../models";
 import { Op } from "sequelize";
-import { calculateLeaveBalance } from "../../../utils/leaveUtils";
+import { calculateAllEmployeesLeaveBalance, calculateLeaveBalance } from "../../../utils/leaveUtils";
 import { sendMail } from "../../../utils/mailer";
 import * as crypto from "crypto";
 import { audit } from "../../../helpers/audit.helper";
@@ -1218,9 +1218,29 @@ const getLeaveBalance = async (req: any, res: any): Promise<any> => {
   res.json(balance);
 };
 
-const getAllEmployeesLeaveBalance = async (req: any, res: Response): Promise<any> => {
-  const employees = await Onboarding.findAll();
-  res.json(employees);
+const getAllEmployeesLeaveBalance = async (
+  req: any,
+  res: Response
+): Promise<any> => {
+  try {
+    const companyCode =
+      req.user.company_code || req.user.companyCode;
+
+    const data = await calculateAllEmployeesLeaveBalance(
+      companyCode
+    );
+
+    return res.status(200).json({
+      message: "Leave balances fetched successfully",
+      data,
+    });
+  } catch (err: any) {
+    console.error("Error fetching leave balances:", err);
+
+    return res.status(500).json({
+      message: err.message || "Error fetching leave balances",
+    });
+  }
 };
 
 // ================= FINANCIAL =================
