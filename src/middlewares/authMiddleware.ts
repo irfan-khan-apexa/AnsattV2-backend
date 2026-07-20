@@ -149,7 +149,7 @@ export const authenticateUser = (
       token,
       process.env.JWT_SECRET || "your-secret-key"
     );
-console.log("VERIFY SECRET =>", process.env.JWT_SECRET);
+
     // 🔥 MINIMUM REQUIRED (for both company & employee)
     if (!decoded.id || !decoded.company_code) {
       return Promise.resolve(
