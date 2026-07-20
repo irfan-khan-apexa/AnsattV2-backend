@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Employee, Onboarding } from "../../models/index";
+import { Employee, Onboarding, Role } from "../../models/index";
 import {
   AuthenticatedRequest,
   CompanyRequest,
@@ -93,33 +93,66 @@ const deleteEmployee = async (
 
 
 
-const loginEmployee = async (req: Request, res: Response): Promise<any> => {
+const loginEmployee = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   const { email, password } = req.body;
 
   try {
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+      return res.status(400).json({
+        message: "Email and password required",
+      });
     }
 
-    const user: any = await Onboarding.findOne({ where: { email } });
+    const user: any = await Onboarding.findOne({
+      where: { email },
+    });
+
     if (!user) {
-      return res.status(404).json({ message: "Employee not found" });
+      return res.status(404).json({
+        message: "Employee not found",
+      });
     }
 
-  
     if (user.auto_password !== password) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({
+        message: "Invalid password",
+      });
     }
 
-    
+    const role: any = await Role.findOne({
+      where: {
+        id: user.role_id,
+        company_code: user.company_code,
+      },
+      raw: true,
+    });
+
+    if (!role) {
+      return res.status(404).json({
+        message: "Role not found",
+      });
+    }
+
+    const permissions =
+      typeof role.permissions === "string"
+        ? JSON.parse(role.permissions)
+        : role.permissions;
+
     const token = jwt.sign(
       {
         id: user.id,
-        role: user.role || "employee",
+        role: "employee",
+        role_id: role.id,
         company_code: user.company_code,
+        permissions,
       },
       process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "1d" }
+      {
+        expiresIn: "1d",
+      }
     );
 
     return res.status(200).json({
@@ -129,11 +162,16 @@ const loginEmployee = async (req: Request, res: Response): Promise<any> => {
         name: user.name,
         email: user.email,
         company_code: user.company_code,
+        role_id: role.id,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("loginEmployee error:", error);
-    return res.status(500).json({ message: "Server error" });
+
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 

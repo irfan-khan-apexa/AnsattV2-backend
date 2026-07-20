@@ -553,32 +553,77 @@ const signupSuperMaster = async (
 };
 
 
-const loginSuperMaster = async (req: Request, res: Response): Promise<any> => {
+const loginSuperMaster = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   const { email, password } = req.body;
 
   try {
-    const user = await SuperMaster.findOne({ where: { email } });
-
-    if (!user) {
-      return res.status(404).json({ message: "Super master not found" });
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const user = await SuperMaster.findOne({
+      where: {
+        email: email.trim(),
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Super master not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({
+        message: "Invalid password",
+      });
     }
 
     const token = jwt.sign(
-      { id: user.id, role: "super_master" },
+      {
+        id: user.id,
+        role: "super_master",
+      },
       process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "1d" }
+      {
+        expiresIn: "1d",
+      }
     );
 
-    return res.status(200).json({ token });
+    await audit(req, {
+      module: "super_master",
+      action: "login",
+      record_id: user.id,
+      new_value: {
+        email: user.email,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Super Master Login Error:", err);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
