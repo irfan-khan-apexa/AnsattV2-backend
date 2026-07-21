@@ -496,7 +496,8 @@ import { Company } from "../../models/index";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { PERMISSION_REGISTRY } from "../../../middlewares/checkPermission";
 import { audit } from "../../../helpers/audit.helper"; // 🔥 ADDED
-
+import { encrypt ,decrypt} from "../../../utils/encryption";
+import { getSignedUrl, uploadToCentralStorage } from "../../../services/uploadfileService";
 
 const signupSuperMaster = async (
   req: Request,
@@ -665,6 +666,73 @@ const getEmployeesByCompanyCode = async (
 
 
 // ================= SETTINGS =================
+// const upsertCompanySettings = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const {
+//       company_code,
+//       company_name,
+//       brand_color,
+//       language,
+//       permissions,
+//     } = req.body;
+
+//     const file = (req as any).file;
+
+//     if (!company_code || !company_name) {
+//       return res.status(400).json({
+//         message: "company_code and company_name are required",
+//       });
+//     }
+
+//     const company = await Company.findOne({ where: { company_code } });
+//     if (!company) {
+//       return res.status(404).json({ message: "Company not found" });
+//     }
+
+//     const existingSettings = await CompanySettings.findOne({
+//       where: { company_code },
+//     });
+
+//     const company_logo = file?.location
+//       ? file.location
+//       : existingSettings?.company_logo;
+
+//     const parsedPermissions =
+//       typeof permissions === "string"
+//         ? JSON.parse(permissions)
+//         : permissions;
+
+//     const [settings] = await CompanySettings.upsert({
+//       company_code,
+//       company_name,
+//       brand_color,
+//       language,
+//       permissions: parsedPermissions,
+//       company_logo,
+//     });
+
+//     // 🔥 AUDIT
+//     await audit(req, {
+//       module: "company_settings",
+//       action: "update",
+//       record_id: company_code,
+//       new_value: settings,
+//     });
+
+//     return res.status(200).json({
+//       message: "Company settings saved",
+//       data: settings,
+//     });
+//   } catch (err: any) {
+//     return res.status(500).json({
+//       message: "Error saving settings",
+//       error: err.message,
+//     });
+//   }
+// };
 const upsertCompanySettings = async (
   req: Request,
   res: Response
@@ -686,53 +754,121 @@ const upsertCompanySettings = async (
       });
     }
 
-    const company = await Company.findOne({ where: { company_code } });
-    if (!company) {
-      return res.status(404).json({ message: "Company not found" });
-    }
-
-    const existingSettings = await CompanySettings.findOne({
+    const company = await Company.findOne({
       where: { company_code },
     });
 
-    const company_logo = file?.location
-      ? file.location
-      : existingSettings?.company_logo;
+    if (!company) {
+      return res.status(404).json({
+        message: "Company not found",
+      });
+    }
+
+    const existingSettings =
+      await CompanySettings.findOne({
+        where: { company_code },
+      });
+
+    let company_logo =
+      existingSettings?.company_logo;
+
+    // Upload logo to Central Storage
+    if (file) {
+      const uploadedFile =
+        await uploadToCentralStorage(file);
+
+      console.log(
+        "Uploaded Company Logo:",
+        uploadedFile
+      );
+
+      company_logo = encrypt(
+        uploadedFile.fileId
+      );
+    }
 
     const parsedPermissions =
       typeof permissions === "string"
         ? JSON.parse(permissions)
         : permissions;
 
-    const [settings] = await CompanySettings.upsert({
-      company_code,
-      company_name,
-      brand_color,
-      language,
-      permissions: parsedPermissions,
-      company_logo,
-    });
+    const [settings] =
+      await CompanySettings.upsert({
+        company_code,
+        company_name,
+        brand_color,
+        language,
+        permissions: parsedPermissions,
+        company_logo,
+      });
 
-    // 🔥 AUDIT
     await audit(req, {
       module: "company_settings",
-      action: "update",
+      action: existingSettings
+        ? "update"
+        : "create",
       record_id: company_code,
       new_value: settings,
     });
 
     return res.status(200).json({
-      message: "Company settings saved",
+      message: existingSettings
+        ? "Company settings updated successfully"
+        : "Company settings created successfully",
       data: settings,
     });
   } catch (err: any) {
+    console.error(
+      "Company Settings Error:",
+      err
+    );
+
     return res.status(500).json({
-      message: "Error saving settings",
+      message:
+        "Error saving company settings",
       error: err.message,
     });
   }
 };
 
+// const getCompanySettings = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { company_code } = req.params;
+
+//     const settings: any = await CompanySettings.findOne({
+//       where: { company_code },
+//       raw: true,
+//     });
+
+//     if (!settings) {
+//       return res.status(404).json({ message: "Settings not found" });
+//     }
+
+//     if (settings.company_logo) {
+//       const bucket = process.env.WASABI_BUCKET_NAME!;
+//       const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+
+//       const key = settings.company_logo.replace(
+//         `${endpoint}/${bucket}/`,
+//         ""
+//       );
+
+//       settings.company_logo_signed_url = await generatePresignedGetUrl(key, 300);
+//     } else {
+//       settings.company_logo_signed_url = null;
+//     }
+
+//     return res.status(200).json({ data: settings });
+//   } catch (err: any) {
+//     return res.status(500).json({
+//       message: "Error fetching settings",
+//       error: err.message,
+//     });
+//   }
+// };
 
 const getCompanySettings = async (
   req: Request,
@@ -747,24 +883,32 @@ const getCompanySettings = async (
     });
 
     if (!settings) {
-      return res.status(404).json({ message: "Settings not found" });
+      return res.status(404).json({
+        message: "Settings not found",
+      });
     }
 
     if (settings.company_logo) {
-      const bucket = process.env.WASABI_BUCKET_NAME!;
-      const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+      try {
+        const fileId = decrypt(settings.company_logo);
 
-      const key = settings.company_logo.replace(
-        `${endpoint}/${bucket}/`,
-        ""
-      );
+        settings.company_logo_signed_url =
+          await getSignedUrl(fileId);
+      } catch (error) {
+        console.error(
+          "Failed to generate company logo URL:",
+          error
+        );
 
-      settings.company_logo_signed_url = await generatePresignedGetUrl(key, 300);
+        settings.company_logo_signed_url = null;
+      }
     } else {
       settings.company_logo_signed_url = null;
     }
 
-    return res.status(200).json({ data: settings });
+    return res.status(200).json({
+      data: settings,
+    });
   } catch (err: any) {
     return res.status(500).json({
       message: "Error fetching settings",
@@ -772,8 +916,6 @@ const getCompanySettings = async (
     });
   }
 };
-
-
 const deleteCompanySettings = async (
   req: Request,
   res: Response

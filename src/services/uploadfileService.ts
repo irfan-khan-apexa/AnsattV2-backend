@@ -23,6 +23,12 @@ const mimeTypes: Record<
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 
   doc: "application/msword",
+    jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  svg: "image/svg+xml",
 };
 
 const getContentType = (
