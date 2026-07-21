@@ -210,6 +210,20 @@ const applyForJob = async (
   try {
     const { job_id, company_code, name, email, phone } = req.body;
 
+    // Check if already applied
+    const existingApplication = await JobApplication.findOne({
+      where: {
+        job_id,
+        email,
+      },
+    });
+
+    if (existingApplication) {
+      return res.status(409).json({
+        message: "You have already applied for this job.",
+      });
+    }
+
     const files = req.files as any;
 
     let resume_url: string | undefined;
@@ -221,21 +235,17 @@ const applyForJob = async (
 
       console.log("Uploaded File:", uploadedFile);
 
-      // Adjust according to response
-      resume_url = encrypt(
-        uploadedFile.fileId
-      );
+      resume_url = encrypt(uploadedFile.fileId);
     }
 
-    const application =
-      await JobApplication.create({
-        company_code,
-        job_id,
-        name,
-        email,
-        phone,
-        resume_url,
-      });
+    const application = await JobApplication.create({
+      company_code,
+      job_id,
+      name,
+      email,
+      phone,
+      resume_url,
+    });
 
     await audit(req, {
       module: "recruitment",
@@ -263,7 +273,6 @@ const applyForJob = async (
     });
   }
 };
-
 const getAllApplications = async (req: Request, res: Response): Promise<any> => {
   try {
     const company_code = (req as any).user.company_code;
