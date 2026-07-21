@@ -200,17 +200,43 @@ import { encrypt, decrypt } from "../../../utils/encryption";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { resumeQueue } from "../../../config/redis";
 import { audit } from "../../../helpers/audit.helper"; // 🔥 ADDED
+import { uploadToCentralStorage } from "../../../services/uploadfileService";
 
 
-const applyForJob = async (req: Request, res: Response): Promise<any> => {
+const applyForJob = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { job_id, company_code, name, email, phone } = req.body;
 
-    const file = req.files as any;
+    // Check if already applied
+    const existingApplication = await JobApplication.findOne({
+      where: {
+        job_id,
+        email,
+      },
+    });
 
-    const resume_url = file?.resume?.[0]?.location
-      ? encrypt(file.resume[0].location)
-      : undefined;
+    if (existingApplication) {
+      return res.status(409).json({
+        message: "You have already applied for this job.",
+      });
+    }
+
+    const files = req.files as any;
+
+    let resume_url: string | undefined;
+
+    if (files?.resume?.length) {
+      const uploadedFile = await uploadToCentralStorage(
+        files.resume[0]
+      );
+
+      console.log("Uploaded File:", uploadedFile);
+
+      resume_url = encrypt(uploadedFile.fileId);
+    }
 
     const application = await JobApplication.create({
       company_code,
@@ -221,7 +247,6 @@ const applyForJob = async (req: Request, res: Response): Promise<any> => {
       resume_url,
     });
 
-    // 🔥 AUDIT (Application Created)
     await audit(req, {
       module: "recruitment",
       action: "create",
@@ -229,7 +254,6 @@ const applyForJob = async (req: Request, res: Response): Promise<any> => {
       new_value: application.toJSON(),
     });
 
-    // pushed in QUEUE PUSH
     if (resumeQueue) {
       await resumeQueue.add("resume-processing", {
         applicationId: application.id,
@@ -249,7 +273,6 @@ const applyForJob = async (req: Request, res: Response): Promise<any> => {
     });
   }
 };
-
 const getAllApplications = async (req: Request, res: Response): Promise<any> => {
   try {
     const company_code = (req as any).user.company_code;
