@@ -582,6 +582,7 @@ const loginSuperMaster = async (
       password,
       user.password
     );
+  
 
     if (!isMatch) {
       return res.status(401).json({
@@ -600,6 +601,7 @@ const loginSuperMaster = async (
       }
     );
 
+    
     await audit(req, {
       module: "super_master",
       action: "login",
