@@ -1,6 +1,5 @@
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../../../config/sequelize";
-import bcrypt from "bcrypt";
 
 // Attributes
 interface SuperMasterAttributes {
@@ -74,20 +73,6 @@ SuperMaster.init(
     sequelize,
     tableName: "super_masters",
     timestamps: false,
-
-    hooks: {
-      beforeCreate: async (user: any) => {
-        if (user.password) {
-          user.password = await bcrypt.hash(user.password, 10);
-        }
-      },
-
-      beforeUpdate: async (user: any) => {
-        if (user.changed("password")) {
-          user.password = await bcrypt.hash(user.password, 10);
-        }
-      },
-    },
   }
 );
 
