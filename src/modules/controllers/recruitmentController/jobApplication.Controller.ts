@@ -200,28 +200,43 @@ import { encrypt, decrypt } from "../../../utils/encryption";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { resumeQueue } from "../../../config/redis";
 import { audit } from "../../../helpers/audit.helper"; // 🔥 ADDED
+import { uploadToCentralStorage } from "../../../services/uploadfileService";
 
 
-const applyForJob = async (req: Request, res: Response): Promise<any> => {
+const applyForJob = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { job_id, company_code, name, email, phone } = req.body;
 
-    const file = req.files as any;
+    const files = req.files as any;
 
-    const resume_url = file?.resume?.[0]?.location
-      ? encrypt(file.resume[0].location)
-      : undefined;
+    let resume_url: string | undefined;
 
-    const application = await JobApplication.create({
-      company_code,
-      job_id,
-      name,
-      email,
-      phone,
-      resume_url,
-    });
+    if (files?.resume?.length) {
+      const uploadedFile = await uploadToCentralStorage(
+        files.resume[0]
+      );
 
-    // 🔥 AUDIT (Application Created)
+      console.log("Uploaded File:", uploadedFile);
+
+      // Adjust according to response
+      resume_url = encrypt(
+        uploadedFile.fileId
+      );
+    }
+
+    const application =
+      await JobApplication.create({
+        company_code,
+        job_id,
+        name,
+        email,
+        phone,
+        resume_url,
+      });
+
     await audit(req, {
       module: "recruitment",
       action: "create",
@@ -229,7 +244,6 @@ const applyForJob = async (req: Request, res: Response): Promise<any> => {
       new_value: application.toJSON(),
     });
 
-    // pushed in QUEUE PUSH
     if (resumeQueue) {
       await resumeQueue.add("resume-processing", {
         applicationId: application.id,
