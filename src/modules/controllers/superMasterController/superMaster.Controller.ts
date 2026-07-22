@@ -493,7 +493,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { CompanySettings, Onboarding, SuperMaster } from "../../models/index";
 import { Company } from "../../models/index";
-import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { PERMISSION_REGISTRY } from "../../../middlewares/checkPermission";
 import { audit } from "../../../helpers/audit.helper"; // ADDED
 import { encrypt ,decrypt} from "../../../utils/encryption";

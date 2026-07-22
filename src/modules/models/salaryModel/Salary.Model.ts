@@ -20,7 +20,7 @@ export interface SalaryAttributes {
   ctc?: number | null; // gross + employer contributions
 
   generated_by: number; // HR/Admin who generated
-  salary_slip?: string | null; // encrypted Wasabi URL
+  salary_slip?: string | null; // encrypted  URL
 }
 
 // For creation, `id` and optional fields are not required

@@ -42,7 +42,6 @@ import {
   AuthenticatedRequest,
   CompanyRequest,
 } from "../../../middlewares/authMiddleware";
-import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { audit } from "../../../helpers/audit.helper";
 import { getSignedUrl } from "../../../services/uploadfileService";
 import { decrypt } from "../../../utils/encryption";

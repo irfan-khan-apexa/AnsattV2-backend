@@ -331,7 +331,6 @@
 import { Request, Response } from "express";
 import { LetterAccessRequest, OfferLetter, Onboarding } from "../../models/index";
 import { decrypt } from "../../../utils/encryption";
-import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { audit } from "../../../helpers/audit.helper"; // 🔥 AUDIT
 import { getSignedUrl } from "../../../services/uploadfileService";
 

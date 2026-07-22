@@ -197,7 +197,6 @@
 import { Request, Response } from "express";
 import { JobApplication } from "../../models/index";
 import { encrypt, decrypt } from "../../../utils/encryption";
-import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { resumeQueue } from "../../../config/redis";
 import { audit } from "../../../helpers/audit.helper"; // 🔥 ADDED
 import { getSignedUrl, uploadToCentralStorage } from "../../../services/uploadfileService";
