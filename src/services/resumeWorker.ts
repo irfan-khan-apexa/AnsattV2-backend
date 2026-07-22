@@ -5,7 +5,6 @@
 // import mammoth from "mammoth";
 // import axios from "axios";
 // import { decrypt } from "../utils/encryption";
-// import { generatePresignedGetUrl } from "../utils/generatePresignedUrl";
 
 // console.log("ATS Worker Started");
 
@@ -451,7 +450,6 @@ import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import axios from "axios";
 import { decrypt } from "../utils/encryption";
-import { generatePresignedGetUrl } from "../utils/generatePresignedUrl";
 import { getSignedUrl } from "./uploadfileService";
 
 console.log("🔥 ATS Worker Started");
