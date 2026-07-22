@@ -43,6 +43,7 @@ import {
   CompanyRequest,
 } from "../../../middlewares/authMiddleware";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
+import { audit } from "../../../helpers/audit.helper";
 
 
 
@@ -77,6 +78,14 @@ const createCompany = async (
       company_code,
       password: hashedPassword,
     });
+    const { password: _, ...auditData } = newCompany.get({ plain: true });
+
+await audit(req, {
+  module: "company",
+  action: "create",
+  record_id: newCompany.id,
+  new_value: auditData,
+});
 
     return res.status(201).json({
       message: "Company created successfully",

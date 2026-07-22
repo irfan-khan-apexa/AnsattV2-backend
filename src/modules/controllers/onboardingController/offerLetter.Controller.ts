@@ -344,13 +344,12 @@ const createOfferLetter = async (req: Request, res: Response): Promise<any> => {
       status: "Pending",
     });
 
-    // 🔥 AUDIT
-    await audit(req, {
-      module: "policy",
-      action: "create",
-      record_id: newOfferLetter.id,
-      new_value: newOfferLetter,
-    });
+   await audit(req, {
+  module: "offer_letter",
+  action: "create",
+  record_id: newOfferLetter.id,
+  new_value: newOfferLetter.toJSON(),
+});
 
     res.status(201).json({
       message: "Offer letter created",
@@ -391,13 +390,12 @@ const requestLetterAccess = async (
       letter_type,
     });
 
-    // 🔥 AUDIT
     await audit(req, {
-      module: "policy",
-      action: "create",
-      record_id: request.id,
-      new_value: request,
-    });
+  module: "letter_access_request",
+  action: "create",
+  record_id: request.id,
+  new_value: request.toJSON(),
+});
 
     return res.status(201).json({
       message: "Letter access request submitted",
@@ -512,14 +510,13 @@ const actionLetterRequest = async (
 
     await request.save();
 
-    // 🔥 AUDIT
-    await audit(req, {
-      module: "policy",
-      action: status === "Approved" ? "approve" : "reject",
-      record_id: request.id,
-      old_value: oldData,
-      new_value: request,
-    });
+   await audit(req, {
+  module: "letter_access_request",
+  action: status === "Approved" ? "approve" : "reject",
+  record_id: request.id,
+  old_value: oldData,
+  new_value: request.toJSON(),
+});
 
     return res.status(200).json({
       message: `Request ${status}`,

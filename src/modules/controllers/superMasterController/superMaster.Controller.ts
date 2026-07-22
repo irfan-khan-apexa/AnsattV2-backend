@@ -495,7 +495,7 @@ import { CompanySettings, Onboarding, SuperMaster } from "../../models/index";
 import { Company } from "../../models/index";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { PERMISSION_REGISTRY } from "../../../middlewares/checkPermission";
-import { audit } from "../../../helpers/audit.helper"; // 🔥 ADDED
+import { audit } from "../../../helpers/audit.helper"; // ADDED
 import { encrypt ,decrypt} from "../../../utils/encryption";
 import { getSignedUrl, uploadToCentralStorage } from "../../../services/uploadfileService";
 
@@ -530,13 +530,16 @@ const signupSuperMaster = async (
       password: hashedPassword,
     });
 
-    await audit(req, {
-      module: "super_master",
-      action: "create",
-      record_id: newUser.id,
-      new_value: newUser.get({ plain: true }),
-    });
+ const auditData: any = newUser.get({ plain: true });
 
+delete auditData.password;
+
+await audit(req, {
+  module: "super_master",
+  action: "create",
+  record_id: newUser.id,
+  new_value: auditData,
+});
     const plainUser = newUser.get({ plain: true });
 
     return res.status(201).json({
@@ -802,14 +805,15 @@ const upsertCompanySettings = async (
         company_logo,
       });
 
-    await audit(req, {
-      module: "company_settings",
-      action: existingSettings
-        ? "update"
-        : "create",
-      record_id: company_code,
-      new_value: settings,
-    });
+   const oldData = existingSettings?.toJSON();
+
+await audit(req, {
+  module: "company_settings",
+  action: existingSettings ? "update" : "create",
+  record_id: company_code,
+  old_value: oldData,
+  new_value: settings.toJSON ? settings.toJSON() : settings,
+});
 
     return res.status(200).json({
       message: existingSettings

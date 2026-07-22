@@ -26,24 +26,23 @@ const generateStrongPassword = (): string => {
 
 // ================= FILE UPLOAD HELPER =================
 const uploadField = async (
-  fileArr: any
-) => {
-  if (!fileArr?.[0])
+  files?: Express.Multer.File[]
+): Promise<string | undefined> => {
+  if (!files?.length) {
     return undefined;
+  }
 
-  const uploaded =
-    await uploadToCentralStorage(
-      fileArr[0]
-    );
-
-  console.log(
-    "UPLOADED FILE:",
-    uploaded
+  const uploadedFile = await uploadToCentralStorage(
+    files[0]
   );
 
-  // 🔥 STORE encrypted fileId
+  console.log(
+    "Uploaded File:",
+    uploadedFile
+  );
+
   return encrypt(
-    uploaded.fileId
+    uploadedFile.fileId
   );
 };
 
@@ -750,6 +749,8 @@ const generateOfferLetterById =
       );
 
       // ================= SAVE FILE IDS =================
+        const oldData = employee.toJSON();
+
       employee.offer_letter =
         JSON.stringify({
           pdf:
@@ -764,19 +765,15 @@ const generateOfferLetterById =
       await employee.save();
 
       // ================= AUDIT =================
-      await audit(req, {
-        module:
-          "onboarding",
+   
 
-        action:
-          "update",
-
-        record_id:
-          employee.id,
-
-        new_value:
-          employee,
-      });
+await audit(req, {
+  module: "onboarding",
+  action: "update",
+  record_id: employee.id,
+  old_value: oldData,
+  new_value: employee.toJSON(),
+});
 
       return res.status(200).json(
         {
