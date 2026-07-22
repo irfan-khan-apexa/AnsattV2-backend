@@ -44,6 +44,8 @@ import {
 } from "../../../middlewares/authMiddleware";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { audit } from "../../../helpers/audit.helper";
+import { getSignedUrl } from "../../../services/uploadfileService";
+import { decrypt } from "../../../utils/encryption";
 
 
 
@@ -186,6 +188,55 @@ const getCompanyDashboard = async (
 //   }
 // };
 
+// const getMyCompanySettings = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const user: any = (req as any).user;
+//     const company_code = user.company_code;
+
+//     const settings: any = await CompanySettings.findOne({
+//       where: { company_code },
+//       raw: true,
+//     });
+
+//     if (!settings) {
+//       return res.status(404).json({
+//         message: "Company settings not configured yet",
+//       });
+//     }
+
+    
+//     if (settings.company_logo) {
+//       const bucket = process.env.WASABI_BUCKET_NAME!;
+//       const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+
+//       // full url → key
+//       const key = settings.company_logo.replace(
+//         `${endpoint}/${bucket}/`,
+//         ""
+//       );
+
+//       settings.company_logo_signed_url = await generatePresignedGetUrl(
+//         key,
+//         300 
+//       );
+//     } else {
+//       settings.company_logo_signed_url = null;
+//     }
+
+//     return res.status(200).json({
+//       data: settings,
+//     });
+//   } catch (err: any) {
+//     return res.status(500).json({
+//       message: "Error fetching company settings",
+//       error: err.message,
+//     });
+//   }
+// };
+
 const getMyCompanySettings = async (
   req: Request,
   res: Response
@@ -205,21 +256,20 @@ const getMyCompanySettings = async (
       });
     }
 
-    
     if (settings.company_logo) {
-      const bucket = process.env.WASABI_BUCKET_NAME!;
-      const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+      try {
+        const fileId = decrypt(settings.company_logo);
 
-      // full url → key
-      const key = settings.company_logo.replace(
-        `${endpoint}/${bucket}/`,
-        ""
-      );
+        settings.company_logo_signed_url =
+          await getSignedUrl(fileId);
+      } catch (error) {
+        console.error(
+          "Failed to generate company logo URL:",
+          error
+        );
 
-      settings.company_logo_signed_url = await generatePresignedGetUrl(
-        key,
-        300 
-      );
+        settings.company_logo_signed_url = null;
+      }
     } else {
       settings.company_logo_signed_url = null;
     }
@@ -234,8 +284,6 @@ const getMyCompanySettings = async (
     });
   }
 };
-
-
 
 // company setings
 

@@ -333,6 +333,7 @@ import { LetterAccessRequest, OfferLetter, Onboarding } from "../../models/index
 import { decrypt } from "../../../utils/encryption";
 import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { audit } from "../../../helpers/audit.helper"; // 🔥 AUDIT
+import { getSignedUrl } from "../../../services/uploadfileService";
 
 const createOfferLetter = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -530,6 +531,69 @@ const actionLetterRequest = async (
   }
 };
 
+// const downloadLetter = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { letter_type, format } = req.params;
+//     const user: any = (req as any).user;
+
+//     if (!format || !["pdf", "docx"].includes(format.toLowerCase())) {
+//       return res.status(400).json({
+//         message: "Invalid format. Allowed: pdf | docx",
+//       });
+//     }
+
+//     const approval = await LetterAccessRequest.findOne({
+//       where: {
+//         employee_id: user.id,
+//         company_code: user.company_code,
+//         letter_type,
+//         status: "Approved",
+//       },
+//     });
+
+//     if (!approval) {
+//       return res.status(403).json({ message: "Access not approved" });
+//     }
+
+//     const employee = await Onboarding.findByPk(user.id);
+
+//     if (!employee) {
+//       return res.status(404).json({ message: "Employee not found" });
+//     }
+
+//     const encryptedUrl = (employee as any)?.[letter_type];
+
+//     if (!encryptedUrl) {
+//       return res.status(404).json({ message: "Letter not found" });
+//     }
+
+//     const fullUrl = decrypt(encryptedUrl);
+
+//     const bucket = process.env.WASABI_BUCKET_NAME!;
+//     const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+
+//     const originalKey = fullUrl.replace(`${endpoint}/${bucket}/`, "");
+
+//     const baseKey = originalKey.replace(/\.pdf|\.docx$/i, "");
+//     const finalKey = `${baseKey}.${format.toLowerCase()}`;
+
+//     const presignedUrl = await generatePresignedGetUrl(finalKey, 5 * 60);
+
+//     return res.status(200).json({
+//       message: `${letter_type} ${format.toUpperCase()} download link generated`,
+//       url: presignedUrl,
+//     });
+//   } catch (err: any) {
+//     console.error("Download Letter Error:", err);
+//     return res.status(500).json({
+//       message: "Error downloading letter",
+//       error: err.message,
+//     });
+//   }
+// };
 const downloadLetter = async (
   req: Request,
   res: Response
@@ -538,12 +602,16 @@ const downloadLetter = async (
     const { letter_type, format } = req.params;
     const user: any = (req as any).user;
 
-    if (!format || !["pdf", "docx"].includes(format.toLowerCase())) {
+    if (
+      !format ||
+      !["pdf", "docx"].includes(format.toLowerCase())
+    ) {
       return res.status(400).json({
         message: "Invalid format. Allowed: pdf | docx",
       });
     }
 
+    // ================= CHECK APPROVAL =================
     const approval = await LetterAccessRequest.findOne({
       where: {
         employee_id: user.id,
@@ -554,32 +622,75 @@ const downloadLetter = async (
     });
 
     if (!approval) {
-      return res.status(403).json({ message: "Access not approved" });
+      return res.status(403).json({
+        message: "Access not approved",
+      });
     }
 
+    // ================= GET EMPLOYEE =================
     const employee = await Onboarding.findByPk(user.id);
 
     if (!employee) {
-      return res.status(404).json({ message: "Employee not found" });
+      return res.status(404).json({
+        message: "Employee not found",
+      });
     }
 
-    const encryptedUrl = (employee as any)?.[letter_type];
+    const storedValue = (employee as any)?.[letter_type];
 
-    if (!encryptedUrl) {
-      return res.status(404).json({ message: "Letter not found" });
+    if (!storedValue) {
+      return res.status(404).json({
+        message: "Letter not found",
+      });
     }
 
-    const fullUrl = decrypt(encryptedUrl);
+    // ================= PARSE JSON (Backward Compatible) =================
+    const parsed: {
+      pdf?: string | null;
+      docx?: string | null;
+    } = (() => {
+      try {
+        return JSON.parse(storedValue);
+      } catch {
+        return {
+          pdf: storedValue,
+          docx: null,
+        };
+      }
+    })();
 
-    const bucket = process.env.WASABI_BUCKET_NAME!;
-    const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
+    // ================= GET ENCRYPTED FILE ID =================
+    let encryptedFileId = "";
 
-    const originalKey = fullUrl.replace(`${endpoint}/${bucket}/`, "");
+    if (format.toLowerCase() === "pdf") {
+      encryptedFileId = parsed.pdf || "";
+    }
 
-    const baseKey = originalKey.replace(/\.pdf|\.docx$/i, "");
-    const finalKey = `${baseKey}.${format.toLowerCase()}`;
+    if (format.toLowerCase() === "docx") {
+      encryptedFileId = parsed.docx || "";
+    }
 
-    const presignedUrl = await generatePresignedGetUrl(finalKey, 5 * 60);
+    if (!encryptedFileId) {
+      return res.status(404).json({
+        message: `${format.toUpperCase()} file not found`,
+      });
+    }
+
+    // ================= DECRYPT FILE ID =================
+    let fileId = "";
+
+    try {
+      fileId = decrypt(encryptedFileId);
+    } catch (err: any) {
+      console.error("Decrypt Error:", err);
+
+      return res.status(500).json({
+        message: "Failed to decrypt file ID",
+      });
+    }
+
+    // ================= GENERATE SIGNED URL =================
+    const presignedUrl = await getSignedUrl(fileId);
 
     return res.status(200).json({
       message: `${letter_type} ${format.toUpperCase()} download link generated`,
@@ -587,6 +698,7 @@ const downloadLetter = async (
     });
   } catch (err: any) {
     console.error("Download Letter Error:", err);
+
     return res.status(500).json({
       message: "Error downloading letter",
       error: err.message,
