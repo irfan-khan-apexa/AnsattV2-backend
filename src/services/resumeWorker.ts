@@ -5,7 +5,6 @@
 // import mammoth from "mammoth";
 // import axios from "axios";
 // import { decrypt } from "../utils/encryption";
-// import { generatePresignedGetUrl } from "../utils/generatePresignedUrl";
 
 // console.log("ATS Worker Started");
 
@@ -451,7 +450,7 @@ import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import axios from "axios";
 import { decrypt } from "../utils/encryption";
-import { generatePresignedGetUrl } from "../utils/generatePresignedUrl";
+import { getSignedUrl } from "./uploadfileService";
 
 console.log("🔥 ATS Worker Started");
 
@@ -510,49 +509,46 @@ new Worker(
         return;
       }
 
-      // ✅ FIX: decrypt
-      const resumeUrl = decrypt(application.resume_url);
+      const fileId = decrypt(application.resume_url);
 
-      console.log("🔓 Decrypted Resume URL:", resumeUrl);
+console.log("🔓 File ID:", fileId);
 
-      // ❌ अगर decrypt fail हुआ तो यहीं पकड़ लो
-      if (!resumeUrl || !resumeUrl.startsWith("http")) {
-        console.log("❌ Invalid decrypted URL");
-        return;
-      }
+const signedUrl = await getSignedUrl(fileId);
 
-      // presigned URL
-      const key =
-        resumeUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
+console.log("✅ Signed URL generated");
 
-      const presignedUrl =
-        await generatePresignedGetUrl(key, 300);
-
-      console.log("✅ Presigned URL generated");
-
-      const response = await axios.get(presignedUrl, {
-        responseType: "arraybuffer",
-        timeout: 15000,
-      });
+const response = await axios.get(signedUrl, {
+  responseType: "arraybuffer",
+  timeout: 15000,
+});
 
       console.log("✅ Resume downloaded");
 
       let text = "";
 
-      if (resumeUrl.endsWith(".pdf")) {
-        console.log("Parsing PDF");
-        const parsed = await pdfParse(response.data);
-        text = parsed.text;
-      }
+    const contentType =
+  response.headers["content-type"] || "";
 
-      if (resumeUrl.endsWith(".docx")) {
-        console.log("Parsing DOCX");
-        const parsed = await mammoth.extractRawText({
-          buffer: response.data,
-        });
-        text = parsed.value;
-      }
+if (contentType.includes("pdf")) {
+  console.log("Parsing PDF");
 
+  const parsed = await pdfParse(response.data);
+
+  text = parsed.text;
+}
+
+if (
+  contentType.includes("word") ||
+  contentType.includes("officedocument")
+) {
+  console.log("Parsing DOCX");
+
+  const parsed = await mammoth.extractRawText({
+    buffer: response.data,
+  });
+
+  text = parsed.value;
+}
       if (!text) {
         console.log("No text extracted");
         return;

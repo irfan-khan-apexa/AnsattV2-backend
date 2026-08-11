@@ -197,10 +197,9 @@
 import { Request, Response } from "express";
 import { JobApplication } from "../../models/index";
 import { encrypt, decrypt } from "../../../utils/encryption";
-import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 import { resumeQueue } from "../../../config/redis";
 import { audit } from "../../../helpers/audit.helper"; // 🔥 ADDED
-import { uploadToCentralStorage } from "../../../services/uploadfileService";
+import { getSignedUrl, uploadToCentralStorage } from "../../../services/uploadfileService";
 
 
 const applyForJob = async (
@@ -208,7 +207,14 @@ const applyForJob = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { job_id, company_code, name, email, phone } = req.body;
+    const {
+      job_id,
+      company_code,
+      name,
+      email,
+      phone,
+      cover_letter,
+    } = req.body;
 
     // Check if already applied
     const existingApplication = await JobApplication.findOne({
@@ -245,6 +251,7 @@ const applyForJob = async (
       email,
       phone,
       resume_url,
+      cover_letter,
     });
 
     await audit(req, {
@@ -273,7 +280,55 @@ const applyForJob = async (
     });
   }
 };
-const getAllApplications = async (req: Request, res: Response): Promise<any> => {
+// const getAllApplications = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const company_code = (req as any).user.company_code;
+
+//     const applications = await JobApplication.findAll({
+//       where: { company_code },
+//       order: [["createdAt", "DESC"]],
+//     });
+
+//     const data = await Promise.all(
+//       applications.map(async (app: any) => {
+//         let resume_download_url = null;
+
+//         if (app.resume_url) {
+//           const realUrl = decrypt(app.resume_url);
+
+//           const key = realUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
+
+//           const signedUrl = await generatePresignedGetUrl(key, 300);
+
+//           resume_download_url = signedUrl;
+//         }
+
+//         return {
+//           ...app.toJSON(),
+//           resume_download_url,
+//         };
+//       })
+//     );
+
+//     return res.status(200).json({
+//       data,
+//     });
+
+//   } catch (error: any) {
+//     console.error("Fetch applications error:", error);
+
+//     return res.status(500).json({
+//       message: "Error fetching applications",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+const getAllApplications = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const company_code = (req as any).user.company_code;
 
@@ -287,13 +342,20 @@ const getAllApplications = async (req: Request, res: Response): Promise<any> => 
         let resume_download_url = null;
 
         if (app.resume_url) {
-          const realUrl = decrypt(app.resume_url);
+          try {
+            const fileId = decrypt(app.resume_url);
 
-          const key = realUrl.split(`${process.env.WASABI_BUCKET_NAME}/`)[1];
+            const signedUrl = await getSignedUrl(fileId, 5);
 
-          const signedUrl = await generatePresignedGetUrl(key, 300);
+            resume_download_url = signedUrl;
+          } catch (err) {
+            console.error(
+              "Resume signed URL error:",
+              err
+            );
 
-          resume_download_url = signedUrl;
+            resume_download_url = null;
+          }
         }
 
         return {
@@ -306,32 +368,44 @@ const getAllApplications = async (req: Request, res: Response): Promise<any> => 
     return res.status(200).json({
       data,
     });
-
   } catch (error: any) {
-    console.error("Fetch applications error:", error);
+    console.error(
+      "Fetch applications error:",
+      error
+    );
 
     return res.status(500).json({
-      message: "Error fetching applications",
-      error: error.message,
+      message:
+        "Error fetching applications",
+      error:
+        error.message,
     });
   }
 };
-
-const updateApplicationStatus = async (req: Request, res: Response): Promise<any>  => {
+const updateApplicationStatus = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { id } = req.params;
 
-    const { status } = req.body;
+    const { status, cover_letter } = req.body;
 
     const record = await JobApplication.findByPk(id);
 
     if (!record) {
-      return res.status(404).json({ message: "Application not found" });
+      return res.status(404).json({
+        message: "Application not found",
+      });
     }
 
-    const oldData = record.toJSON(); // 🔥
+    const oldData = record.toJSON();
 
     const updateData: any = { status };
+
+    if (cover_letter !== undefined) {
+      updateData.cover_letter = cover_letter;
+    }
 
     if (status === "rejected") {
       updateData.rejected_at = new Date();
@@ -339,7 +413,7 @@ const updateApplicationStatus = async (req: Request, res: Response): Promise<any
 
     await record.update(updateData);
 
-    // 🔥 AUDIT (Status Update)
+    // AUDIT (Status Update)
     await audit(req, {
       module: "recruitment",
       action: "update",

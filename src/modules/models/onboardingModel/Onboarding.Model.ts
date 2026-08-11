@@ -24,7 +24,7 @@ export interface OnboardingAttributes {
   aadhar_photo?: string;
   passport_photo?: string;
 
-  // ✅ Wasabi Uploads
+  // ✅  Uploads
   resume?: string;
   offer_letter?: string;
   joining_letter?: string;

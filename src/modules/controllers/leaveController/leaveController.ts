@@ -412,7 +412,16 @@ const handleLeaveAction = async (req: Request, res: Response): Promise<any> => {
     leave.actionReason = type === "reject" ? (reason as string || "No reason provided") : null;
 
     await leave.save();
-
+const oldData = leave?.toJSON();
+await audit(req,{
+    module:"leave",
+    action:type === "approve"
+        ? "approve"
+        : "reject",
+    record_id:leave.id,
+    old_value:oldData,
+    new_value:leave.toJSON()
+});
        // 🗑️ Delete ALL tokens for this leave (including other recipients’)
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
@@ -516,7 +525,15 @@ const approveLeave = async (req: Request, res: Response): Promise<any> => {
 
     leave.status = "Approved";
     await leave.save();
+const oldData = leave.toJSON();
 
+await audit(req,{
+    module:"leave",
+    action:"approve",
+    record_id:leave.id,
+    old_value:oldData,
+    new_value:leave.toJSON()
+});
     // Delete all action tokens
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
@@ -552,7 +569,15 @@ const rejectLeave = async (req: Request, res: Response): Promise<any> => {
     leave.status = "Rejected";
     await leave.save();
 
-   
+   const oldData = leave.toJSON();
+
+await audit(req,{
+    module:"leave",
+    action:"reject",
+    record_id:leave.id,
+    old_value:oldData,
+    new_value:leave.toJSON()
+});
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
    
@@ -605,7 +630,12 @@ const addNewCategory = async (req: Request, res: Response): Promise<any> => {
       name,
       allowedLeaves: allowedLeaves || 0,
     });
-
+await audit(req,{
+    module:"leave",
+    action:"create",
+    record_id:record.id,
+    new_value:record.toJSON()
+});
     res.status(201).json({
       message: "Category created successfully",
       data: record,
@@ -682,7 +712,16 @@ const updateLeaveCategory = async (req: Request, res: Response): Promise<any> =>
     if (allowedLeaves !== undefined) record.allowedLeaves = allowedLeaves;
 
     await record.save();
+const oldData=record.toJSON();
 
+
+await audit(req,{
+    module:"leave",
+    action:"update",
+    record_id:record.id,
+    old_value:oldData,
+    new_value:record.toJSON()
+});
     res.status(200).json({
       message: "Category updated successfully",
       data: record,
@@ -704,7 +743,17 @@ const deleteLeavecategory = async (req: Request, res: Response): Promise<any> =>
 
     if (!record) return res.status(404).json({ message: "Category not found" });
 
-    await record.destroy();
+    // await record.destroy();
+    const oldData=record.toJSON();
+
+await record.destroy();
+
+await audit(req,{
+    module:"leave",
+    action:"delete",
+    record_id:oldData.id,
+    old_value:oldData
+});
     res.status(200).json({ message: "Category deleted successfully" });
   } catch (err) {
     console.error("Error in deleteLeavecategory:", err);
@@ -731,6 +780,12 @@ const addExtraField = async (req: Request, res: Response): Promise<any> => {
     if (exists) return res.status(400).json({ message: "Field already exists" });
 
     const field = await LeaveExtraField.create({ companyCode, name });
+    await audit(req,{
+    module:"leave",
+    action:"create",
+    record_id:field.id,
+    new_value:field.toJSON()
+});
     res.status(201).json({ message: "Field added", field });
   } catch (err) {
     console.error("Error in addExtraField:", err);
@@ -787,8 +842,18 @@ const renameExtraField = async (req: Request, res: Response): Promise<any> => {
     if (!field) return res.status(404).json({ message: "Field not found" });
 
     field.name = newName;
-    await field.save();
+    // await field.save();
+const oldData=field.toJSON();
 
+await field.save();
+
+await audit(req,{
+    module:"leave",
+    action:"update",
+    record_id:field.id,
+    old_value:oldData,
+    new_value:field.toJSON()
+});
     res.status(200).json({ message: "Field renamed", field });
   } catch (err) {
     console.error("Error renaming field:", err);
@@ -806,7 +871,17 @@ const renameExtraField = async (req: Request, res: Response): Promise<any> => {
     const field = await LeaveExtraField.findOne({ where: { id: req.params.id, companyCode } });
     if (!field) return res.status(404).json({ message: "Field not found" });
 
-    await field.destroy();
+    // await field.destroy();
+    const oldData=field.toJSON();
+
+await field.destroy();
+
+await audit(req,{
+    module:"leave",
+    action:"delete",
+    record_id:oldData.id,
+    old_value:oldData
+});
     res.status(200).json({ message: "Field deleted" });
   } catch (err) {
     console.error("Error deleting field:", err);
@@ -903,6 +978,55 @@ const getAllEmployeesLeaveBalance = async (
   }
 };
 
+
+// const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const { startDate, endDate } = req.body;
+//     const companyCode = (req as any).user.company_code;
+
+//     if (!startDate || !endDate) {
+//       return res.status(400).json({ message: "Start and End Date are required" });
+//     }
+
+//   const duplicate = await FinancialYear.findOne({
+//   where: {
+//     companyCode,
+//     startDate: new Date(startDate),
+//     endDate: new Date(endDate),
+//   },
+// });
+
+// if (duplicate) {
+//   return res.status(400).json({
+//     message: "A financial year with the same dates already exists for this company",
+//     financialYear: duplicate,
+//   });
+// }
+
+  
+//     await FinancialYear.update(
+//       { isActive: false },
+//       { where: { companyCode } }
+//     );
+
+
+//     const fy = await FinancialYear.create({
+//       companyCode,
+//       startDate,
+//       endDate,
+//       isActive: true,
+//     });
+    
+
+//     return res.status(201).json({
+//       message: "Financial Year created successfully",
+//       financialYear: fy,
+//     });
+//   } catch (error: any) {
+//     console.error("Error in setFinancialYear:", error);
+//     return res.status(500).json({ message: error.message });
+//   }
+// };
 const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
   try {
     const { startDate, endDate } = req.body;
@@ -912,33 +1036,62 @@ const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ message: "Start and End Date are required" });
     }
 
-  const duplicate = await FinancialYear.findOne({
-  where: {
-    companyCode,
-    startDate: new Date(startDate),
-    endDate: new Date(endDate),
-  },
-});
+    const duplicate = await FinancialYear.findOne({
+      where: {
+        companyCode,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+      },
+    });
 
-if (duplicate) {
-  return res.status(400).json({
-    message: "A financial year with the same dates already exists for this company",
-    financialYear: duplicate,
-  });
-}
+    if (duplicate) {
+      return res.status(400).json({
+        message: "A financial year with the same dates already exists for this company",
+        financialYear: duplicate,
+      });
+    }
 
-  
+    // Get currently active Financial Year (for audit only)
+    const activeFinancialYear = await FinancialYear.findOne({
+      where: {
+        companyCode,
+        isActive: true,
+      },
+    });
+
+    const oldFinancialYear = activeFinancialYear?.toJSON();
+
     await FinancialYear.update(
       { isActive: false },
       { where: { companyCode } }
     );
 
+    // Audit previous Financial Year deactivation
+    if (activeFinancialYear) {
+      activeFinancialYear.isActive = false;
+
+      await audit(req, {
+        module: "leave",
+        action: "update",
+        record_id: activeFinancialYear.id,
+        old_value: oldFinancialYear,
+        new_value: activeFinancialYear.toJSON(),
+      });
+    }
 
     const fy = await FinancialYear.create({
       companyCode,
       startDate,
       endDate,
       isActive: true,
+    });
+
+    // Audit new Financial Year creation
+    await audit(req, {
+      module: "leave",
+      action: "create",
+      record_id: fy.id,
+      new_value: fy.toJSON(),
     });
 
     return res.status(201).json({
@@ -950,7 +1103,6 @@ if (duplicate) {
     return res.status(500).json({ message: error.message });
   }
 };
-
 
 
 
@@ -990,23 +1142,69 @@ const getAllFinancialYears = async (req: Request, res: Response): Promise<any> =
 };
 
 
+// const deleteFinancialYear = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const companyCode = (req as any).user.company_code;
+
+//     const deleted = await FinancialYear.destroy({ where: { companyCode } });
+
+// const oldData = fy.toJSON();
+
+// await audit(req,{
+//     module:"leave",
+//     action:"delete",
+//     record_id:oldData.id,
+//     old_value:oldData
+// });
+//     if (!deleted) {
+//       return res.status(404).json({ message: "No Financial Year found to delete" });
+//     }
+
+//     res.status(200).json({ message: "Financial Year deleted" });
+//   } catch (error: any) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 const deleteFinancialYear = async (req: Request, res: Response): Promise<any> => {
   try {
     const companyCode = (req as any).user.company_code;
 
-    const deleted = await FinancialYear.destroy({ where: { companyCode } });
+    // Get record for audit
+    const financialYear = await FinancialYear.findOne({
+      where: { companyCode, isActive: true },
+    });
 
-    if (!deleted) {
-      return res.status(404).json({ message: "No Financial Year found to delete" });
+    if (!financialYear) {
+      return res.status(404).json({
+        message: "No Financial Year found to delete",
+      });
     }
 
-    res.status(200).json({ message: "Financial Year deleted" });
+    const oldData = financialYear.toJSON();
+
+    const deleted = await FinancialYear.destroy({
+      where: { companyCode, isActive: true },
+    });
+
+    if (deleted) {
+      await audit(req, {
+        module: "leave",
+        action: "delete",
+        record_id: oldData.id,
+        old_value: oldData,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Financial Year deleted",
+    });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: error.message,
+    });
   }
 };
-
-
 
 export { applyLeave, getMyLeaves, getAllLeaves,handleLeaveAction, approveLeave, 
   rejectLeave, addNewCategory, getLeaveCategory,updateLeaveCategory
