@@ -331,7 +331,7 @@
 import { Request, Response } from "express";
 import { LetterAccessRequest, OfferLetter, Onboarding } from "../../models/index";
 import { decrypt } from "../../../utils/encryption";
-import { audit } from "../../../helpers/audit.helper"; // 🔥 AUDIT
+import { audit } from "../../../helpers/audit.helper"; // AUDIT
 import { getSignedUrl } from "../../../services/uploadfileService";
 
 const createOfferLetter = async (req: Request, res: Response): Promise<any> => {
