@@ -132,6 +132,11 @@ import {
   getGoalById,
   updateGoal,
   deleteGoal,} from "./pmsController/goalSetting.Controller";
+  import { 
+    upsertCustomDocument,
+  getAllCustomDocuments,
+  getCustomDocument,
+  deleteCustomDocument,} from "./customFormBuilderController/customFormBuilder.Controller";
 
 // All controllers exported as single object
 export {
@@ -223,4 +228,6 @@ export {
   getGoalById,
   updateGoal,
   deleteGoal,
+
+   upsertCustomDocument,getAllCustomDocuments,getCustomDocument,deleteCustomDocument,
 };

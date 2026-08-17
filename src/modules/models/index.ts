@@ -26,6 +26,7 @@ import { JobApplication } from "./recruitmentModel/JobApplication.Model";
 import { Interview } from "./recruitmentModel/Interview.Model";
 import { InterviewFeedback } from "./recruitmentModel/InterviewFeedback.Model";
 import { GoalSetting } from "./pmsModel/goalSetting.Model"
+import { CustomDocument } from "./customFormBuilderModel/customFormBuilder.Model"
 import sequelize from "../../config/sequelize";
 
 
@@ -76,5 +77,6 @@ export {
   HrAnnouncement,
   AuditLog,
   JobPosting,JobApplication,Interview,InterviewFeedback,
-  GoalSetting
+  GoalSetting,
+  CustomDocument
 };

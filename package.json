@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "server.ts",
   "scripts": {
-    "dev": "ts-node server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "migrate": "npx sequelize-cli db:migrate --config src/config/config.js --migrations-path src/migrations"
-  },
+  "dev": "ts-node server.ts",
+  "build": "tsc",
+  "migrate": "npx sequelize-cli db:migrate --config src/config/config.js --migrations-path src/migrations",
+  "start": "npm run migrate && node dist/server.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -60,6 +60,7 @@
     "pdfkit": "^0.17.1",
     "sequelize": "^6.37.7",
     "stopword": "^3.1.5",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.4.3"
   }
 }
