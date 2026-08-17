@@ -527,7 +527,9 @@ const response = await axios.get(signedUrl, {
       let text = "";
 
     const contentType =
-  response.headers["content-type"] || "";
+  typeof response.headers["content-type"] === "string"
+    ? response.headers["content-type"].toLowerCase()
+    : "";
 
 if (contentType.includes("pdf")) {
   console.log("Parsing PDF");
