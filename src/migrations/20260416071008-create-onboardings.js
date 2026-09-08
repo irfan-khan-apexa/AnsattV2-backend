@@ -50,8 +50,8 @@ module.exports = {
       },
 
       status: {
-        type: Sequelize.STRING,
-        allowNull: true,
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
       },
 
       joining_date: {

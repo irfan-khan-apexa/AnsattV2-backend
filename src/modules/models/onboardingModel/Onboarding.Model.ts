@@ -11,7 +11,7 @@ export interface OnboardingAttributes {
   designation: string;
   department: string;
   reporting_manager: string;
-  status?: string;
+  status?: boolean;
   joining_date?: Date;
   probation_period?: string;
   auto_password?: string;
@@ -29,7 +29,7 @@ export interface OnboardingAttributes {
   offer_letter?: string;
   joining_letter?: string;
   experience_letter?: string;
-  exit_letter?:string;
+  exit_letter?: string;
 
   deleted_at?: Date;
 
@@ -57,7 +57,7 @@ export class Onboarding
   public designation!: string;
   public department!: string;
   public reporting_manager!: string;
-  public status!: string;
+  public status!: boolean;
   public joining_date!: Date;
   public exit_date!: Date;
   public probation_period!: string;
@@ -73,8 +73,6 @@ export class Onboarding
   public offer_letter!: string;
   public joining_letter!: string;
   public experience_letter!: string;
-
-
 
   public deleted_at!: Date;
 
@@ -107,8 +105,8 @@ Onboarding.init(
     department: DataTypes.STRING,
     reporting_manager: DataTypes.STRING,
     status: {
-      type: DataTypes.STRING,
-      // defaultValue: "pending",
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
     },
     joining_date: DataTypes.DATE,
     exit_date: DataTypes.DATE,
@@ -126,10 +124,10 @@ Onboarding.init(
     offer_letter: DataTypes.TEXT,
     joining_letter: DataTypes.TEXT,
     experience_letter: DataTypes.TEXT,
-      exit_letter: {
-  type: DataTypes.TEXT,
-  allowNull: true,
-},
+    exit_letter: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
 
     deleted_at: DataTypes.DATE,
 
@@ -147,8 +145,8 @@ Onboarding.init(
     sequelize,
     tableName: "onboardings",
     timestamps: true,
-    paranoid: true,
-  }
+    // paranoid: true,
+  },
 );
 
 // Onboarding.sync({alter:true});
