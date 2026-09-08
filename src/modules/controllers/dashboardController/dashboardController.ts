@@ -118,41 +118,41 @@ const getPlatformDashboard = async (
     // PLATFORM DASHBOARD RESPONSE
     // ==================================================
 
-    const allEmployees = await Onboarding.findAll({
-      where: {
-        company_code,
-      },
-      attributes: [
-        "id",
-        "name",
-        "company_code",
-        "status",
-        "joining_date",
-        "exit_date",
-      ],
-      raw: true,
-    });
+    // const allEmployees = await Onboarding.findAll({
+    //   where: {
+    //     company_code,
+    //   },
+    //   attributes: [
+    //     "id",
+    //     "name",
+    //     "company_code",
+    //     "status",
+    //     "joining_date",
+    //     "exit_date",
+    //   ],
+    //   raw: true,
+    // });
 
-    console.log("TOKEN COMPANY CODE:", company_code);
-    console.log("EMPLOYEE COUNT:", allEmployees.length);
-    console.table(allEmployees);
+    // console.log("TOKEN COMPANY CODE:", company_code);
+    // console.log("EMPLOYEE COUNT:", allEmployees.length);
+    // console.table(allEmployees);
 
-    const totalTest = await Onboarding.count({
-      where: {
-        company_code,
-      },
-    });
+    // const totalTest = await Onboarding.count({
+    //   where: {
+    //     company_code,
+    //   },
+    // });
 
-    console.log("COUNT WITHOUT EXIT FILTER:", totalTest);
+    // console.log("COUNT WITHOUT EXIT FILTER:", totalTest);
 
-    const totalActiveTest = await Onboarding.count({
-      where: {
-        company_code,
-        status: 1,
-      },
-    });
+    // const totalActiveTest = await Onboarding.count({
+    //   where: {
+    //     company_code,
+    //     status: 1,
+    //   },
+    // });
 
-    console.log("ACTIVE COUNT:", totalActiveTest);
+    // console.log("ACTIVE COUNT:", totalActiveTest);
 
     return res.status(200).json({
       success: true,
