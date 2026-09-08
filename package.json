@@ -51,7 +51,7 @@
     "mammoth": "^1.12.0",
     "mongoose": "^9.7.2",
     "multer": "^2.2.0",
-    "mysql2": "^3.14.0",
+    "mysql2": "^3.24.4",
     "nanoid": "^5.1.16",
     "natural": "^8.1.1",
     "nodemailer": "^9.0.5",
