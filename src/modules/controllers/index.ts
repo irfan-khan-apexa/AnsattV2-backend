@@ -3,8 +3,10 @@ import {
   signupSuperMaster,
   getAllCompanies,
   getEmployeesByCompanyCode,
-  upsertCompanySettings,getCompanySettings,deleteCompanySettings,
-  resetCompanyMasterPassword
+  upsertCompanySettings,
+  getCompanySettings,
+  deleteCompanySettings,
+  resetCompanyMasterPassword,
 } from "./superMasterController/superMaster.Controller";
 
 import {
@@ -12,7 +14,6 @@ import {
   loginCompany,
   getCompanyDashboard,
   getMyCompanySettings,
-
 } from "./companyController/company.Controller";
 import {
   createEmployee,
@@ -24,11 +25,20 @@ import {
 } from "./employeeController/employee.Controller";
 
 import {
- createDepartment,getDepartments,getDepartmentById,updateDepartment,deleteDepartment
+  createDepartment,
+  getDepartments,
+  getDepartmentById,
+  updateDepartment,
+  deleteDepartment,
 } from "./departmentController/department.Controller";
 
 import {
-createRole,getRoles,getRoleById,updateRole,deleteRole,getPermissionRegistry
+  createRole,
+  getRoles,
+  getRoleById,
+  updateRole,
+  deleteRole,
+  getPermissionRegistry,
 } from "./roleController/roleController";
 
 import {
@@ -46,18 +56,36 @@ import {
 //   rejectLeave,
 // } from "./leaveController/leaveController";
 import {
-  applyLeave, 
-  getMyLeaves, 
-  getAllLeaves, 
-handleLeaveAction,
-  approveLeave, 
+  applyLeave,
+  getMyLeaves,
+  getAllLeaves,
+  handleLeaveAction,
+  approveLeave,
   rejectLeave,
- addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
-    addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
-    getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
-    
+  addNewCategory,
+  getLeaveCategory,
+  updateLeaveCategory,
+  deleteLeavecategory,
+  addExtraField,
+  getExtraFields,
+  getExtraFieldById,
+  renameExtraField,
+  deleteExtraField,
+  getLeaveBalance,
+  getAllEmployeesLeaveBalance,
+  setFinancialYear,
+  getFinancialYear,
+  getAllFinancialYears,
+  deleteFinancialYear,
 } from "./leaveController/leaveController";
-import { createOfferLetter ,requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest} from "./onboardingController/offerLetter.Controller";
+import {
+  createOfferLetter,
+  requestLetterAccess,
+  getCompanyLetterRequests,
+  getEmployeeLetterRequests,
+  downloadLetter,
+  actionLetterRequest,
+} from "./onboardingController/offerLetter.Controller";
 import {
   createOnboarding,
   getAllOnboardings,
@@ -69,7 +97,7 @@ import {
   downloadOfferLetter,
   getAllTemplates,
   bulkCreateOnboarding,
-  employeeLogin
+  employeeLogin,
 } from "./onboardingController/onBoarding.Controller";
 import {
   createExitRequest,
@@ -78,9 +106,9 @@ import {
   updateExitRequestStatus,
   generateExitLetterById,
   downloadExitLetter,
-    createExitFeedback,
+  createExitFeedback,
   getFeedbacksForEmployee,
-  getMyExitRequest
+  getMyExitRequest,
 } from "./exitRequestController/exitRequest.controller";
 import {
   createSalary,
@@ -90,10 +118,10 @@ import {
   exportSalaryData,
   updateSalary,
   deleteSalary,
-  getAllSalaries
+  getAllSalaries,
 } from "./salaryController/salary.Controller";
 import {
-createAsset,
+  createAsset,
   updateAsset,
   deleteAsset,
   assignAsset,
@@ -103,49 +131,68 @@ createAsset,
   getAllAssets,
 } from "./assetController/asset.Controller";
 import {
-createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement
+  createAnnouncement,
+  getActiveAnnouncements,
+  getPreviousAnnouncements,
+  updateAnnouncement,
+  deleteAnnouncement,
 } from "./hrAnnouncementController/hrAnnouncement.Controller";
 import {
-getCompanyAudit,getAllAudit} from "./auditController/audit.Controller";
+  getCompanyAudit,
+  getAllAudit,
+} from "./auditController/audit.Controller";
 import {
-createJobPosting,
+  createJobPosting,
   getAllJobs,
   getJobById,
   updateJob,
-  deleteJob,} from "./recruitmentController/JobPosting.Controller";
+  deleteJob,
+} from "./recruitmentController/JobPosting.Controller";
 import {
   applyForJob,
   getAllApplications,
-  updateApplicationStatus,} from "./recruitmentController/jobApplication.Controller";
+  updateApplicationStatus,
+} from "./recruitmentController/jobApplication.Controller";
 import {
   createInterview,
   getAllInterviews,
   getByApplication,
   updateInterview,
-  deleteInterview,} from "./recruitmentController/interview.Controller";
-  import {
- submitFeedback,getAllFeedbacks,getFeedbackByApplicationId} from "./recruitmentController/interviewFeedback.Controller";
-  import {
+  deleteInterview,
+} from "./recruitmentController/interview.Controller";
+import {
+  submitFeedback,
+  getAllFeedbacks,
+  getFeedbackByApplicationId,
+} from "./recruitmentController/interviewFeedback.Controller";
+import {
   createGoal,
   getGoals,
   getGoalsByEmployeeCycle,
   getGoalById,
   updateGoal,
-  deleteGoal,} from "./pmsController/goalSetting.Controller";
-  import { 
-    upsertCustomDocument,
+  deleteGoal,
+} from "./pmsController/goalSetting.Controller";
+import {
+  upsertCustomDocument,
   getAllCustomDocuments,
   getCustomDocument,
-  deleteCustomDocument,} from "./customFormBuilderController/customFormBuilder.Controller";
+  deleteCustomDocument,
+} from "./customFormBuilderController/customFormBuilder.Controller";
 
+import { getPlatformDashboard } from "./dashboardController/dashboardController";
 // All controllers exported as single object
 export {
   signupSuperMaster,
   loginSuperMaster,
   createCompany,
   loginCompany,
-  getCompanyDashboard,upsertCompanySettings,getCompanySettings,deleteCompanySettings,
-  getMyCompanySettings,resetCompanyMasterPassword,
+  getCompanyDashboard,
+  upsertCompanySettings,
+  getCompanySettings,
+  deleteCompanySettings,
+  getMyCompanySettings,
+  resetCompanyMasterPassword,
   createEmployee,
   getEmployees,
   updateEmployee,
@@ -154,14 +201,21 @@ export {
   getEmployeeModules,
   getAllCompanies,
   getEmployeesByCompanyCode,
-  createDepartment,getDepartments,getDepartmentById,updateDepartment,deleteDepartment,
- 
-  createRole,getRoles,getRoleById,updateRole,deleteRole,getPermissionRegistry,
+  createDepartment,
+  getDepartments,
+  getDepartmentById,
+  updateDepartment,
+  deleteDepartment,
+  createRole,
+  getRoles,
+  getRoleById,
+  updateRole,
+  deleteRole,
+  getPermissionRegistry,
   // createRoleModulePermission,
   // getRolePermissions,
   // updateRoleModulePermission,
   // deleteRoleModulePermission,
- 
   createPolicy,
   getAllPolicies,
   getPolicyById,
@@ -173,17 +227,34 @@ export {
   handleLeaveAction,
   approveLeave,
   rejectLeave,
- addNewCategory, getLeaveCategory,updateLeaveCategory, deleteLeavecategory,
-   addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField,getLeaveBalance,
-   getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear,
-  createOfferLetter,requestLetterAccess,getCompanyLetterRequests,getEmployeeLetterRequests,downloadLetter,actionLetterRequest,
+  addNewCategory,
+  getLeaveCategory,
+  updateLeaveCategory,
+  deleteLeavecategory,
+  addExtraField,
+  getExtraFields,
+  getExtraFieldById,
+  renameExtraField,
+  deleteExtraField,
+  getLeaveBalance,
+  getAllEmployeesLeaveBalance,
+  setFinancialYear,
+  getFinancialYear,
+  getAllFinancialYears,
+  deleteFinancialYear,
+  createOfferLetter,
+  requestLetterAccess,
+  getCompanyLetterRequests,
+  getEmployeeLetterRequests,
+  downloadLetter,
+  actionLetterRequest,
   createOnboarding,
   getAllOnboardings,
   getOnboardingById,
   updateOnboarding,
   deleteOnboarding,
-  bulkCreateOnboarding,employeeLogin,
-
+  bulkCreateOnboarding,
+  employeeLogin,
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
@@ -195,7 +266,7 @@ export {
   generateExitLetterById,
   downloadExitLetter,
   getMyExitRequest,
-    createExitFeedback,
+  createExitFeedback,
   getFeedbacksForEmployee,
   createSalary,
   getEmployeeSlips,
@@ -212,22 +283,39 @@ export {
   returnAsset,
   getEmployeeAssets,
   getAssetHistory,
-  getAllAssets, 
-  createAnnouncement,getActiveAnnouncements,getPreviousAnnouncements,updateAnnouncement,deleteAnnouncement,
-  getCompanyAudit,getAllAudit,
-  createJobPosting,getAllJobs,getJobById,updateJob,deleteJob,
-  applyForJob,getAllApplications,updateApplicationStatus,
+  getAllAssets,
+  createAnnouncement,
+  getActiveAnnouncements,
+  getPreviousAnnouncements,
+  updateAnnouncement,
+  deleteAnnouncement,
+  getCompanyAudit,
+  getAllAudit,
+  createJobPosting,
+  getAllJobs,
+  getJobById,
+  updateJob,
+  deleteJob,
+  applyForJob,
+  getAllApplications,
+  updateApplicationStatus,
   createInterview,
   getAllInterviews,
   getByApplication,
   updateInterview,
-  deleteInterview,submitFeedback,getAllFeedbacks,getFeedbackByApplicationId,
-    createGoal,
+  deleteInterview,
+  submitFeedback,
+  getAllFeedbacks,
+  getFeedbackByApplicationId,
+  createGoal,
   getGoals,
   getGoalsByEmployeeCycle,
   getGoalById,
   updateGoal,
   deleteGoal,
-
-   upsertCustomDocument,getAllCustomDocuments,getCustomDocument,deleteCustomDocument,
+  upsertCustomDocument,
+  getAllCustomDocuments,
+  getCustomDocument,
+  deleteCustomDocument,
+  getPlatformDashboard,
 };
