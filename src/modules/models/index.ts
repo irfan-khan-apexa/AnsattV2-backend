@@ -5,11 +5,12 @@ import { Employee } from "./employeeModel/employee.Model";
 import { Department } from "./departmentModel/department.Model";
 import { OfferLetter } from "./onboardingModel/offerLetter.Model";
 import { Onboarding } from "./onboardingModel/Onboarding.Model";
-import { LetterAccessRequest} from "./onboardingModel/LetterAccessRequest.Model";
+import { BlackListedToken } from "./onboardingModel/blacklistedToken.Model";
+import { LetterAccessRequest } from "./onboardingModel/LetterAccessRequest.Model";
 import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
 import { Role } from "./roleModel/role.model";
 import { Policy } from "./policyModel/policyModel";
-import {AuditLog} from "./auditModel/auditLog.Model";
+import { AuditLog } from "./auditModel/auditLog.Model";
 import { Leave } from "./leaveModel/leaveModel";
 import { LeaveMaster } from "./leaveModel/LeaveMasterModel";
 import { LeaveTransaction } from "./leaveModel/LeaveTransactionModel";
@@ -25,18 +26,15 @@ import { JobPosting } from "./recruitmentModel/JobPosting.Model";
 import { JobApplication } from "./recruitmentModel/JobApplication.Model";
 import { Interview } from "./recruitmentModel/Interview.Model";
 import { InterviewFeedback } from "./recruitmentModel/InterviewFeedback.Model";
-import { GoalSetting } from "./pmsModel/goalSetting.Model"
-import { CustomDocument } from "./customFormBuilderModel/customFormBuilder.Model"
+import { GoalSetting } from "./pmsModel/goalSetting.Model";
+import { CustomDocument } from "./customFormBuilderModel/customFormBuilder.Model";
 import sequelize from "../../config/sequelize";
-
-
 
 // Onboarding belongs to Department
 // Onboarding.belongsTo(Department, { foreignKey: "department" });
 
 // Onboarding has one Manager (self relation)
 // Onboarding.belongsTo(Onboarding, { foreignKey: "reporting_manager", as: "Manager" });
-
 
 // Employee.hasOne(Onboarding, { foreignKey: "employee_id" });
 // Onboarding.belongsTo(Employee, { foreignKey: "employee_id" });
@@ -52,10 +50,10 @@ import sequelize from "../../config/sequelize";
 //   console.error("❌ Error syncing models:", err);
 // });
 
-
 export {
   SuperMaster,
-  Company, CompanySettings,
+  Company,
+  CompanySettings,
   Employee,
   Department,
   OfferLetter,
@@ -68,6 +66,7 @@ export {
   LeaveExtraField,
   FinancialYear,
   Onboarding,
+  BlackListedToken,
   LetterAccessRequest,
   ExitRequest,
   Salary,
@@ -76,7 +75,10 @@ export {
   ExitFeedback,
   HrAnnouncement,
   AuditLog,
-  JobPosting,JobApplication,Interview,InterviewFeedback,
+  JobPosting,
+  JobApplication,
+  Interview,
+  InterviewFeedback,
   GoalSetting,
-  CustomDocument
+  CustomDocument,
 };

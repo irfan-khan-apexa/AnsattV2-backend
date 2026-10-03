@@ -97,7 +97,6 @@
 //   downloadOfferLetter
 // );
 
-
 // onboardingRouter.post("/onboarding/bulk-import", upload.single("file"), bulkCreateOnboarding);
 
 // onboardingRouter.post("/requestLetterAccess", authenticateUser, requestLetterAccess);
@@ -111,8 +110,6 @@
 //   downloadLetter
 // );
 // onboardingRouter.post("/employee-login", employeeLogin);
-
-
 
 // export { onboardingRouter };
 
@@ -140,6 +137,7 @@ import {
   getEmployeeLetterRequests,
   downloadLetter,
   actionLetterRequest,
+  employeeLogout,
 } from "../../controllers/index";
 
 import {
@@ -164,74 +162,59 @@ const onboardingUploadFields = upload.fields([
 ]);
 
 // ================= TEMPLATES =================
-onboardingRouter.get(
-  "/Onboarding/templates",
-  getAllTemplates
-);
+onboardingRouter.get("/Onboarding/templates", getAllTemplates);
 
 // ================= CREATE =================
 onboardingRouter.post(
   "/Onboarding",
   authenticateUser,
   onboardingUploadFields,
-  createOnboarding
+  createOnboarding,
 );
 
 // ================= GET ALL =================
-onboardingRouter.get(
-  "/Onboarding",
-  authenticateUser,
-  getAllOnboardings
-);
+onboardingRouter.get("/Onboarding", authenticateUser, getAllOnboardings);
 
 // ================= GET BY ID =================
-onboardingRouter.get(
-  "/Onboarding/:id",
-  authenticateUser,
-  getOnboardingById
-);
+onboardingRouter.get("/Onboarding/:id", authenticateUser, getOnboardingById);
 
 // ================= UPDATE =================
 onboardingRouter.put(
   "/Onboarding/:id",
   authenticateUser,
   onboardingUploadFields,
-  updateOnboarding
+  updateOnboarding,
 );
 
 // ================= DELETE =================
-onboardingRouter.delete(
-  "/Onboarding/:id",
-  authenticateUser,
-  deleteOnboarding
-);
+onboardingRouter.delete("/Onboarding/:id", authenticateUser, deleteOnboarding);
 
 // ================= SIGNED URLS =================
 onboardingRouter.get(
   "/Onboarding/:id/presigned-url",
   authenticateUser,
-  getAllPresignedUrls
+  getAllPresignedUrls,
 );
 
 // ================= OFFER LETTER =================
 onboardingRouter.post(
   "/Onboarding/:id/generate-offer-letter",
   authenticateUser,
-  generateOfferLetterById
+  generateOfferLetterById,
 );
 
 // ================= OFFER LETTER DOWNLOAD =================
 onboardingRouter.get(
   "/Onboarding/:id/offer-letter/download/:format",
   authenticateUser,
-  downloadOfferLetter
+  downloadOfferLetter,
 );
 
 // ================= EXIT LETTER =================
 onboardingRouter.post(
   "/Onboarding/:id/generate-exit-letter",
   authenticateUser,
-  generateExitLetterById
+  generateExitLetterById,
 );
 
 // ================= BULK IMPORT =================
@@ -239,45 +222,43 @@ onboardingRouter.post(
   "/onboarding/bulk-import",
   authenticateUser,
   upload.single("file"),
-  bulkCreateOnboarding
+  bulkCreateOnboarding,
 );
 
 // ================= LETTER REQUESTS =================
 onboardingRouter.post(
   "/requestLetterAccess",
   authenticateUser,
-  requestLetterAccess
+  requestLetterAccess,
 );
 
 onboardingRouter.get(
   "/getemployeerequest",
   authenticateUser,
-  getEmployeeLetterRequests
+  getEmployeeLetterRequests,
 );
 
 onboardingRouter.get(
   "/getallrequest",
   authenticateUser,
-  getCompanyLetterRequests
+  getCompanyLetterRequests,
 );
 
 onboardingRouter.post(
   "/hr/letter/request/:id/action",
   authenticateUser,
-  actionLetterRequest
+  actionLetterRequest,
 );
 
 // ================= LETTER DOWNLOAD =================
 onboardingRouter.get(
   "/letter/download/:letter_type/:format",
   authenticateUser,
-  downloadLetter
+  downloadLetter,
 );
 
 // ================= EMPLOYEE LOGIN =================
-onboardingRouter.post(
-  "/employee-login",
-  employeeLogin
-);
+onboardingRouter.post("/employee-login", employeeLogin);
+onboardingRouter.post("/employee-logout", authenticateUser, employeeLogout);
 
 export { onboardingRouter };

@@ -9,7 +9,6 @@
 // import { generatePresignedGetUrl } from "../../../utils/generatePresignedUrl";
 // import { PERMISSION_REGISTRY } from "../../../middlewares/checkPermission";
 
-
 // const signupSuperMaster = async (
 //   req: Request,
 //   res: Response,
@@ -66,14 +65,14 @@
 //       return res.status(404).json({ message: "Super master not found" });
 //     }
 
-//     const isMatch = await bcrypt.compare(password, user.password); 
+//     const isMatch = await bcrypt.compare(password, user.password);
 
 //     if (!isMatch) {
 //       return res.status(401).json({ message: "Invalid password" });
 //     }
 
 //     const token = jwt.sign(
-//       { id: user.id, role: "super_master" }, 
+//       { id: user.id, role: "super_master" },
 //       process.env.JWT_SECRET || "your-secret-key",
 //       { expiresIn: "1d" }
 //     );
@@ -88,7 +87,7 @@
 // const getAllCompanies = async (req: Request, res: Response): Promise<any> => {
 //   try {
 //     const companies = await Company.findAll({
-//       attributes: { exclude: ["password"] }, 
+//       attributes: { exclude: ["password"] },
 //     });
 //     return res.status(200).json({ companies });
 //   } catch (err) {
@@ -112,7 +111,7 @@
 
 //     const employees = await Onboarding.findAll({
 //       where: { company_code },
-//       attributes: { exclude: ["auto_password", "presigned_url_cache"] }, 
+//       attributes: { exclude: ["auto_password", "presigned_url_cache"] },
 //     });
 
 //     return res.status(200).json({ company: company.name, employees });
@@ -121,8 +120,6 @@
 //     return res.status(500).json({ message: "Server error", error });
 //   }
 // };
-
-
 
 // // const upsertCompanySettings = async (
 // //   req: Request,
@@ -141,7 +138,6 @@
 
 // //     //  logo URL from Wasabi
 // //     const company_logo = file?.location || null;
-
 
 // //     if (!company_code || !company_name) {
 // //       return res
@@ -187,8 +183,6 @@
 // //       language,
 // //       permissions,
 // //     } = req.body;
-
-
 
 // //     const file = (req as any).file;
 // //     const company_logo = file?.location ;
@@ -281,7 +275,6 @@
 // //   }
 // // };
 
-
 // const upsertCompanySettings = async (
 //   req: Request,
 //   res: Response
@@ -326,7 +319,7 @@
 //       company_name,
 //       brand_color,
 //       language,
-//       permissions: parsedPermissions, 
+//       permissions: parsedPermissions,
 //       company_logo,
 //     });
 
@@ -381,7 +374,6 @@
 //   }
 // };
 
-
 // // const getCompanySettings = async (
 // //   req: Request,
 // //   res: Response
@@ -405,8 +397,6 @@
 // //     });
 // //   }
 // // };
-
-
 
 // // const getCompanySettings = async (
 // //   req: Request,
@@ -452,7 +442,6 @@
 // //   }
 // // };
 
-
 // const deleteCompanySettings = async (
 //   req: Request,
 //   res: Response
@@ -495,13 +484,16 @@ import { CompanySettings, Onboarding, SuperMaster } from "../../models/index";
 import { Company } from "../../models/index";
 import { PERMISSION_REGISTRY } from "../../../middlewares/checkPermission";
 import { audit } from "../../../helpers/audit.helper"; // ADDED
-import { encrypt ,decrypt} from "../../../utils/encryption";
-import { getSignedUrl, uploadToCentralStorage } from "../../../services/uploadfileService";
+import { encrypt, decrypt } from "../../../utils/encryption";
+import {
+  getSignedUrl,
+  uploadToCentralStorage,
+} from "../../../services/uploadfileService";
 
 const signupSuperMaster = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   const { name, email, password } = req.body;
 
@@ -515,7 +507,9 @@ const signupSuperMaster = async (
   }
 
   try {
-    const existing = await SuperMaster.findOne({ where: { email: email.trim() } });
+    const existing = await SuperMaster.findOne({
+      where: { email: email.trim() },
+    });
 
     if (existing) {
       return res.status(400).json({ message: "Email already registered" });
@@ -529,16 +523,16 @@ const signupSuperMaster = async (
       password: hashedPassword,
     });
 
- const auditData: any = newUser.get({ plain: true });
+    const auditData: any = newUser.get({ plain: true });
 
-delete auditData.password;
+    delete auditData.password;
 
-await audit(req, {
-  module: "super_master",
-  action: "create",
-  record_id: newUser.id,
-  new_value: auditData,
-});
+    await audit(req, {
+      module: "super_master",
+      action: "create",
+      record_id: newUser.id,
+      new_value: auditData,
+    });
     const plainUser = newUser.get({ plain: true });
 
     return res.status(201).json({
@@ -555,11 +549,7 @@ await audit(req, {
   }
 };
 
-
-const loginSuperMaster = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+const loginSuperMaster = async (req: Request, res: Response): Promise<any> => {
   const { email, password } = req.body;
 
   try {
@@ -581,11 +571,7 @@ const loginSuperMaster = async (
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
-  
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -598,13 +584,12 @@ const loginSuperMaster = async (
         id: user.id,
         role: "super_master",
       },
-      process.env.JWT_SECRET || "your-secret-key",
+      process.env.JWT_SECRET || "secret-key",
       {
         expiresIn: "1d",
-      }
+      },
     );
 
-    
     await audit(req, {
       module: "super_master",
       action: "login",
@@ -645,7 +630,7 @@ const getAllCompanies = async (req: Request, res: Response): Promise<any> => {
 
 const getEmployeesByCompanyCode = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   const { company_code } = req.params;
 
@@ -665,7 +650,6 @@ const getEmployeesByCompanyCode = async (
     return res.status(500).json({ message: "Server error", error });
   }
 };
-
 
 // ================= SETTINGS =================
 // const upsertCompanySettings = async (
@@ -737,16 +721,11 @@ const getEmployeesByCompanyCode = async (
 // };
 const upsertCompanySettings = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
-    const {
-      company_code,
-      company_name,
-      brand_color,
-      language,
-      permissions,
-    } = req.body;
+    const { company_code, company_name, brand_color, language, permissions } =
+      req.body;
 
     const file = (req as any).file;
 
@@ -766,53 +745,42 @@ const upsertCompanySettings = async (
       });
     }
 
-    const existingSettings =
-      await CompanySettings.findOne({
-        where: { company_code },
-      });
+    const existingSettings = await CompanySettings.findOne({
+      where: { company_code },
+    });
 
-    let company_logo =
-      existingSettings?.company_logo;
+    let company_logo = existingSettings?.company_logo;
 
     // Upload logo to Central Storage
     if (file) {
-      const uploadedFile =
-        await uploadToCentralStorage(file);
+      const uploadedFile = await uploadToCentralStorage(file);
 
-      console.log(
-        "Uploaded Company Logo:",
-        uploadedFile
-      );
+      console.log("Uploaded Company Logo:", uploadedFile);
 
-      company_logo = encrypt(
-        uploadedFile.fileId
-      );
+      company_logo = encrypt(uploadedFile.fileId);
     }
 
     const parsedPermissions =
-      typeof permissions === "string"
-        ? JSON.parse(permissions)
-        : permissions;
+      typeof permissions === "string" ? JSON.parse(permissions) : permissions;
 
-    const [settings] =
-      await CompanySettings.upsert({
-        company_code,
-        company_name,
-        brand_color,
-        language,
-        permissions: parsedPermissions,
-        company_logo,
-      });
+    const [settings] = await CompanySettings.upsert({
+      company_code,
+      company_name,
+      brand_color,
+      language,
+      permissions: parsedPermissions,
+      company_logo,
+    });
 
-   const oldData = existingSettings?.toJSON();
+    const oldData = existingSettings?.toJSON();
 
-await audit(req, {
-  module: "company_settings",
-  action: existingSettings ? "update" : "create",
-  record_id: company_code,
-  old_value: oldData,
-  new_value: settings.toJSON ? settings.toJSON() : settings,
-});
+    await audit(req, {
+      module: "company_settings",
+      action: existingSettings ? "update" : "create",
+      record_id: company_code,
+      old_value: oldData,
+      new_value: settings.toJSON ? settings.toJSON() : settings,
+    });
 
     return res.status(200).json({
       message: existingSettings
@@ -821,14 +789,10 @@ await audit(req, {
       data: settings,
     });
   } catch (err: any) {
-    console.error(
-      "Company Settings Error:",
-      err
-    );
+    console.error("Company Settings Error:", err);
 
     return res.status(500).json({
-      message:
-        "Error saving company settings",
+      message: "Error saving company settings",
       error: err.message,
     });
   }
@@ -875,7 +839,7 @@ await audit(req, {
 
 const getCompanySettings = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const { company_code } = req.params;
@@ -895,13 +859,9 @@ const getCompanySettings = async (
       try {
         const fileId = decrypt(settings.company_logo);
 
-        settings.company_logo_signed_url =
-          await getSignedUrl(fileId);
+        settings.company_logo_signed_url = await getSignedUrl(fileId);
       } catch (error) {
-        console.error(
-          "Failed to generate company logo URL:",
-          error
-        );
+        console.error("Failed to generate company logo URL:", error);
 
         settings.company_logo_signed_url = null;
       }
@@ -921,7 +881,7 @@ const getCompanySettings = async (
 };
 const deleteCompanySettings = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const { company_code } = req.params;
@@ -958,7 +918,7 @@ const deleteCompanySettings = async (
 };
 const resetCompanyMasterPassword = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   const { company_code, new_password } = req.body;
 
@@ -1013,5 +973,5 @@ export {
   upsertCompanySettings,
   getCompanySettings,
   deleteCompanySettings,
-  resetCompanyMasterPassword
+  resetCompanyMasterPassword,
 };

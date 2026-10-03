@@ -37,7 +37,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { Company ,CompanySettings} from "../../models/index";
+import { Company, CompanySettings } from "../../models/index";
 import {
   AuthenticatedRequest,
   CompanyRequest,
@@ -46,10 +46,6 @@ import { audit } from "../../../helpers/audit.helper";
 import { getSignedUrl } from "../../../services/uploadfileService";
 import { decrypt } from "../../../utils/encryption";
 
-
-
-
-
 function generateCompanyCode(name: string): string {
   const randomNum = Math.floor(1000 + Math.random() * 9000);
   return `${name.toLowerCase().replace(/\s+/g, "")}_${randomNum}`;
@@ -57,7 +53,7 @@ function generateCompanyCode(name: string): string {
 
 const createCompany = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   const { name, address, contact, password } = req.body;
 
@@ -81,12 +77,12 @@ const createCompany = async (
     });
     const { password: _, ...auditData } = newCompany.get({ plain: true });
 
-await audit(req, {
-  module: "company",
-  action: "create",
-  record_id: newCompany.id,
-  new_value: auditData,
-});
+    await audit(req, {
+      module: "company",
+      action: "create",
+      record_id: newCompany.id,
+      new_value: auditData,
+    });
 
     return res.status(201).json({
       message: "Company created successfully",
@@ -124,8 +120,8 @@ const loginCompany = async (req: Request, res: Response): Promise<any> => {
         company_name: company.name,
         company_code: company.company_code,
       },
-      process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "1d" }
+      process.env.JWT_SECRET || "secret-key",
+      { expiresIn: "1d" },
     );
 
     return res.status(200).json({ token });
@@ -137,7 +133,7 @@ const loginCompany = async (req: Request, res: Response): Promise<any> => {
 
 const getCompanyDashboard = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const companyCode = req.user?.company_code;
@@ -206,7 +202,6 @@ const getCompanyDashboard = async (
 //       });
 //     }
 
-    
 //     if (settings.company_logo) {
 //       const bucket = process.env.WASABI_BUCKET_NAME!;
 //       const endpoint = process.env.WASABI_ENDPOINT!.replace(/\/+$/, "");
@@ -219,7 +214,7 @@ const getCompanyDashboard = async (
 
 //       settings.company_logo_signed_url = await generatePresignedGetUrl(
 //         key,
-//         300 
+//         300
 //       );
 //     } else {
 //       settings.company_logo_signed_url = null;
@@ -238,7 +233,7 @@ const getCompanyDashboard = async (
 
 const getMyCompanySettings = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const user: any = (req as any).user;
@@ -259,13 +254,9 @@ const getMyCompanySettings = async (
       try {
         const fileId = decrypt(settings.company_logo);
 
-        settings.company_logo_signed_url =
-          await getSignedUrl(fileId);
+        settings.company_logo_signed_url = await getSignedUrl(fileId);
       } catch (error) {
-        console.error(
-          "Failed to generate company logo URL:",
-          error
-        );
+        console.error("Failed to generate company logo URL:", error);
 
         settings.company_logo_signed_url = null;
       }
@@ -286,7 +277,9 @@ const getMyCompanySettings = async (
 
 // company setings
 
-
-
-
-export { createCompany, loginCompany, getCompanyDashboard ,getMyCompanySettings,};
+export {
+  createCompany,
+  loginCompany,
+  getCompanyDashboard,
+  getMyCompanySettings,
+};

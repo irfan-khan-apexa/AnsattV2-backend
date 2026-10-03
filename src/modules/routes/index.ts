@@ -21,6 +21,7 @@ import { interviewFeedbackRouter } from "./recruitmentRoutes/interviewFeedback.R
 import { goalRouter } from "./pmsRoutes/goalSetting.Routes";
 import { customDocumentRouter } from "./customFormBuilderRoutes/customFormBuilder.Routes";
 import { dashboardRouter } from "./dashboardRoutes/dashboardRoutes";
+import { blackListedTokenRouter } from "./onboardingRoutes/blacklistedToken.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -43,6 +44,7 @@ router.use(interviewFeedbackRouter);
 router.use(goalRouter);
 router.use(customDocumentRouter);
 router.use(dashboardRouter);
+router.use(blackListedTokenRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({

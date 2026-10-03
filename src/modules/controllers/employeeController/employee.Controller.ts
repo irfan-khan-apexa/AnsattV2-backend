@@ -10,7 +10,7 @@ import { RoleModuleAccess } from "../../../config/roleModuleAccess";
 
 const createEmployee = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const { name, email, contact, role, password } = req.body;
@@ -18,7 +18,6 @@ const createEmployee = async (
     const company_code = req.user.company_code;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-   
     if (!name || !email || !role || !password) {
       return res.status(400).json({ message: "Missing required fields" });
     }
@@ -41,7 +40,7 @@ const createEmployee = async (
 
 const getEmployees = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const company_code = req.user.company_code;
@@ -57,7 +56,7 @@ const getEmployees = async (
 
 const updateEmployee = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const { id } = req.params;
@@ -76,7 +75,7 @@ const updateEmployee = async (
 
 const deleteEmployee = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const { id } = req.params;
@@ -91,12 +90,7 @@ const deleteEmployee = async (
   }
 };
 
-
-
-const loginEmployee = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+const loginEmployee = async (req: Request, res: Response): Promise<any> => {
   const { email, password } = req.body;
 
   try {
@@ -149,10 +143,10 @@ const loginEmployee = async (
         company_code: user.company_code,
         permissions,
       },
-      process.env.JWT_SECRET || "your-secret-key",
+      process.env.JWT_SECRET || "secret-key",
       {
         expiresIn: "1d",
-      }
+      },
     );
 
     return res.status(200).json({
@@ -175,15 +169,13 @@ const loginEmployee = async (
   }
 };
 
-
 const getEmployeeModules = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const userRole = req.user.role;
 
-   
     const normalizedRole =
       userRole.charAt(0).toUpperCase() + userRole.slice(1).toLowerCase();
 

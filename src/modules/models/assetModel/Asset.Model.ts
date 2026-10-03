@@ -18,10 +18,21 @@ export interface AssetAttributes {
 
 export type AssetCreationAttributes = Optional<
   AssetAttributes,
-  "id" | "asset_type" | "serial_number" | "purchase_date" | "purchase_value" | "condition" | "location" | "status" | "assigned_to"
+  | "id"
+  | "asset_type"
+  | "serial_number"
+  | "purchase_date"
+  | "purchase_value"
+  | "condition"
+  | "location"
+  | "status"
+  | "assigned_to"
 >;
 
-export class Asset extends Model<AssetAttributes, AssetCreationAttributes> implements AssetAttributes {
+export class Asset
+  extends Model<AssetAttributes, AssetCreationAttributes>
+  implements AssetAttributes
+{
   public id!: number;
   public company_code!: string;
   public name!: string;
@@ -46,14 +57,17 @@ Asset.init(
     purchase_value: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 0 },
     condition: { type: DataTypes.STRING, allowNull: true },
     location: { type: DataTypes.STRING, allowNull: true },
-    status: { type: DataTypes.STRING, allowNull: false, defaultValue: "available" },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "available",
+    },
     assigned_to: { type: DataTypes.INTEGER, allowNull: true },
     generated_by: { type: DataTypes.INTEGER, allowNull: false },
   },
-  { sequelize, tableName: "assets", timestamps: true }
+  { sequelize, tableName: "assets", timestamps: true },
 );
 
 // Asset.sync();
-
 
 export default Asset;

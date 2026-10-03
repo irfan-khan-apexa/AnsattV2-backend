@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/config";
+import { BlackListedToken } from "../modules/models";
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -18,7 +19,7 @@ export interface AuthRequest extends Request {
 export const authenticateSuperMaster = (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -29,11 +30,11 @@ export const authenticateSuperMaster = (
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "your-secret-key"
+      process.env.JWT_SECRET || "your-secret-key",
     );
     if ((decoded as any).role !== "super_master") {
       return Promise.resolve(
-        res.status(403).json({ message: "Forbidden: Not a super master" })
+        res.status(403).json({ message: "Forbidden: Not a super master" }),
       );
     }
     req.user = decoded;
@@ -47,7 +48,7 @@ export const authenticateSuperMaster = (
 export const authenticateCompanyMaster = (
   req: CompanyRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -58,12 +59,12 @@ export const authenticateCompanyMaster = (
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "your-secret-key"
+      process.env.JWT_SECRET || "your-secret-key",
     );
 
     if ((decoded as any).role !== "company_master") {
       return Promise.resolve(
-        res.status(403).json({ message: "Forbidden: Not a company master" })
+        res.status(403).json({ message: "Forbidden: Not a company master" }),
       );
     }
 
@@ -78,20 +79,20 @@ export const authenticateCompanyMaster = (
 export const authenticateEmployee = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return Promise.resolve(
-      res.status(401).json({ message: "No token provided" })
+      res.status(401).json({ message: "No token provided" }),
     );
   }
 
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "your-secret-key"
+      process.env.JWT_SECRET || "your-secret-key",
     );
     (req as any).user = decoded; // ✅ attach user to request
     next();
@@ -132,11 +133,10 @@ export const authenticateEmployee = (
 //   }
 // };
 
-
-export const authenticateUser = (
+export const authenticateUser = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -145,15 +145,22 @@ export const authenticateUser = (
   }
 
   try {
+    const tokendata = await BlackListedToken.findOne({ where: { token } });
+
     const decoded: any = jwt.verify(
       token,
-      process.env.JWT_SECRET || "your-secret-key"
+      process.env.JWT_SECRET || "secret-key",
     );
 
     // 🔥 MINIMUM REQUIRED (for both company & employee)
     if (!decoded.id || !decoded.company_code) {
       return Promise.resolve(
-        res.status(401).json({ message: "Invalid token payload" })
+        res.status(401).json({ message: "Invalid token payload" }),
+      );
+    }
+    if (tokendata) {
+      return Promise.resolve(
+        res.status(401).json({ message: "this token is already blacklisted" }),
       );
     }
 
@@ -169,14 +176,17 @@ export const authenticateUser = (
     req.user = decoded;
     next();
     return Promise.resolve();
-  } catch (err) {
-    return Promise.resolve(res.status(401).json({ message: "Invalid token" }));
+  } catch (err: any) {
+    // return Promise.resolve(res.status(401).json({ message: "Invalid token" }));
+    console.log("JWT ERROR:", err.name);
+    console.log("JWT MESSAGE:", err.message);
+
+    return res.status(401).json({
+      message: "Invalid token",
+      error: err.message,
+    });
   }
 };
-
-
-
-
 
 // export const authenticateRole = (allowedRoles: string[]) => {
 //   return (

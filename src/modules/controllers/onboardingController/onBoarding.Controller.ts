@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
-import { Onboarding, Role } from "../../models/index";
+import { BlackListedToken, Onboarding, Role } from "../../models/index";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import XLSX from "xlsx";
 
-import { CompanyRequest } from "../../../middlewares/authMiddleware";
+import {
+  AuthRequest,
+  CompanyRequest,
+} from "../../../middlewares/authMiddleware";
 
 import { encrypt, decrypt } from "../../../utils/encryption";
 
@@ -311,6 +314,7 @@ const getOnboardingById = async (
 //     });
 //   }
 // };
+
 const updateOnboarding = async (
   req: CompanyRequest,
   res: Response,
@@ -822,7 +826,7 @@ const employeeLogin = async (req: Request, res: Response): Promise<any> => {
         role_id: role.id,
         permissions,
       },
-      process.env.JWT_SECRET || "secret",
+      process.env.JWT_SECRET || "secret-key",
       {
         expiresIn: "1d",
       },
@@ -840,6 +844,71 @@ const employeeLogin = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+const employeeLogout = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<any> => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    console.log("token arah h", token);
+    if (!token) {
+      return res.status(401).json({
+        message: "Token missing",
+      });
+    }
+
+    // const decoded: any = jwt.verify(
+    //   token,
+    //   process.env.JWT_SECRET || "secret-key",
+    // );
+    // const company_code = decoded.company_code;
+    const company_code = req.user.company_code;
+
+    const expiresAt = new Date(req.user.exp * 1000);
+
+    const existedToken = await BlackListedToken.findOne({
+      where: { token, company_code },
+    });
+    if (existedToken) {
+      return res.status(401).json({
+        message: "Token Already Exits",
+      });
+    }
+    const data = await BlackListedToken.create({
+      token,
+      company_code,
+      expiresAt,
+    });
+
+    return res
+      .status(201)
+      .json({ message: "token added to blacklisted", data: data });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "error adding to blacklisted token",
+      error: error.message,
+    });
+  }
+};
+
+// const employeeLogout = async (req: Request, res: Response): Promise<any> => {
+//   console.log("🔥 LOGOUT CONTROLLER HIT");
+
+//   const token = req.headers.authorization?.split(" ")[1];
+
+//   console.log("AUTH HEADER:", req.headers.authorization);
+//   console.log("TOKEN:", token);
+
+//   if (!token) {
+//     return res.status(401).json({
+//       message: "Token missing",
+//     });
+//   }
+
+//   return res.status(200).json({
+//     message: "controller reached",
+//   });
+// };
 export {
   createOnboarding,
   getAllOnboardings,
@@ -852,4 +921,5 @@ export {
   getAllTemplates,
   bulkCreateOnboarding,
   employeeLogin,
+  employeeLogout,
 };

@@ -98,7 +98,14 @@ import {
   getAllTemplates,
   bulkCreateOnboarding,
   employeeLogin,
+  employeeLogout,
 } from "./onboardingController/onBoarding.Controller";
+
+import {
+  addToken,
+  getBlacklistedToken,
+  checktoken,
+} from "../controllers/onboardingController/blackListedToken.Controller";
 import {
   createExitRequest,
   getAllExitRequests,
@@ -201,6 +208,9 @@ export {
   getEmployeeModules,
   getAllCompanies,
   getEmployeesByCompanyCode,
+  addToken,
+  getBlacklistedToken,
+  checktoken,
   createDepartment,
   getDepartments,
   getDepartmentById,
@@ -255,6 +265,7 @@ export {
   deleteOnboarding,
   bulkCreateOnboarding,
   employeeLogin,
+  employeeLogout,
   getAllPresignedUrls,
   generateOfferLetterById,
   downloadOfferLetter,
