@@ -6,7 +6,15 @@ export const PERMISSION_REGISTRY = {
   leaves: ["read", "create", "update", "delete"],
   onboarding: ["read", "create", "update", "delete"],
   policy: ["read", "create", "update", "delete"],
-  salary: ["read", "create", "update", "delete"],
+  salary: [
+    "read",
+    "create",
+    "update",
+    "delete",
+    "download",
+    "bulk_upload",
+    "export",
+  ],
   hrAnnouncement: ["read", "create", "update", "delete"],
   roles: ["read", "create", "update", "delete"],
 };

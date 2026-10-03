@@ -8,7 +8,7 @@ import { Onboarding } from "./onboardingModel/Onboarding.Model";
 import { BlackListedToken } from "./onboardingModel/blacklistedToken.Model";
 import { LetterAccessRequest } from "./onboardingModel/LetterAccessRequest.Model";
 import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
-import { Role } from "./roleModel/role.model";
+import { Role } from "./roleModel/role.Model";
 import { Policy } from "./policyModel/policyModel";
 import { AuditLog } from "./auditModel/auditLog.Model";
 import { Leave } from "./leaveModel/leaveModel";
