@@ -38,15 +38,11 @@ Role.init(
     sequelize,
     tableName: "roles",
     timestamps: true,
-  }
+  },
 );
-
-
-
 
 // Role.sync({alter:true});
 // Role.sync();
 // sequelize.sync({ alter: false });
-
 
 export default Role;
