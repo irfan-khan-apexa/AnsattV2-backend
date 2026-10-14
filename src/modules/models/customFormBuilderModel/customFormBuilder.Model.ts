@@ -4,7 +4,7 @@ import sequelize from "../../../config/sequelize";
 export interface CustomDocumentAttributes {
   id?: string;
   company_code: string;
-
+  template_type?: string;
   doc_name: string;
 
   sections?: Record<string, any> | null;
@@ -39,15 +39,12 @@ export type CustomDocumentCreationAttributes = Optional<
 >;
 
 export class CustomDocument
-  extends Model<
-    CustomDocumentAttributes,
-    CustomDocumentCreationAttributes
-  >
+  extends Model<CustomDocumentAttributes, CustomDocumentCreationAttributes>
   implements CustomDocumentAttributes
 {
   public id!: string;
   public company_code!: string;
-
+  public template_type!: string;
   public doc_name!: string;
 
   public sections!: Record<string, any> | null;
@@ -77,6 +74,10 @@ CustomDocument.init(
     },
 
     company_code: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    template_type: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -138,7 +139,7 @@ CustomDocument.init(
     sequelize,
     tableName: "custom_documents",
     timestamps: true,
-  }
+  },
 );
-
+// CustomDocument.sync({ alter: true });
 export default CustomDocument;

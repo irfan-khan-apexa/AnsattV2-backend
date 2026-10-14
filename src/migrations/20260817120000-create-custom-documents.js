@@ -19,19 +19,24 @@ module.exports = {
         allowNull: false,
       },
 
+      template_type: {
+        type: Sequelize.STRING(100),
+        allowNull: false,
+      },
+
       sections: {
         type: Sequelize.JSON,
-        allowNull: false,
+        allowNull: true,
       },
 
       section_list: {
         type: Sequelize.JSON,
-        allowNull: false,
+        allowNull: true,
       },
 
       logo_size: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         defaultValue: 80,
       },
 
@@ -42,7 +47,7 @@ module.exports = {
 
       pos: {
         type: Sequelize.JSON,
-        allowNull: false,
+        allowNull: true,
       },
 
       font_family: {
@@ -82,25 +87,19 @@ module.exports = {
     });
 
     // Indexes
-    await queryInterface.addIndex(
-      "custom_documents",
-      ["company_code"]
-    );
+    await queryInterface.addIndex("custom_documents", ["company_code"]);
 
-    await queryInterface.addIndex(
-      "custom_documents",
-      ["generated_by"]
-    );
+    await queryInterface.addIndex("custom_documents", ["generated_by"]);
 
-    await queryInterface.addIndex(
-      "custom_documents",
-      ["is_draft"]
-    );
+    await queryInterface.addIndex("custom_documents", ["is_draft"]);
+
+    await queryInterface.addIndex("custom_documents", [
+      "company_code",
+      "template_type",
+    ]);
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable(
-      "custom_documents"
-    );
+    await queryInterface.dropTable("custom_documents");
   },
 };

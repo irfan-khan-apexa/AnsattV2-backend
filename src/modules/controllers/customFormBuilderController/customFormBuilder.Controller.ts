@@ -24,17 +24,9 @@ const MAX_SECTION_LIST = 500;
 
 const positionSchema = z
   .object({
-    x: z
-      .number()
-      .finite()
-      .min(-10000)
-      .max(10000),
+    x: z.number().finite().min(-10000).max(10000),
 
-    y: z
-      .number()
-      .finite()
-      .min(-10000)
-      .max(10000),
+    y: z.number().finite().min(-10000).max(10000),
   })
   .strict();
 
@@ -59,72 +51,30 @@ const positionSchema = z
 
 const sectionSchema = z
   .object({
-    id: z
-      .string()
-      .trim()
-      .min(1)
-      .max(150),
+    id: z.string().trim().min(1).max(150),
 
-    type: z
-      .string()
-      .trim()
-      .min(1)
-      .max(100),
+    type: z.string().trim().min(1).max(100),
 
-    label: z
-      .string()
-      .trim()
-      .max(500)
-      .optional(),
+    label: z.string().trim().max(500).optional(),
 
-    content: z
-      .string()
-      .max(10000)
-      .optional(),
+    content: z.string().max(10000).optional(),
 
-    enabled: z
-      .boolean()
-      .optional(),
+    enabled: z.boolean().optional(),
 
-    fontSize: z
-      .number()
-      .finite()
-      .min(1)
-      .max(200)
-      .optional(),
+    fontSize: z.number().finite().min(1).max(200).optional(),
 
-    align: z
-      .enum([
-        "left",
-        "center",
-        "right",
-        "justify",
-      ])
-      .optional(),
+    align: z.enum(["left", "center", "right", "justify"]).optional(),
 
-    bold: z
-      .boolean()
-      .optional(),
+    bold: z.boolean().optional(),
 
     color: z
       .string()
-      .regex(
-        /^#[0-9A-Fa-f]{6}$/,
-        "Invalid color format"
-      )
+      .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format")
       .optional(),
 
-    width: z
-      .string()
-      .max(50)
-      .optional(),
+    width: z.string().max(50).optional(),
 
-    orderIndex: z
-      .number()
-      .int()
-      .min(0)
-      .max(MAX_SECTION_LIST)
-      .optional(),
+    orderIndex: z.number().int().min(0).max(MAX_SECTION_LIST).optional(),
 
     position: positionSchema.optional(),
   })
@@ -146,22 +96,13 @@ const sectionSchema = z
 
 const sectionsSchema = z
   .record(
-    z
-      .string()
-      .min(1)
-      .max(150),
+    z.string().min(1).max(150),
 
-    sectionSchema
+    sectionSchema,
   )
-  .refine(
-    (sections) =>
-      Object.keys(sections).length <=
-      MAX_SECTIONS,
-    {
-      message:
-        `Maximum ${MAX_SECTIONS} sections are allowed`,
-    }
-  );
+  .refine((sections) => Object.keys(sections).length <= MAX_SECTIONS, {
+    message: `Maximum ${MAX_SECTIONS} sections are allowed`,
+  });
 
 /**
  * =========================================================
@@ -171,10 +112,7 @@ const sectionsSchema = z
 
 const sectionListSchema = z
   .array(sectionSchema)
-  .max(
-    MAX_SECTION_LIST,
-    `Maximum ${MAX_SECTION_LIST} sections are allowed`
-  );
+  .max(MAX_SECTION_LIST, `Maximum ${MAX_SECTION_LIST} sections are allowed`);
 
 /**
  * =========================================================
@@ -193,11 +131,17 @@ const createCustomDocumentSchema = z
       .trim()
       .min(1)
       .max(100)
-      .regex(
-        /^[a-zA-Z0-9_-]+$/,
-        "Invalid document ID"
-      )
+      .regex(/^[a-zA-Z0-9_-]+$/, "Invalid document ID")
       .optional(),
+
+    /**
+     * templaye type
+     */
+    templateType: z
+      .string()
+      .trim()
+      .min(1, "Template type is required")
+      .max(100, "Template type cannot exceed 100 characters"),
 
     /**
      * Document name
@@ -205,79 +149,51 @@ const createCustomDocumentSchema = z
     docName: z
       .string()
       .trim()
-      .min(
-        1,
-        "Document name is required"
-      )
-      .max(
-        200,
-        "Document name cannot exceed 200 characters"
-      ),
+      .min(1, "Document name is required")
+      .max(200, "Document name cannot exceed 200 characters"),
 
     /**
      * Dynamic sections
      */
-    sections:
-      sectionsSchema.optional(),
+    sections: sectionsSchema.optional(),
 
     /**
      * Ordered sections
      */
-    sectionList:
-      sectionListSchema.optional(),
+    sectionList: sectionListSchema.optional(),
 
     /**
      * Logo size
      */
-    logoSize: z
-      .number()
-      .finite()
-      .int()
-      .min(0)
-      .max(1000)
-      .optional(),
+    logoSize: z.number().finite().int().min(0).max(1000).optional(),
 
     /**
      * Logo can be URL/path/base64
      * depending on your frontend implementation.
      */
-    logo: z
-      .string()
-      .trim()
-      .max(2000)
-      .nullable()
-      .optional(),
+    logo: z.string().trim().max(2000).nullable().optional(),
 
     /**
      * Document position
      */
-    pos:
-      positionSchema.optional(),
+    pos: positionSchema.optional(),
 
     /**
      * Font family
      *
      * No whitelist validation for now.
      */
-    fontFamily: z
-      .string()
-      .trim()
-      .max(100)
-      .optional(),
+    fontFamily: z.string().trim().max(100).optional(),
 
     /**
      * Page border
      */
-    pageBorder: z
-      .boolean()
-      .optional(),
+    pageBorder: z.boolean().optional(),
 
     /**
      * Draft status
      */
-    isDraft: z
-      .boolean()
-      .optional(),
+    isDraft: z.boolean().optional(),
   })
   .strict();
 
@@ -287,10 +203,9 @@ const createCustomDocumentSchema = z
  * =========================================================
  */
 
-const updateCustomDocumentSchema =
-  createCustomDocumentSchema
-    .partial()
-    .strict();
+const updateCustomDocumentSchema = createCustomDocumentSchema
+  .partial()
+  .strict();
 
 /**
  * =========================================================
@@ -298,14 +213,9 @@ const updateCustomDocumentSchema =
  * =========================================================
  */
 
-const validateRequestSize = (
-  body: unknown
-): boolean => {
+const validateRequestSize = (body: unknown): boolean => {
   try {
-    const size = Buffer.byteLength(
-      JSON.stringify(body || {}),
-      "utf8"
-    );
+    const size = Buffer.byteLength(JSON.stringify(body || {}), "utf8");
 
     return size <= MAX_REQUEST_SIZE;
   } catch {
@@ -319,9 +229,7 @@ const validateRequestSize = (
  * =========================================================
  */
 
-const validateDocumentId = (
-  id: unknown
-): id is string => {
+const validateDocumentId = (id: unknown): id is string => {
   if (typeof id !== "string") {
     return false;
   }
@@ -335,401 +243,337 @@ const validateDocumentId = (
  * =========================================================
  */
 
-const upsertCustomDocument = async ( 
-  req: CompanyRequest, 
-  res: Response 
-): Promise<any> => { 
-  try { 
-    /** 
-     * ===================================================== 
-     * AUTHENTICATION / TENANT SECURITY 
-     * ===================================================== 
-     */ 
- 
-    const company_code = 
-      req.user?.company_code; 
- 
-    const generated_by = 
-      req.user?.id; 
- 
-    if (!company_code || !generated_by) { 
-      return res.status(401).json({ 
-        message: "Unauthorized", 
-      }); 
-    } 
- 
-    /** 
-     * ===================================================== 
-     * REQUEST SIZE PROTECTION 
-     * ===================================================== 
-     */ 
- 
-    if (!validateRequestSize(req.body)) { 
-      return res.status(413).json({ 
-        message: 
-          "Request payload is too large. Maximum allowed size is 2 MB.", 
-      }); 
-    } 
- 
-    /** 
-     * ===================================================== 
-     * BODY VALIDATION 
-     * ===================================================== 
-     */ 
- 
-    const validation = 
-      createCustomDocumentSchema.safeParse( 
-        req.body 
-      ); 
- 
-    if (!validation.success) { 
-      return res.status(400).json({ 
-        message: "Validation failed", 
-        errors: 
-          validation.error.flatten(), 
-      }); 
-    } 
- 
-    const data = 
-      validation.data; 
- 
-    /** 
-     * ===================================================== 
-     * DOCUMENT ID 
-     * ===================================================== 
-     * 
-     * If frontend sends ID: 
-     *   -> check whether document exists 
-     * 
-     * If no ID: 
-     *   -> create a new UUID 
-     */ 
- 
-    const documentId = 
-      data.id || randomUUID(); 
- 
-    /** 
-     * ===================================================== 
-     * FIND EXISTING DOCUMENT 
-     * ===================================================== 
-     * 
-     * IMPORTANT: 
-     * company_code is always included. 
-     * 
-     * This prevents one company from accessing 
-     * another company's document. 
-     */ 
- 
-    const existingDocument = 
-      await CustomDocument.findOne({ 
-        where: { 
-          id: documentId, 
-          company_code, 
-        }, 
-      }); 
- 
-    /** 
-     * ===================================================== 
-     * UPDATE EXISTING DOCUMENT 
-     * ===================================================== 
-     */ 
- 
-    if (existingDocument) { 
-      /** 
-       * Old value for audit 
-       */ 
-      const oldDocument = 
-        existingDocument.toJSON(); 
- 
-      /** 
-       * Explicit update object. 
-       * 
-       * Do NOT use req.body directly. 
-       */ 
- 
-      const updates: { 
-        doc_name?: string; 
-        sections?: Record< 
-          string, 
-          any 
-        >; 
-        section_list?: any[]; 
-        logo_size?: number; 
-        logo?: string | null; 
-        pos?: { 
-          x: number; 
-          y: number; 
-        }; 
-        font_family?: string; 
-        page_border?: boolean; 
-        is_draft?: boolean; 
-      } = {}; 
- 
-      /** 
-       * Document name 
-       */ 
-      if ( 
-        data.docName !== undefined 
-      ) { 
-        updates.doc_name = 
-          data.docName; 
-      } 
- 
-      /** 
-       * Sections 
-       */ 
-      if ( 
-        data.sections !== undefined 
-      ) { 
-        updates.sections = 
-          data.sections; 
-      } 
- 
-      /** 
-       * Section list 
-       */ 
-      if ( 
-        data.sectionList !== undefined 
-      ) { 
-        updates.section_list = 
-          data.sectionList; 
-      } 
- 
-      /** 
-       * Logo size 
-       */ 
-      if ( 
-        data.logoSize !== undefined 
-      ) { 
-        updates.logo_size = 
-          data.logoSize; 
-      } 
- 
-      /** 
-       * Logo 
-       */ 
-      if ( 
-        data.logo !== undefined 
-      ) { 
-        updates.logo = 
-          data.logo; 
-      } 
- 
-      /** 
-       * Position 
-       */ 
-      if ( 
-        data.pos !== undefined 
-      ) { 
-        updates.pos = 
-          data.pos; 
-      } 
- 
-      /** 
-       * Font family 
-       * 
-       * No whitelist validation. 
-       */ 
-      if ( 
-        data.fontFamily !== undefined 
-      ) { 
-        updates.font_family = 
-          data.fontFamily; 
-      } 
- 
-      /** 
-       * Page border 
-       */ 
-      if ( 
-        data.pageBorder !== undefined 
-      ) { 
-        updates.page_border = 
-          data.pageBorder; 
-      } 
- 
-      /** 
-       * Draft status 
-       */ 
-      if ( 
-        data.isDraft !== undefined 
-      ) { 
-        updates.is_draft = 
-          data.isDraft; 
-      } 
- 
-      /** 
-       * Prevent empty update 
-       */ 
-      if ( 
-        Object.keys(updates).length === 0 
-      ) { 
-        return res.status(400).json({ 
-          message: 
-            "No fields provided for update", 
-        }); 
-      } 
- 
-      /** 
-       * Update document 
-       */ 
-      await existingDocument.update( 
-        updates 
-      ); 
- 
-      /** 
-       * =================================================== 
-       * AUDIT UPDATE 
-       * =================================================== 
-       */ 
- 
-      await audit(req, { 
-        module: 
-          "custom_document", 
- 
-        action: 
-          "update", 
- 
-        record_id: 
-          existingDocument.id, 
- 
-        old_value: 
-          oldDocument, 
- 
-        new_value: 
-          existingDocument.toJSON(), 
-      }); 
- 
-      return res.status(200).json({ 
-        message: 
-          "Custom document updated successfully", 
- 
-        data: 
-          existingDocument, 
-      }); 
-    } 
- 
-    /** 
-     * ===================================================== 
-     * CREATE NEW DOCUMENT 
-     * ===================================================== 
-     */ 
- 
-    const document = 
-      await CustomDocument.create({ 
-        /** 
-         * Primary key 
-         */ 
-        id: documentId, 
- 
-        /** 
-         * IMPORTANT: 
-         * company_code comes ONLY from JWT. 
-         */ 
-        company_code, 
- 
-        /** 
-         * Document name 
-         */ 
-        doc_name: 
-          data.docName, 
- 
-        /** 
-         * Dynamic sections 
-         */ 
-        sections: 
-          data.sections || {}, 
- 
-        /** 
-         * Ordered section list 
-         */ 
-        section_list: 
-          data.sectionList || [], 
- 
-        /** 
-         * Logo size 
-         */ 
-        logo_size: 
-          data.logoSize ?? 80, 
- 
-        /** 
-         * Logo 
-         */ 
-        logo: 
-          data.logo ?? null, 
- 
-        /** 
-         * Position 
-         */ 
-        pos: 
-          data.pos || { 
-            x: 0, 
-            y: 0, 
-          }, 
- 
-        /** 
-         * Font family 
-         */ 
-        font_family: 
-          data.fontFamily || 
-          "sans-serif", 
- 
-        /** 
-         * Page border 
-         */ 
-        page_border: 
-          data.pageBorder ?? false, 
- 
-        /** 
-         * Draft status 
-         */ 
-        is_draft: 
-          data.isDraft ?? true, 
- 
-        /** 
-         * IMPORTANT: 
-         * generated_by comes ONLY from JWT. 
-         */ 
-        generated_by, 
-      }); 
- 
-    /** 
-     * ===================================================== 
-     * AUDIT CREATE 
-     * ===================================================== 
-     */ 
- 
-    await audit(req, { 
-      module: 
-        "custom_document", 
- 
-      action: 
-        "create", 
- 
-      record_id: 
-        document.id, 
- 
-      new_value: 
-        document.toJSON(), 
-    }); 
- 
-    return res.status(201).json({ 
-      message: 
-        "Custom document created successfully", 
- 
-      data: 
-        document, 
-    }); 
-  } catch (err: any) { 
-    console.error( 
-      "saveCustomDocument error:", 
-      err 
-    ); 
- 
-    return res.status(500).json({ 
-      message: 
-        "Error saving custom document", 
-    }); 
-  } 
+const upsertCustomDocument = async (
+  req: CompanyRequest,
+  res: Response,
+): Promise<any> => {
+  try {
+    /**
+     * =====================================================
+     * AUTHENTICATION / TENANT SECURITY
+     * =====================================================
+     */
+    console.log("API HIT:", Date.now());
+    const company_code = req.user?.company_code;
+
+    const generated_by = req.user?.id;
+
+    if (!company_code || !generated_by) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
+    /**
+     * =====================================================
+     * REQUEST SIZE PROTECTION
+     * =====================================================
+     */
+
+    if (!validateRequestSize(req.body)) {
+      return res.status(413).json({
+        message: "Request payload is too large. Maximum allowed size is 2 MB.",
+      });
+    }
+
+    /**
+     * =====================================================
+     * BODY VALIDATION
+     * =====================================================
+     */
+
+    const validation = createCustomDocumentSchema.safeParse(req.body);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.error.flatten(),
+      });
+    }
+
+    const data = validation.data;
+
+    /**
+     * =====================================================
+     * DOCUMENT ID
+     * =====================================================
+     *
+     * If frontend sends ID:
+     *   -> check whether document exists
+     *
+     * If no ID:
+     *   -> create a new UUID
+     */
+
+    const documentId = data.id || randomUUID();
+
+    /**
+     * =====================================================
+     * FIND EXISTING DOCUMENT
+     * =====================================================
+     *
+     * IMPORTANT:
+     * company_code is always included.
+     *
+     * This prevents one company from accessing
+     * another company's document.
+     */
+
+    const existingDocument = await CustomDocument.findOne({
+      where: {
+        id: documentId,
+        company_code,
+      },
+    });
+
+    /**
+     * =====================================================
+     * UPDATE EXISTING DOCUMENT
+     * =====================================================
+     */
+
+    if (existingDocument) {
+      /**
+       * Old value for audit
+       */
+      const oldDocument = existingDocument.toJSON();
+
+      /**
+       * Explicit update object.
+       *
+       * Do NOT use req.body directly.
+       */
+
+      const updates: {
+        template_type?: string;
+        doc_name?: string;
+        sections?: Record<string, any>;
+        section_list?: any[];
+        logo_size?: number;
+        logo?: string | null;
+        pos?: {
+          x: number;
+          y: number;
+        };
+        font_family?: string;
+        page_border?: boolean;
+        is_draft?: boolean;
+      } = {};
+
+      if (data.templateType !== undefined) {
+        updates.template_type = data.templateType;
+      }
+
+      /**
+       * Document name
+       */
+      if (data.docName !== undefined) {
+        updates.doc_name = data.docName;
+      }
+
+      /**
+       * Sections
+       */
+      if (data.sections !== undefined) {
+        updates.sections = data.sections;
+      }
+
+      /**
+       * Section list
+       */
+      if (data.sectionList !== undefined) {
+        updates.section_list = data.sectionList;
+      }
+
+      /**
+       * Logo size
+       */
+      if (data.logoSize !== undefined) {
+        updates.logo_size = data.logoSize;
+      }
+
+      /**
+       * Logo
+       */
+      if (data.logo !== undefined) {
+        updates.logo = data.logo;
+      }
+
+      /**
+       * Position
+       */
+      if (data.pos !== undefined) {
+        updates.pos = data.pos;
+      }
+
+      /**
+       * Font family
+       *
+       * No whitelist validation.
+       */
+      if (data.fontFamily !== undefined) {
+        updates.font_family = data.fontFamily;
+      }
+
+      /**
+       * Page border
+       */
+      if (data.pageBorder !== undefined) {
+        updates.page_border = data.pageBorder;
+      }
+
+      /**
+       * Draft status
+       */
+      if (data.isDraft !== undefined) {
+        updates.is_draft = data.isDraft;
+      }
+
+      /**
+       * Prevent empty update
+       */
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({
+          message: "No fields provided for update",
+        });
+      }
+
+      /**
+       * Update document
+       */
+      await existingDocument.update(updates);
+
+      /**
+       * ===================================================
+       * AUDIT UPDATE
+       * ===================================================
+       */
+
+      await audit(req, {
+        module: "custom_document",
+
+        action: "update",
+
+        record_id: existingDocument.id,
+
+        old_value: oldDocument,
+
+        new_value: existingDocument.toJSON(),
+      });
+
+      return res.status(200).json({
+        message: "Custom document updated successfully",
+
+        data: existingDocument,
+      });
+    }
+
+    /**
+     * =====================================================
+     * CREATE NEW DOCUMENT
+     * =====================================================
+     */
+
+    const document = await CustomDocument.create({
+      /**
+       * Primary key
+       */
+      id: documentId,
+
+      /**
+       * yemplate type
+       */
+
+      template_type: data.templateType,
+      /**
+       * IMPORTANT:
+       * company_code comes ONLY from JWT.
+       */
+      company_code,
+
+      /**
+       * Document name
+       */
+      doc_name: data.docName,
+
+      /**
+       * Dynamic sections
+       */
+      sections: data.sections || {},
+
+      /**
+       * Ordered section list
+       */
+      section_list: data.sectionList || [],
+
+      /**
+       * Logo size
+       */
+      logo_size: data.logoSize ?? 80,
+
+      /**
+       * Logo
+       */
+      logo: data.logo ?? null,
+
+      /**
+       * Position
+       */
+      pos: data.pos || {
+        x: 0,
+        y: 0,
+      },
+
+      /**
+       * Font family
+       */
+      font_family: data.fontFamily || "sans-serif",
+
+      /**
+       * Page border
+       */
+      page_border: data.pageBorder ?? false,
+
+      /**
+       * Draft status
+       */
+      is_draft: data.isDraft ?? true,
+
+      /**
+       * IMPORTANT:
+       * generated_by comes ONLY from JWT.
+       */
+      generated_by,
+    });
+
+    /**
+     * =====================================================
+     * AUDIT CREATE
+     * =====================================================
+     */
+
+    await audit(req, {
+      module: "custom_document",
+
+      action: "create",
+
+      record_id: document.id,
+
+      new_value: document.toJSON(),
+    });
+
+    return res.status(201).json({
+      message: "Custom document created successfully",
+
+      data: document,
+    });
+  } catch (err: any) {
+    console.error("saveCustomDocument error:", err);
+
+    return res.status(500).json({
+      message: "Error saving custom document",
+    });
+  }
 };
 
 /**
@@ -740,7 +584,7 @@ const upsertCustomDocument = async (
 
 const getAllCustomDocuments = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     /**
@@ -749,13 +593,11 @@ const getAllCustomDocuments = async (
      * =====================================================
      */
 
-    const company_code =
-      req.user?.company_code;
+    const company_code = req.user?.company_code;
 
     if (!company_code) {
       return res.status(401).json({
-        message:
-          "Unauthorized",
+        message: "Unauthorized",
       });
     }
 
@@ -765,36 +607,25 @@ const getAllCustomDocuments = async (
      * =====================================================
      */
 
-    const documents =
-      await CustomDocument.findAll({
-        where: {
-          /**
-           * Tenant isolation
-           */
-          company_code,
-        },
+    const documents = await CustomDocument.findAll({
+      where: {
+        /**
+         * Tenant isolation
+         */
+        company_code,
+      },
 
-        order: [
-          [
-            "createdAt",
-            "DESC",
-          ],
-        ],
-      });
+      order: [["createdAt", "DESC"]],
+    });
 
     return res.status(200).json({
-      data:
-        documents,
+      data: documents,
     });
   } catch (err: any) {
-    console.error(
-      "getAllCustomDocuments error:",
-      err
-    );
+    console.error("getAllCustomDocuments error:", err);
 
     return res.status(500).json({
-      message:
-        "Error fetching custom documents",
+      message: "Error fetching custom documents",
     });
   }
 };
@@ -807,14 +638,12 @@ const getAllCustomDocuments = async (
 
 const getCustomDocument = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
-    const { id } =
-      req.params;
+    const { id } = req.params;
 
-    const company_code =
-      req.user?.company_code;
+    const company_code = req.user?.company_code;
 
     /**
      * =====================================================
@@ -824,8 +653,7 @@ const getCustomDocument = async (
 
     if (!company_code) {
       return res.status(401).json({
-        message:
-          "Unauthorized",
+        message: "Unauthorized",
       });
     }
 
@@ -835,12 +663,9 @@ const getCustomDocument = async (
      * =====================================================
      */
 
-    if (
-      !validateDocumentId(id)
-    ) {
+    if (!validateDocumentId(id)) {
       return res.status(400).json({
-        message:
-          "Invalid document ID",
+        message: "Invalid document ID",
       });
     }
 
@@ -850,45 +675,37 @@ const getCustomDocument = async (
      * =====================================================
      */
 
-    const document =
-      await CustomDocument.findOne({
-        where: {
-          /**
-           * ID
-           */
-          id,
+    const document = await CustomDocument.findOne({
+      where: {
+        /**
+         * ID
+         */
+        id,
 
-          /**
-           * Tenant isolation
-           */
-          company_code,
-        },
-      });
+        /**
+         * Tenant isolation
+         */
+        company_code,
+      },
+    });
 
     if (!document) {
       return res.status(404).json({
-        message:
-          "Custom document not found",
+        message: "Custom document not found",
       });
     }
 
     return res.status(200).json({
-      data:
-        document,
+      data: document,
     });
   } catch (err: any) {
-    console.error(
-      "getCustomDocument error:",
-      err
-    );
+    console.error("getCustomDocument error:", err);
 
     return res.status(500).json({
-      message:
-        "Error fetching custom document",
+      message: "Error fetching custom document",
     });
   }
 };
-
 
 //   req: CompanyRequest,
 //   res: Response
@@ -1194,14 +1011,12 @@ const getCustomDocument = async (
 
 const deleteCustomDocument = async (
   req: CompanyRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
-    const { id } =
-      req.params;
+    const { id } = req.params;
 
-    const company_code =
-      req.user?.company_code;
+    const company_code = req.user?.company_code;
 
     /**
      * =====================================================
@@ -1211,8 +1026,7 @@ const deleteCustomDocument = async (
 
     if (!company_code) {
       return res.status(401).json({
-        message:
-          "Unauthorized",
+        message: "Unauthorized",
       });
     }
 
@@ -1222,12 +1036,9 @@ const deleteCustomDocument = async (
      * =====================================================
      */
 
-    if (
-      !validateDocumentId(id)
-    ) {
+    if (!validateDocumentId(id)) {
       return res.status(400).json({
-        message:
-          "Invalid document ID",
+        message: "Invalid document ID",
       });
     }
 
@@ -1237,18 +1048,16 @@ const deleteCustomDocument = async (
      * =====================================================
      */
 
-    const document =
-      await CustomDocument.findOne({
-        where: {
-          id,
-          company_code,
-        },
-      });
+    const document = await CustomDocument.findOne({
+      where: {
+        id,
+        company_code,
+      },
+    });
 
     if (!document) {
       return res.status(404).json({
-        message:
-          "Custom document not found",
+        message: "Custom document not found",
       });
     }
 
@@ -1258,8 +1067,7 @@ const deleteCustomDocument = async (
      * =====================================================
      */
 
-    const oldDocument =
-      document.toJSON();
+    const oldDocument = document.toJSON();
 
     /**
      * =====================================================
@@ -1276,32 +1084,23 @@ const deleteCustomDocument = async (
      */
 
     await audit(req, {
-      module:
-        "custom_document",
+      module: "custom_document",
 
-      action:
-        "delete",
+      action: "delete",
 
-      record_id:
-        document.id,
+      record_id: document.id,
 
-      old_value:
-        oldDocument,
+      old_value: oldDocument,
     });
 
     return res.status(200).json({
-      message:
-        "Custom document deleted successfully",
+      message: "Custom document deleted successfully",
     });
   } catch (err: any) {
-    console.error(
-      "deleteCustomDocument error:",
-      err
-    );
+    console.error("deleteCustomDocument error:", err);
 
     return res.status(500).json({
-      message:
-        "Error deleting custom document",
+      message: "Error deleting custom document",
     });
   }
 };
