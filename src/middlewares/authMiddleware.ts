@@ -28,10 +28,7 @@ export const authenticateSuperMaster = (
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "your-secret-key",
-    );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret-key");
     if ((decoded as any).role !== "super_master") {
       return Promise.resolve(
         res.status(403).json({ message: "Forbidden: Not a super master" }),

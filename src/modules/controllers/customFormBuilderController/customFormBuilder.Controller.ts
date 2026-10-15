@@ -253,7 +253,7 @@ const upsertCustomDocument = async (
      * AUTHENTICATION / TENANT SECURITY
      * =====================================================
      */
-    console.log("API HIT:", Date.now());
+    // console.log("API HIT:", Date.now());
     const company_code = req.user?.company_code;
 
     const generated_by = req.user?.id;
