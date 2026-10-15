@@ -15,8 +15,10 @@ import {
   signupSuperMaster,
   getAllCompanies,
   getEmployeesByCompanyCode,
-  upsertCompanySettings,getCompanySettings,deleteCompanySettings,
-  resetCompanyMasterPassword
+  upsertCompanySettings,
+  getCompanySettings,
+  deleteCompanySettings,
+  resetCompanyMasterPassword,
 } from "../../controllers/index";
 import { authenticateSuperMaster } from "../../../middlewares/authMiddleware";
 import upload from "../../../middlewares/fileUpload";
@@ -28,37 +30,35 @@ superMasterRouter.post("/super-master/signup", signupSuperMaster);
 superMasterRouter.get(
   "/super-master/get-allcompanies",
   authenticateSuperMaster,
-  getAllCompanies
+  getAllCompanies,
 );
 superMasterRouter.get(
   "/super-master/companies/:company_code/employees",
   authenticateSuperMaster,
-  getEmployeesByCompanyCode
+  getEmployeesByCompanyCode,
 );
 
-
-
-superMasterRouter.post(
+superMasterRouter.put(
   "/super-master/company-settings",
   authenticateSuperMaster,
-    upload.single("company_logo"),
-  upsertCompanySettings
+  upload.single("company_logo"),
+  upsertCompanySettings,
 );
 
 superMasterRouter.get(
   "/super-master/company-setting/:company_code",
   authenticateSuperMaster,
-  getCompanySettings
+  getCompanySettings,
 );
 superMasterRouter.delete(
   "/super-master/company-setting/delete/:company_code",
   authenticateSuperMaster,
-  deleteCompanySettings
+  deleteCompanySettings,
 );
 superMasterRouter.put(
   "/company/reset-password",
   authenticateSuperMaster,
-  resetCompanyMasterPassword
+  resetCompanyMasterPassword,
 );
 
 export { superMasterRouter };

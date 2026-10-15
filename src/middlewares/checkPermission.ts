@@ -1,4 +1,4 @@
-import { Role } from "../modules/models";
+import { CompanySettings, Role } from "../modules/models";
 
 export const PERMISSION_REGISTRY = {
   asset: ["read", "create", "update", "delete"],
@@ -21,15 +21,67 @@ export const PERMISSION_REGISTRY = {
   roles: ["read", "create", "update", "delete"],
 };
 
+// export const authorizePermission = (module: string, action: string) => {
+//   return (req: any, res: any, next: any) => {
+//     const permissions = req.user?.permissions;
+//     if (!permissions?.[module]?.includes(action)) {
+//       return res.status(403).json({
+//         message: "permission denied",
+//       });
+//     }
+//     next();
+//   };
+// };
+
 export const authorizePermission = (module: string, action: string) => {
-  return (req: any, res: any, next: any) => {
-    const permissions = req.user?.permissions;
-    if (!permissions?.[module]?.includes(action)) {
-      return res.status(403).json({
-        message: "permission denied",
+  return async (req: any, res: any, next: any) => {
+    try {
+      const user = req.user;
+
+      // 1. Company Master: check Super Admin's configured permissions
+      if (user?.role === "company_master") {
+        if (!user.company_code) {
+          return res.status(403).json({
+            message: "Company access denied",
+          });
+        }
+
+        const settings = await CompanySettings.findOne({
+          where: {
+            company_code: user.company_code,
+          },
+          attributes: ["permissions"],
+        });
+
+        const allowedActions = settings?.permissions?.[module];
+
+        if (!allowedActions?.includes(action)) {
+          return res.status(403).json({
+            message: "permission denied",
+          });
+        }
+
+        return next();
+      }
+
+      // 2. Employee and other existing roles:
+      // Keep the existing JWT permission check unchanged.
+      const permissions = user?.permissions;
+
+      if (!permissions?.[module]?.includes(action)) {
+        return res.status(403).json({
+          message: "permission denied",
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error("Permission authorization failed:", error);
+
+      return res.status(500).json({
+        message: "Authorization failed",
       });
     }
-    next();
   };
 };
 
