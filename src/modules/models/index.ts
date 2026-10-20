@@ -8,7 +8,7 @@ import { Onboarding } from "./onboardingModel/Onboarding.Model";
 import { BlackListedToken } from "./onboardingModel/blacklistedToken.Model";
 import { LetterAccessRequest } from "./onboardingModel/LetterAccessRequest.Model";
 import { ExitRequest } from "./exitRequestModel/exitRequest.Model";
-import { Role } from "./roleModel/role.model";
+import { Role } from "./roleModel/role.Model";
 import { Policy } from "./policyModel/policyModel";
 import { AuditLog } from "./auditModel/auditLog.Model";
 import { Leave } from "./leaveModel/leaveModel";
@@ -29,6 +29,7 @@ import { InterviewFeedback } from "./recruitmentModel/InterviewFeedback.Model";
 import { GoalSetting } from "./pmsModel/goalSetting.Model";
 import { CustomDocument } from "./customFormBuilderModel/customFormBuilder.Model";
 import { Attendance } from "./attendanceModel/attendance.Model";
+import { Site } from "./siteModel/site.Model";
 import sequelize from "../../config/sequelize";
 
 // Onboarding belongs to Department
@@ -83,4 +84,5 @@ export {
   GoalSetting,
   CustomDocument,
   Attendance,
+  Site,
 };

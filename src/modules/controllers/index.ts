@@ -188,6 +188,13 @@ import {
 } from "./customFormBuilderController/customFormBuilder.Controller";
 
 import { getPlatformDashboard } from "./dashboardController/dashboardController";
+import {
+  createSite,
+  getAllSites,
+  getSiteById,
+  updateSite,
+  deleteSite,
+} from "./siteController/siteController";
 // All controllers exported as single object
 export {
   signupSuperMaster,
@@ -329,4 +336,9 @@ export {
   getCustomDocument,
   deleteCustomDocument,
   getPlatformDashboard,
+  createSite,
+  getAllSites,
+  getSiteById,
+  updateSite,
+  deleteSite,
 };

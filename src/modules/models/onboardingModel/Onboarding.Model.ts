@@ -1,4 +1,4 @@
-import { Model, DataTypes, Optional } from "sequelize";
+import { Model, DataTypes } from "sequelize";
 import sequelize from "../../../config/sequelize";
 
 export interface OnboardingAttributes {
@@ -16,7 +16,14 @@ export interface OnboardingAttributes {
   probation_period?: string;
   auto_password?: string;
 
-  // ✅ KYC Fields
+  // Attendance Fields
+  siteCode?: string | null;
+  shiftCode?: string | null;
+  shiftType?: number | null;
+  reportingManagerEmail?: string | null;
+  reportingHrEmail?: string | null;
+
+  // KYC Fields
   pan_card?: string;
   aadhar_card?: string;
 
@@ -24,7 +31,7 @@ export interface OnboardingAttributes {
   aadhar_photo?: string;
   passport_photo?: string;
 
-  // ✅  Uploads
+  // Uploads
   resume?: string;
   offer_letter?: string;
   joining_letter?: string;
@@ -33,7 +40,7 @@ export interface OnboardingAttributes {
 
   deleted_at?: Date;
 
-  // ✅ Presigned URL Caching
+  // Presigned URL Caching
   presigned_url_cache?: Record<string, string | null>;
   presigned_url_cache_time?: Date;
 
@@ -45,9 +52,11 @@ export class Onboarding
   implements OnboardingAttributes
 {
   exit_letter: string | undefined;
+
   static findById(id: string) {
     throw new Error("Method not implemented.");
   }
+
   public id!: number;
   public company_code!: string;
   public name!: string;
@@ -62,6 +71,13 @@ export class Onboarding
   public exit_date!: Date;
   public probation_period!: string;
   public auto_password!: string;
+
+  // Attendance Fields
+  public siteCode!: string | null;
+  public shiftCode!: string | null;
+  public shiftType!: number | null;
+  public reportingManagerEmail!: string | null;
+  public reportingHrEmail!: string | null;
 
   public pan_card!: string;
   public aadhar_card!: string;
@@ -113,6 +129,28 @@ Onboarding.init(
     probation_period: DataTypes.STRING,
     auto_password: DataTypes.STRING,
 
+    // Attendance Fields
+    siteCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    shiftCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    shiftType: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+    reportingManagerEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reportingHrEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
     pan_card: DataTypes.STRING,
     aadhar_card: DataTypes.STRING,
 
@@ -131,9 +169,8 @@ Onboarding.init(
 
     deleted_at: DataTypes.DATE,
 
-    // New fields
     presigned_url_cache: {
-      type: DataTypes.JSON, // use JSON if you're using MySQL
+      type: DataTypes.JSON,
       allowNull: true,
     },
     presigned_url_cache_time: {
@@ -145,10 +182,10 @@ Onboarding.init(
     sequelize,
     tableName: "onboardings",
     timestamps: true,
-    // paranoid: true,
   },
 );
 
-// Onboarding.sync({alter:true});
+Onboarding.sync({ alter: true });
 // Onboarding.sync();
+
 export default Onboarding;

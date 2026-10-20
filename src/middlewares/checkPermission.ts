@@ -18,6 +18,7 @@ export const PERMISSION_REGISTRY = {
     "export",
   ],
   hrAnnouncement: ["read", "create", "update", "delete"],
+  site: ["read", "create", "update", "delete"],
   roles: ["read", "create", "update", "delete"],
 };
 
