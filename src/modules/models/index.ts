@@ -28,6 +28,7 @@ import { Interview } from "./recruitmentModel/Interview.Model";
 import { InterviewFeedback } from "./recruitmentModel/InterviewFeedback.Model";
 import { GoalSetting } from "./pmsModel/goalSetting.Model";
 import { CustomDocument } from "./customFormBuilderModel/customFormBuilder.Model";
+import { Attendance } from "./attendanceModel/attendance.Model";
 import sequelize from "../../config/sequelize";
 
 // Onboarding belongs to Department
@@ -81,4 +82,5 @@ export {
   InterviewFeedback,
   GoalSetting,
   CustomDocument,
+  Attendance,
 };
