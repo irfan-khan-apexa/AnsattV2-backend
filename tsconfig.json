@@ -9,6 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "server.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["server.ts", "src/**/*.ts"],
+  "ts-node": {
+    "files": true
+  }
 }
