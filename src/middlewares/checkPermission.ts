@@ -1,4 +1,4 @@
-import { CompanySettings, Role } from "../modules/models";
+import { CompanySettings } from "../modules/models";
 
 export const PERMISSION_REGISTRY = {
   asset: ["read", "create", "update", "delete"],
@@ -19,6 +19,10 @@ export const PERMISSION_REGISTRY = {
   ],
   hrAnnouncement: ["read", "create", "update", "delete"],
   site: ["read", "create", "update", "delete"],
+  shift: ["read", "create", "update", "delete"],
+  attendance: ["read", "create", "update", "delete"],
+  holidays: ["read", "create", "update", "delete"],
+  departmentPolicy: ["read", "create", "update", "delete"],
   roles: ["read", "create", "update", "delete"],
 };
 

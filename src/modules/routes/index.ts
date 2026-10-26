@@ -22,6 +22,11 @@ import { goalRouter } from "./pmsRoutes/goalSetting.Routes";
 import { customDocumentRouter } from "./customFormBuilderRoutes/customFormBuilder.Routes";
 import { dashboardRouter } from "./dashboardRoutes/dashboardRoutes";
 import { blackListedTokenRouter } from "./onboardingRoutes/blacklistedToken.Routes";
+import { siteRouter } from "./siteRoutes/siteRoutes";
+import { shiftRouter } from "./shiftRoutes/shiftRoutes";
+import { attendanceRouter } from "./attendanceRoutes/attendanceRoutes";
+import { holidayRouter } from "./holidayRoutes/holidayRoutes";
+import { departmentPolicyRouter } from "./departmentPolicyRoutes/departmentPolicyRoutes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -45,6 +50,11 @@ router.use(goalRouter);
 router.use(customDocumentRouter);
 router.use(dashboardRouter);
 router.use(blackListedTokenRouter);
+router.use(siteRouter);
+router.use(shiftRouter);
+router.use(attendanceRouter);
+router.use(holidayRouter);
+router.use(departmentPolicyRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({

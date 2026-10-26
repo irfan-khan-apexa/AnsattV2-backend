@@ -11,6 +11,12 @@ export interface CompanyRequest extends Request {
 }
 export interface AuthRequest extends Request {
   user?: any;
+  // user?: {
+  //   id: number;
+  //   company_code: string;
+  //   role?: string;
+  //   role_id?: number;
+  // };
 }
 // export interface AuthenticatedRequest extends Request {
 //   user?: any;

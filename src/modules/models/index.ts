@@ -30,6 +30,9 @@ import { GoalSetting } from "./pmsModel/goalSetting.Model";
 import { CustomDocument } from "./customFormBuilderModel/customFormBuilder.Model";
 import { Attendance } from "./attendanceModel/attendance.Model";
 import { Site } from "./siteModel/site.Model";
+import { Shift } from "./shiftModel/Shift.Model";
+import { HolidayMaster } from "./holidayModel/holidayMaster.Model";
+import { DepartmentPolicy } from "./departmentPolicyModel/departmentPolicy.Model";
 import sequelize from "../../config/sequelize";
 
 // Onboarding belongs to Department
@@ -85,4 +88,7 @@ export {
   CustomDocument,
   Attendance,
   Site,
+  Shift,
+  HolidayMaster,
+  DepartmentPolicy,
 };

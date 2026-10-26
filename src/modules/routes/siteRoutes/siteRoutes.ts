@@ -17,7 +17,7 @@ const siteRouter = Router();
 siteRouter.post(
   "/site",
   authenticateUser,
-  authorizePermission("site", "create"),
+  // authorizePermission("site", "create"),
   createSite,
 );
 
@@ -25,7 +25,7 @@ siteRouter.post(
 siteRouter.get(
   "/site/all",
   authenticateUser,
-  authorizePermission("site", "read"),
+  // authorizePermission("site", "read"),
   getAllSites,
 );
 
@@ -33,7 +33,7 @@ siteRouter.get(
 siteRouter.get(
   "/site/:id",
   authenticateUser,
-  authorizePermission("site", "read"),
+  // authorizePermission("site", "read"),
   getSiteById,
 );
 
@@ -41,7 +41,7 @@ siteRouter.get(
 siteRouter.put(
   "/site/:id",
   authenticateUser,
-  authorizePermission("site", "update"),
+  // authorizePermission("site", "update"),
   updateSite,
 );
 
@@ -49,7 +49,7 @@ siteRouter.put(
 siteRouter.delete(
   "/site/:id",
   authenticateUser,
-  authorizePermission("site", "delete"),
+  // authorizePermission("site", "delete"),
   deleteSite,
 );
 

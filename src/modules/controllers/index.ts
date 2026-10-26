@@ -195,6 +195,36 @@ import {
   updateSite,
   deleteSite,
 } from "./siteController/siteController";
+import {
+  createShift,
+  getShifts,
+  getShiftbyId,
+  updateShift,
+  deleteShift,
+} from "./shiftController/shiftController";
+import {
+  punch,
+  manualAdd,
+  updateManualAttendance,
+  getCompanyAttendance,
+  getSingleEmployeeAttendance,
+  punchController,
+  getMonthlyAttendanceSummary,
+} from "./attendanceController/attendanceController";
+import {
+  createHoliday,
+  getHolidaysByYear,
+  getHolidayById,
+  updateHoliday,
+  deleteHoliday,
+} from "./holidayController/holidayController";
+import {
+  createDepartmentPolicy,
+  getDepartmentPolicies,
+  getDepartmentPolicyById,
+  updateDepartmentPolicy,
+  deleteDepartmentPolicy,
+} from "./departmentPolicyController/departmentPolicyController";
 // All controllers exported as single object
 export {
   signupSuperMaster,
@@ -341,4 +371,26 @@ export {
   getSiteById,
   updateSite,
   deleteSite,
+  createShift,
+  getShifts,
+  getShiftbyId,
+  updateShift,
+  deleteShift,
+  punch,
+  manualAdd,
+  updateManualAttendance,
+  getCompanyAttendance,
+  getSingleEmployeeAttendance,
+  punchController,
+  getMonthlyAttendanceSummary,
+  createHoliday,
+  getHolidaysByYear,
+  getHolidayById,
+  updateHoliday,
+  deleteHoliday,
+  createDepartmentPolicy,
+  getDepartmentPolicies,
+  getDepartmentPolicyById,
+  updateDepartmentPolicy,
+  deleteDepartmentPolicy,
 };

@@ -174,5 +174,5 @@ Attendance.init(
     ],
   },
 );
-
+Attendance.sync();
 export default Attendance;

@@ -98,5 +98,6 @@ Site.init(
     ],
   },
 );
+Site.sync();
 
 export default Site;

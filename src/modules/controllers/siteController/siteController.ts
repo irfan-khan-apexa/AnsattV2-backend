@@ -1,20 +1,19 @@
+// import { Request, Response } from "express";
+// import { Site } from "../../models/index";
+
+// const getCompanyCode = (req: Request): string | undefined => {
+//   return req.user?.companyCode;
+// };
+
 import { Request, Response } from "express";
 import { Site } from "../../models/index";
-
-const getCompanyCode = (req: Request): string | undefined => {
-  return req.user?.companyCode;
-};
 
 /**
  * Create site
  */
-const createSite = async (req: Request, res: Response) => {
+const createSite = async (req: Request, res: Response): Promise<any> => {
   try {
-    const company_code = getCompanyCode(req);
-
-    if (!company_code) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    const company_code = (req as any).user.company_code;
 
     const { name, location, sitecode, latitude, longitude, radius } = req.body;
 
@@ -83,7 +82,7 @@ const createSite = async (req: Request, res: Response) => {
       message: "Site created successfully",
       site,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("createSite error:", error);
 
     return res.status(500).json({
@@ -95,13 +94,9 @@ const createSite = async (req: Request, res: Response) => {
 /**
  * Get all sites belonging to the logged-in company
  */
-const getAllSites = async (req: Request, res: Response) => {
+const getAllSites = async (req: Request, res: Response): Promise<any> => {
   try {
-    const company_code = getCompanyCode(req);
-
-    if (!company_code) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    const company_code = (req as any).user.company_code;
 
     const sites = await Site.findAll({
       where: { company_code },
@@ -112,7 +107,7 @@ const getAllSites = async (req: Request, res: Response) => {
       message: "Sites fetched successfully",
       sites,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("getAllSites error:", error);
 
     return res.status(500).json({
@@ -124,18 +119,15 @@ const getAllSites = async (req: Request, res: Response) => {
 /**
  * Get a single site belonging to the logged-in company
  */
-const getSiteById = async (req: Request, res: Response) => {
+const getSiteById = async (req: Request, res: Response): Promise<any> => {
   try {
-    const company_code = getCompanyCode(req);
-
-    if (!company_code) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
+    const company_code = (req as any).user.company_code;
     const siteId = Number(req.params.id);
 
     if (!Number.isInteger(siteId) || siteId <= 0) {
-      return res.status(400).json({ message: "Invalid site ID" });
+      return res.status(400).json({
+        message: "Invalid site ID",
+      });
     }
 
     const site = await Site.findOne({
@@ -146,11 +138,13 @@ const getSiteById = async (req: Request, res: Response) => {
     });
 
     if (!site) {
-      return res.status(404).json({ message: "Site not found" });
+      return res.status(404).json({
+        message: "Site not found",
+      });
     }
 
     return res.status(200).json(site);
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("getSiteById error:", error);
 
     return res.status(500).json({
@@ -162,18 +156,15 @@ const getSiteById = async (req: Request, res: Response) => {
 /**
  * Update a site without allowing sitecode/company_code changes
  */
-const updateSite = async (req: Request, res: Response) => {
+const updateSite = async (req: Request, res: Response): Promise<any> => {
   try {
-    const company_code = getCompanyCode(req);
-
-    if (!company_code) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
+    const company_code = (req as any).user.company_code;
     const siteId = Number(req.params.id);
 
     if (!Number.isInteger(siteId) || siteId <= 0) {
-      return res.status(400).json({ message: "Invalid site ID" });
+      return res.status(400).json({
+        message: "Invalid site ID",
+      });
     }
 
     const site = await Site.findOne({
@@ -184,30 +175,32 @@ const updateSite = async (req: Request, res: Response) => {
     });
 
     if (!site) {
-      return res.status(404).json({ message: "Site not found" });
+      return res.status(404).json({
+        message: "Site not found",
+      });
     }
 
     const { name, location, latitude, longitude, radius } = req.body;
 
-    const updates: {
-      name?: string;
-      location?: string;
-      latitude?: number;
-      longitude?: number;
-      radius?: number;
-    } = {};
+    const updates: any = {};
 
     if (name !== undefined) {
       if (typeof name !== "string" || !name.trim()) {
-        return res.status(400).json({ message: "Invalid site name" });
+        return res.status(400).json({
+          message: "Invalid site name",
+        });
       }
+
       updates.name = name.trim();
     }
 
     if (location !== undefined) {
       if (typeof location !== "string" || !location.trim()) {
-        return res.status(400).json({ message: "Invalid location" });
+        return res.status(400).json({
+          message: "Invalid location",
+        });
       }
+
       updates.location = location.trim();
     }
 
@@ -215,7 +208,9 @@ const updateSite = async (req: Request, res: Response) => {
       const lat = Number(latitude);
 
       if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-        return res.status(400).json({ message: "Invalid latitude" });
+        return res.status(400).json({
+          message: "Invalid latitude",
+        });
       }
 
       updates.latitude = lat;
@@ -225,7 +220,9 @@ const updateSite = async (req: Request, res: Response) => {
       const lng = Number(longitude);
 
       if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
-        return res.status(400).json({ message: "Invalid longitude" });
+        return res.status(400).json({
+          message: "Invalid longitude",
+        });
       }
 
       updates.longitude = lng;
@@ -249,7 +246,7 @@ const updateSite = async (req: Request, res: Response) => {
       message: "Site updated successfully",
       site,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("updateSite error:", error);
 
     return res.status(500).json({
@@ -261,18 +258,15 @@ const updateSite = async (req: Request, res: Response) => {
 /**
  * Delete a site belonging to the logged-in company
  */
-const deleteSite = async (req: Request, res: Response) => {
+const deleteSite = async (req: Request, res: Response): Promise<any> => {
   try {
-    const company_code = getCompanyCode(req);
-
-    if (!company_code) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
+    const company_code = (req as any).user.company_code;
     const siteId = Number(req.params.id);
 
     if (!Number.isInteger(siteId) || siteId <= 0) {
-      return res.status(400).json({ message: "Invalid site ID" });
+      return res.status(400).json({
+        message: "Invalid site ID",
+      });
     }
 
     const site = await Site.findOne({
@@ -283,7 +277,9 @@ const deleteSite = async (req: Request, res: Response) => {
     });
 
     if (!site) {
-      return res.status(404).json({ message: "Site not found" });
+      return res.status(404).json({
+        message: "Site not found",
+      });
     }
 
     await site.destroy();
@@ -291,7 +287,7 @@ const deleteSite = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: "Site deleted successfully",
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("deleteSite error:", error);
 
     return res.status(500).json({
