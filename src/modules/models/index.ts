@@ -33,6 +33,7 @@ import { Site } from "./siteModel/site.Model";
 import { Shift } from "./shiftModel/Shift.Model";
 import { HolidayMaster } from "./holidayModel/holidayMaster.Model";
 import { DepartmentPolicy } from "./departmentPolicyModel/departmentPolicy.Model";
+import { Calendar } from "./calendarModel/calendar.Model";
 import sequelize from "../../config/sequelize";
 
 // Onboarding belongs to Department
@@ -91,4 +92,5 @@ export {
   Shift,
   HolidayMaster,
   DepartmentPolicy,
+  Calendar,
 };

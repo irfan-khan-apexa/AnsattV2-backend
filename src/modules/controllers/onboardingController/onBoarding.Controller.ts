@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
-import { BlackListedToken, Onboarding, Role } from "../../models/index";
+import {
+  BlackListedToken,
+  Department,
+  Onboarding,
+  Role,
+} from "../../models/index";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import XLSX from "xlsx";
@@ -108,6 +113,33 @@ const createOnboarding = async (
       });
     }
 
+    // ================= DEPARTMENT =================
+    const departmentId = Number(department);
+
+    if (
+      department === undefined ||
+      department === null ||
+      String(department).trim() === "" ||
+      !Number.isInteger(departmentId) ||
+      departmentId <= 0
+    ) {
+      return res.status(400).json({
+        message: "Valid department ID is required",
+      });
+    }
+
+    const departmentRecord = await Department.findOne({
+      where: {
+        id: departmentId,
+        companyCode: company_code,
+      },
+    });
+
+    if (!departmentRecord) {
+      return res.status(400).json({
+        message: "Invalid department ID for this company",
+      });
+    }
     // ================= PASSWORD =================
     const auto_password = generateStrongPassword();
 
@@ -384,6 +416,36 @@ const updateOnboarding = async (
           message: "Invalid role",
         });
       }
+    }
+    // ================= DEPARTMENT =================
+    if (req.body.department !== undefined) {
+      const departmentId = Number(req.body.department);
+
+      if (
+        req.body.department === null ||
+        String(req.body.department).trim() === "" ||
+        !Number.isInteger(departmentId) ||
+        departmentId <= 0
+      ) {
+        return res.status(400).json({
+          message: "Valid department ID is required",
+        });
+      }
+
+      const departmentRecord = await Department.findOne({
+        where: {
+          id: departmentId,
+          companyCode: req.user.company_code,
+        },
+      });
+
+      if (!departmentRecord) {
+        return res.status(400).json({
+          message: "Invalid department ID for this company",
+        });
+      }
+
+      updates.department = departmentId;
     }
 
     // ================= STATUS =================

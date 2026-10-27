@@ -9,7 +9,10 @@ export interface OnboardingAttributes {
   contact: string;
   role_id: number;
   designation: string;
-  department: string;
+
+  // Department ID instead of department name
+  department: number;
+
   reporting_manager: string;
   status?: boolean;
   joining_date?: Date;
@@ -51,12 +54,6 @@ export class Onboarding
   extends Model<OnboardingAttributes>
   implements OnboardingAttributes
 {
-  exit_letter: string | undefined;
-
-  static findById(id: string) {
-    throw new Error("Method not implemented.");
-  }
-
   public id!: number;
   public company_code!: string;
   public name!: string;
@@ -64,7 +61,10 @@ export class Onboarding
   public contact!: string;
   public role_id!: number;
   public designation!: string;
-  public department!: string;
+
+  // Department ID
+  public department!: number;
+
   public reporting_manager!: string;
   public status!: boolean;
   public joining_date!: Date;
@@ -79,19 +79,23 @@ export class Onboarding
   public reportingManagerEmail!: string | null;
   public reportingHrEmail!: string | null;
 
+  // KYC Fields
   public pan_card!: string;
   public aadhar_card!: string;
   public pan_photo!: string;
   public aadhar_photo!: string;
   public passport_photo!: string;
 
+  // Uploads
   public resume!: string;
   public offer_letter!: string;
   public joining_letter!: string;
   public experience_letter!: string;
+  public exit_letter!: string;
 
   public deleted_at!: Date;
 
+  // Presigned URL Caching
   public presigned_url_cache!: Record<string, string | null>;
   public presigned_url_cache_time!: Date;
 
@@ -106,73 +110,162 @@ Onboarding.init(
       autoIncrement: true,
       primaryKey: true,
     },
+
     company_code: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    name: DataTypes.STRING,
-    email: DataTypes.STRING,
-    contact: DataTypes.STRING,
+
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
+    contact: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
     role_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
-    designation: DataTypes.STRING,
-    department: DataTypes.STRING,
-    reporting_manager: DataTypes.STRING,
+
+    designation: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
+    // Store Department.id
+    department: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
+
+    reporting_manager: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    joining_date: DataTypes.DATE,
-    exit_date: DataTypes.DATE,
-    probation_period: DataTypes.STRING,
-    auto_password: DataTypes.STRING,
 
-    // Attendance Fields
+    joining_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+
+    exit_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+
+    probation_period: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    auto_password: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    // ================= ATTENDANCE FIELDS =================
     siteCode: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     shiftCode: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     shiftType: {
       type: DataTypes.FLOAT,
       allowNull: true,
     },
+
     reportingManagerEmail: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     reportingHrEmail: {
       type: DataTypes.STRING,
       allowNull: true,
     },
 
-    pan_card: DataTypes.STRING,
-    aadhar_card: DataTypes.STRING,
+    // ================= KYC FIELDS =================
+    pan_card: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-    pan_photo: DataTypes.TEXT,
-    aadhar_photo: DataTypes.TEXT,
-    passport_photo: DataTypes.TEXT,
+    aadhar_card: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
-    resume: DataTypes.TEXT,
-    offer_letter: DataTypes.TEXT,
-    joining_letter: DataTypes.TEXT,
-    experience_letter: DataTypes.TEXT,
+    pan_photo: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    aadhar_photo: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    passport_photo: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    // ================= UPLOAD FIELDS =================
+    resume: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    offer_letter: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    joining_letter: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    experience_letter: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
     exit_letter: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
 
-    deleted_at: DataTypes.DATE,
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
 
+    // ================= PRESIGNED URL CACHE =================
     presigned_url_cache: {
       type: DataTypes.JSON,
       allowNull: true,
     },
+
     presigned_url_cache_time: {
       type: DataTypes.DATE,
       allowNull: true,
@@ -185,7 +278,8 @@ Onboarding.init(
   },
 );
 
-Onboarding.sync({ alter: true });
-// Onboarding.sync();
-
+// IMPORTANT:
+// Do not run sync({ alter: true }) until existing department names
+// have been migrated to their corresponding Department.id values.
+// Onboarding.sync({ alter: true });
 export default Onboarding;
