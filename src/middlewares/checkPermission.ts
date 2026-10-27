@@ -23,6 +23,7 @@ export const PERMISSION_REGISTRY = {
   attendance: ["read", "create", "update", "delete"],
   holidays: ["read", "create", "update", "delete"],
   departmentPolicy: ["read", "create", "update", "delete"],
+  authorizePermission: ["read", "create", "update", "delete"],
   roles: ["read", "create", "update", "delete"],
 };
 

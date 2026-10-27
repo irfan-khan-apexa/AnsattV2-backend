@@ -27,6 +27,8 @@ import { shiftRouter } from "./shiftRoutes/shiftRoutes";
 import { attendanceRouter } from "./attendanceRoutes/attendanceRoutes";
 import { holidayRouter } from "./holidayRoutes/holidayRoutes";
 import { departmentPolicyRouter } from "./departmentPolicyRoutes/departmentPolicyRoutes";
+import { calendarRouter } from "./calendarRoutes/calendar.Routes";
+import { wfhRouter } from "./WFHRoutes/WFH.Routes";
 const router = Router();
 
 router.use(superMasterRouter);
@@ -55,6 +57,8 @@ router.use(shiftRouter);
 router.use(attendanceRouter);
 router.use(holidayRouter);
 router.use(departmentPolicyRouter);
+router.use(calendarRouter);
+router.use(wfhRouter);
 
 router.all("/{*any}", (req: Request, res: Response) => {
   res.status(200).json({

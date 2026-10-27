@@ -34,6 +34,7 @@ import { Shift } from "./shiftModel/Shift.Model";
 import { HolidayMaster } from "./holidayModel/holidayMaster.Model";
 import { DepartmentPolicy } from "./departmentPolicyModel/departmentPolicy.Model";
 import { Calendar } from "./calendarModel/calendar.Model";
+import { WFHRequest } from "./WFHRequestModel/WFHRequest.Model";
 import sequelize from "../../config/sequelize";
 
 // Onboarding belongs to Department
@@ -93,4 +94,5 @@ export {
   HolidayMaster,
   DepartmentPolicy,
   Calendar,
+  WFHRequest,
 };

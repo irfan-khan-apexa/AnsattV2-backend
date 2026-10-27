@@ -225,6 +225,17 @@ import {
   updateDepartmentPolicy,
   deleteDepartmentPolicy,
 } from "./departmentPolicyController/departmentPolicyController";
+import {
+  createOrUpdateCalendar,
+  getDepartmentCalendar,
+} from "./calendarController/calendar.Controller";
+import {
+  applyWFH,
+  getMyWFHRequests,
+  cancelWFHRequest,
+  updateWFHStatus,
+  getWFHRequests,
+} from "./WFHController/WFH.Controller";
 // All controllers exported as single object
 export {
   signupSuperMaster,
@@ -393,4 +404,11 @@ export {
   getDepartmentPolicyById,
   updateDepartmentPolicy,
   deleteDepartmentPolicy,
+  createOrUpdateCalendar,
+  getDepartmentCalendar,
+  applyWFH,
+  getMyWFHRequests,
+  cancelWFHRequest,
+  updateWFHStatus,
+  getWFHRequests,
 };
