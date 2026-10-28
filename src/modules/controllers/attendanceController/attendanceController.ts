@@ -2,10 +2,13 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import {
   Attendance,
+  Calendar,
+  HolidayMaster,
   LeaveTransaction,
   Onboarding,
   Shift,
   Site,
+  WFHRequest,
 } from "../../models";
 
 // ================= AUTH HELPERS =================
@@ -106,6 +109,25 @@ const toIST = (value: Date | string | null | undefined): string | null => {
   return `${datePart} ${timePart}`;
 };
 
+// Return a date-only key in Asia/Kolkata so it matches HolidayMaster DATEONLY values.
+const getISTDateKey = (value: Date | string): string | null => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+
 // ================= GEO HELPERS =================
 
 const getDistanceInMeters = (
@@ -184,9 +206,20 @@ const punch = async (req: Request, res: Response) => {
       });
     }
 
+    // Find an open attendance early so punch-out can reuse its original WFH mode.
+    const openAttendance = await Attendance.findOne({
+      where: {
+        employee_id: employeeId,
+        company_code: companyCode,
+        outTime: null,
+      },
+      order: [["inTime", "DESC"]],
+    });
+
     const { latitude, longitude, timestamp } = req.body;
 
-    const isWFH = req.body.isWFH === true;
+    // If punch-in was WFH, punch-out remains WFH even if the client omits isWFH.
+    const isWFH = req.body.isWFH === true || Boolean(openAttendance?.isWFH);
     const hasCoordinates = latitude !== undefined && longitude !== undefined;
 
     if (
@@ -258,15 +291,78 @@ const punch = async (req: Request, res: Response) => {
       });
     }
 
-    // Find an open attendance record for this employee and company.
-    const openAttendance = await Attendance.findOne({
-      where: {
-        employee_id: employeeId,
-        company_code: companyCode,
-        outTime: null,
-      },
-      order: [["inTime", "DESC"]],
-    });
+    // Holiday integration: retain attendance punches on holidays so actual holiday
+    // work can still be recorded. For punch-out, use the punch-in date (overnight shifts).
+    const attendanceDateKey = getISTDateKey(openAttendance?.inTime ?? time);
+
+    // WFH punches are allowed only for an approved WFH request covering this date.
+    // DepartmentPolicy integration is intentionally kept separate for a later step.
+    const approvedWFHRequest =
+      isWFH && attendanceDateKey
+        ? await WFHRequest.findOne({
+            where: {
+              companyCode,
+              employeeId,
+              status: "APPROVED",
+              startDate: { [Op.lte]: attendanceDateKey },
+              endDate: { [Op.gte]: attendanceDateKey },
+            },
+          })
+        : null;
+
+    if (isWFH && !approvedWFHRequest) {
+      return res.status(403).json({
+        message: "Approved WFH request not found for this date",
+      });
+    }
+
+    const holiday = attendanceDateKey
+      ? await HolidayMaster.findOne({
+          where: {
+            companyCode,
+            date: attendanceDateKey,
+          },
+        })
+      : null;
+
+    // Approved leave integration: allow punch-in but return a warning.
+    // Only check leave when starting a new attendance record, not on punch-out.
+    const approvedLeave =
+      !openAttendance && attendanceDateKey
+        ? await LeaveTransaction.findOne({
+            where: {
+              companyCode,
+              employeeId,
+              status: "Approved",
+              startDate: { [Op.lte]: attendanceDateKey },
+              endDate: { [Op.gte]: attendanceDateKey },
+            },
+          })
+        : null;
+
+    // Calendar integration: check the employee department's configured day.
+    // Missing calendar entries remain normal working days; existing logic is preserved.
+    const departmentId = Number(employee.department);
+    const calendarEntry =
+      attendanceDateKey && Number.isInteger(departmentId) && departmentId > 0
+        ? await Calendar.findOne({
+            where: {
+              companyCode,
+              departmentId,
+              date: attendanceDateKey,
+            },
+          })
+        : null;
+
+    const isCalendarWorkDay = calendarEntry
+      ? Boolean(calendarEntry.isWorkDay)
+      : null;
+    const calendarNote = calendarEntry?.note ?? null;
+    const isWeeklyOff = Boolean(
+      calendarEntry &&
+      !calendarEntry.isWorkDay &&
+      /weekly off/i.test(calendarEntry.note ?? ""),
+    );
 
     // ================= PUNCH IN =================
 
@@ -290,6 +386,22 @@ const punch = async (req: Request, res: Response) => {
 
       return res.status(201).json({
         message: isWFH ? "WFH Punch In" : "Punched In",
+        ...(approvedLeave || (calendarEntry && !calendarEntry.isWorkDay)
+          ? {
+              warning: [
+                ...(approvedLeave
+                  ? [
+                      "Employee is on approved leave today. Attendance has been recorded.",
+                    ]
+                  : []),
+                ...(calendarEntry && !calendarEntry.isWorkDay
+                  ? [
+                      `This is a non-working day in the department calendar${calendarNote ? ` (${calendarNote})` : ""}. Attendance has been recorded.`,
+                    ]
+                  : []),
+              ].join(" "),
+            }
+          : {}),
         data: {
           id: attendance.id,
           employee_id: employeeId,
@@ -300,6 +412,12 @@ const punch = async (req: Request, res: Response) => {
           distance: distance == null ? null : Math.round(distance),
           isInsideGeofence,
           isWFH,
+          isHoliday: Boolean(holiday),
+          holidayName: holiday?.name ?? null,
+          isOnLeave: Boolean(approvedLeave),
+          isCalendarWorkDay,
+          isWeeklyOff,
+          calendarNote,
           status: attendance.status,
         },
       });
@@ -356,6 +474,11 @@ const punch = async (req: Request, res: Response) => {
         distance: distance == null ? null : Math.round(distance),
         isInsideGeofence,
         isWFH,
+        isHoliday: Boolean(holiday),
+        holidayName: holiday?.name ?? null,
+        isCalendarWorkDay,
+        isWeeklyOff,
+        calendarNote,
         status: openAttendance.status,
       },
     });
@@ -421,6 +544,53 @@ const manualAdd = async (req: Request, res: Response) => {
       });
     }
 
+    // Additional integration: check approved leave and holiday.
+    // Existing attendance creation logic remains unchanged.
+    const attendanceDateKey = getISTDateKey(inDate);
+
+    const approvedLeave = attendanceDateKey
+      ? await LeaveTransaction.findOne({
+          where: {
+            companyCode,
+            employeeId,
+            status: "Approved",
+            startDate: { [Op.lte]: attendanceDateKey },
+            endDate: { [Op.gte]: attendanceDateKey },
+          },
+        })
+      : null;
+
+    const holiday = attendanceDateKey
+      ? await HolidayMaster.findOne({
+          where: {
+            companyCode,
+            date: attendanceDateKey,
+          },
+        })
+      : null;
+
+    const departmentId = Number(employee.department);
+    const calendarEntry =
+      attendanceDateKey && Number.isInteger(departmentId) && departmentId > 0
+        ? await Calendar.findOne({
+            where: {
+              companyCode,
+              departmentId,
+              date: attendanceDateKey,
+            },
+          })
+        : null;
+
+    const isCalendarWorkDay = calendarEntry
+      ? Boolean(calendarEntry.isWorkDay)
+      : null;
+    const calendarNote = calendarEntry?.note ?? null;
+    const isWeeklyOff = Boolean(
+      calendarEntry &&
+      !calendarEntry.isWorkDay &&
+      /weekly off/i.test(calendarEntry.note ?? ""),
+    );
+
     let durationHours: number | null = null;
     let overtimeHours = 0;
 
@@ -450,8 +620,31 @@ const manualAdd = async (req: Request, res: Response) => {
       isWFH: Boolean(isWFH),
     });
 
+    const warnings: string[] = [];
+
+    if (approvedLeave) {
+      warnings.push(
+        "Employee is on approved leave on this date. Manual attendance has been recorded.",
+      );
+    }
+
+    if (holiday) {
+      warnings.push(
+        `This date is a holiday (${holiday.name}). Manual attendance has been recorded.`,
+      );
+    }
+
+    if (calendarEntry && !calendarEntry.isWorkDay) {
+      warnings.push(
+        `This is a non-working day in the department calendar${calendarNote ? ` (${calendarNote})` : ""}. Manual attendance has been recorded.`,
+      );
+    }
+
     return res.status(201).json({
       message: "Manual attendance added successfully",
+      ...(warnings.length > 0 && {
+        warning: warnings.join(" "),
+      }),
       data: {
         id: attendance.id,
         employee_id: employeeId,
@@ -465,6 +658,12 @@ const manualAdd = async (req: Request, res: Response) => {
         status: attendance.status,
         isManual: attendance.isManual,
         isWFH: attendance.isWFH,
+        isOnLeave: Boolean(approvedLeave),
+        isHoliday: Boolean(holiday),
+        holidayName: holiday?.name ?? null,
+        isCalendarWorkDay,
+        isWeeklyOff,
+        calendarNote,
         createdAt: toIST(attendance.createdAt),
         updatedAt: toIST(attendance.updatedAt),
       },
@@ -912,12 +1111,37 @@ const getMonthlyAttendanceSummary = async (req: Request, res: Response) => {
       },
     });
 
+    // Holiday integration: fetch company holidays for this month.
+    const monthStartKey = `${year}-${String(month).padStart(2, "0")}-01`;
+    const monthEndKey = `${year}-${String(month).padStart(2, "0")}-${String(
+      new Date(year, month, 0).getDate(),
+    ).padStart(2, "0")}`;
+
+    const holidayRecords = await HolidayMaster.findAll({
+      where: {
+        companyCode,
+        date: {
+          [Op.gte]: monthStartKey,
+          [Op.lte]: monthEndKey,
+        },
+      },
+      attributes: ["date", "name"],
+      order: [["date", "ASC"]],
+    });
+
+    const holidayByDate = new Map<string, string>();
+    for (const holiday of holidayRecords) {
+      holidayByDate.set(String(holiday.date), holiday.name);
+    }
+
     const attendanceByEmployee = new Map<number, Set<string>>();
 
     for (const record of attendanceRecords) {
       if (!record.inTime) continue;
 
-      const dateKey = new Date(record.inTime).toISOString().slice(0, 10);
+      const dateKey = getISTDateKey(record.inTime);
+
+      if (!dateKey) continue;
 
       if (!attendanceByEmployee.has(record.employee_id)) {
         attendanceByEmployee.set(record.employee_id, new Set());
@@ -954,6 +1178,13 @@ const getMonthlyAttendanceSummary = async (req: Request, res: Response) => {
 
       const daysInMonth = new Date(year, month, 0).getDate();
 
+      // Holidays with attendance are already counted as present; only exclude
+      // holiday dates without attendance from the absent-day estimate.
+      const holidayDays = holidayByDate.size;
+      const holidaysWithoutAttendance = [...holidayByDate.keys()].filter(
+        (dateKey) => !presentDates.has(dateKey),
+      ).length;
+
       return {
         employeeId,
         employeeName: employee.name,
@@ -966,11 +1197,20 @@ const getMonthlyAttendanceSummary = async (req: Request, res: Response) => {
           presentDays: presentDates.size,
           paidLeaveDays,
           lwpDays,
-          // Department model currently has no workingDays field.
-          // This is a calendar-day estimate, not a working-day calculation.
+          holidayDays,
+          holidays: [...holidayByDate.entries()].map(([date, name]) => ({
+            date,
+            name,
+          })),
+          // This remains a calendar-day estimate; holiday dates without attendance
+          // are excluded from absences. Weekly-offs are not calculated here.
           absentCalendarDays: Math.max(
             0,
-            daysInMonth - presentDates.size - paidLeaveDays - lwpDays,
+            daysInMonth -
+              presentDates.size -
+              paidLeaveDays -
+              lwpDays -
+              holidaysWithoutAttendance,
           ),
         },
       };
