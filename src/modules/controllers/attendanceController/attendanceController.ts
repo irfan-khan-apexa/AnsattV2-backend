@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import {
   Attendance,
   Calendar,
+  DepartmentPolicy,
   HolidayMaster,
   LeaveTransaction,
   Onboarding,
@@ -50,6 +51,23 @@ const findCompanyEmployee = async (employeeId: number, companyCode: string) => {
       id: employeeId,
       company_code: companyCode,
       status: true,
+    },
+  });
+};
+
+// ================= DEPARTMENT POLICY HELPERS =================
+
+const findDepartmentPolicy = async (employee: any, companyCode: string) => {
+  const departmentId = Number(employee?.department);
+
+  if (!Number.isInteger(departmentId) || departmentId <= 0) {
+    return null;
+  }
+
+  return DepartmentPolicy.findOne({
+    where: {
+      companyCode,
+      departmentId,
     },
   });
 };
@@ -158,13 +176,22 @@ const calculateOvertime = async (
   employee: any,
   companyCode: string,
   durationHours: number,
+  departmentPolicy?: any,
 ): Promise<number> => {
+  const shiftPolicy = departmentPolicy?.shiftPolicy;
+
+  // If a department policy exists, it controls whether overtime is allowed.
+  // No policy means legacy overtime behavior is preserved.
+  if (shiftPolicy && shiftPolicy.overtimeAllowed !== true) {
+    return 0;
+  }
+
   if (!employee?.shiftCode) return 0;
 
   const shift = await Shift.findOne({
     where: {
       shiftCode: employee.shiftCode,
-      companyCode: companyCode, // Fixed: model field is companyCode
+      companyCode,
       isActive: true,
     },
   });
@@ -173,11 +200,17 @@ const calculateOvertime = async (
     return 0;
   }
 
-  // Calculate overtime using the configured shift duration.
-  return Math.max(
+  const calculatedOvertime = Math.max(
     0,
     Number((durationHours - Number(shift.totalHours)).toFixed(2)),
   );
+
+  if (shiftPolicy?.overtimeAllowed === true) {
+    const maxOvertimeHours = Number(shiftPolicy.maxOvertimeHours ?? 0);
+    return Math.min(calculatedOvertime, Math.max(0, maxOvertimeHours));
+  }
+
+  return calculatedOvertime;
 };
 // ================= PUNCH IN / PUNCH OUT =================
 
@@ -205,6 +238,9 @@ const punch = async (req: Request, res: Response) => {
         message: "Active employee not found in this company",
       });
     }
+
+    const departmentPolicy = await findDepartmentPolicy(employee, companyCode);
+    const attendancePolicy = departmentPolicy?.attendancePolicy;
 
     // Find an open attendance early so punch-out can reuse its original WFH mode.
     const openAttendance = await Attendance.findOne({
@@ -240,46 +276,65 @@ const punch = async (req: Request, res: Response) => {
     let isInsideGeofence: boolean | null = null;
 
     if (!isWFH) {
-      if (!employee.siteCode) {
-        return res.status(400).json({
-          message: "Employee site is not configured",
-        });
-      }
+      const enforceGeoFence = attendancePolicy
+        ? attendancePolicy.enforceGeoFence !== false
+        : true;
+      const allowGeoFenceBypass =
+        attendancePolicy?.allowGeoFenceBypass === true;
+      const allowRemotePunch =
+        attendancePolicy?.allowRemoteLocation === true &&
+        attendancePolicy?.remotePunchAllowed === true &&
+        attendancePolicy?.onPremiseAttendance === false;
 
-      const site = await Site.findOne({
-        where: {
-          sitecode: employee.siteCode,
-          company_code: companyCode,
-        },
-      });
-
-      if (!site) {
-        return res.status(404).json({
-          message: "Employee site not found",
-        });
-      }
-
-      if (!hasCoordinates) {
+      // Missing coordinates are allowed only when policy explicitly permits remote punching.
+      if (!hasCoordinates && (enforceGeoFence || !allowRemotePunch)) {
         return res.status(400).json({
           message: "Latitude and longitude are required for office attendance",
         });
       }
 
-      distance = getDistanceInMeters(
-        Number(latitude),
-        Number(longitude),
-        Number(site.latitude),
-        Number(site.longitude),
-      );
+      if (hasCoordinates) {
+        if (!employee.siteCode) {
+          return res.status(400).json({
+            message: "Employee site is not configured",
+          });
+        }
 
-      isInsideGeofence = distance <= Number(site.radius);
-
-      if (!isInsideGeofence) {
-        return res.status(403).json({
-          message: "You are outside the allowed attendance location",
-          distance: Math.round(distance),
-          allowedRadius: site.radius,
+        const site = await Site.findOne({
+          where: {
+            sitecode: employee.siteCode,
+            company_code: companyCode,
+          },
         });
+
+        if (!site) {
+          return res.status(404).json({
+            message: "Employee site not found",
+          });
+        }
+
+        distance = getDistanceInMeters(
+          Number(latitude),
+          Number(longitude),
+          Number(site.latitude),
+          Number(site.longitude),
+        );
+
+        isInsideGeofence = distance <= Number(site.radius);
+
+        // A configured policy may explicitly permit geofence bypass or remote punching.
+        if (
+          !isInsideGeofence &&
+          enforceGeoFence &&
+          !allowGeoFenceBypass &&
+          !allowRemotePunch
+        ) {
+          return res.status(403).json({
+            message: "You are outside the allowed attendance location",
+            distance: Math.round(distance),
+            allowedRadius: site.radius,
+          });
+        }
       }
     }
 
@@ -295,8 +350,23 @@ const punch = async (req: Request, res: Response) => {
     // work can still be recorded. For punch-out, use the punch-in date (overnight shifts).
     const attendanceDateKey = getISTDateKey(openAttendance?.inTime ?? time);
 
+    // Department policy must permit WFH before a new WFH attendance can start.
+    // Allow an already-open attendance to be punched out even if policy settings changed mid-day.
+    if (isWFH && !openAttendance) {
+      if (!departmentPolicy) {
+        return res.status(403).json({
+          message: "Department policy not configured for this employee",
+        });
+      }
+
+      if (attendancePolicy?.allowWFH !== true) {
+        return res.status(403).json({
+          message: "WFH is not allowed for this department",
+        });
+      }
+    }
+
     // WFH punches are allowed only for an approved WFH request covering this date.
-    // DepartmentPolicy integration is intentionally kept separate for a later step.
     const approvedWFHRequest =
       isWFH && attendanceDateKey
         ? await WFHRequest.findOne({
@@ -446,6 +516,7 @@ const punch = async (req: Request, res: Response) => {
       employee,
       companyCode,
       durationHours,
+      departmentPolicy,
     );
 
     await openAttendance.update({
@@ -518,6 +589,8 @@ const manualAdd = async (req: Request, res: Response) => {
       });
     }
 
+    const departmentPolicy = await findDepartmentPolicy(employee, companyCode);
+
     const { inTime, outTime, note, isWFH = false } = req.body;
 
     if (!inTime) {
@@ -542,6 +615,20 @@ const manualAdd = async (req: Request, res: Response) => {
       return res.status(400).json({
         message: "outTime cannot be earlier than inTime",
       });
+    }
+
+    if (Boolean(isWFH)) {
+      if (!departmentPolicy) {
+        return res.status(403).json({
+          message: "Department policy not configured for this employee",
+        });
+      }
+
+      if (departmentPolicy.attendancePolicy?.allowWFH !== true) {
+        return res.status(403).json({
+          message: "WFH is not allowed for this department",
+        });
+      }
     }
 
     // Additional integration: check approved leave and holiday.
@@ -600,6 +687,7 @@ const manualAdd = async (req: Request, res: Response) => {
         employee,
         companyCode,
         durationHours,
+        departmentPolicy,
       );
     }
 
@@ -715,6 +803,14 @@ const updateManualAttendance = async (req: Request, res: Response) => {
       });
     }
 
+    const employee = await findCompanyEmployee(
+      attendance.employee_id,
+      companyCode,
+    );
+    const departmentPolicy = employee
+      ? await findDepartmentPolicy(employee, companyCode)
+      : null;
+
     const { inTime, outTime, note } = req.body;
 
     const inDate = inTime ? new Date(inTime) : attendance.inTime;
@@ -755,9 +851,10 @@ const updateManualAttendance = async (req: Request, res: Response) => {
       );
 
       overtimeHours = await calculateOvertime(
-        await findCompanyEmployee(attendance.employee_id, companyCode),
+        employee,
         companyCode,
         durationHours,
+        departmentPolicy,
       );
     }
 
