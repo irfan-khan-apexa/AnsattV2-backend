@@ -77,5 +77,5 @@ Calendar.init(
     ],
   },
 );
-Calendar.sync();
+// Calendar.sync();
 export default Calendar;

@@ -76,6 +76,6 @@ HolidayMaster.init(
     ],
   },
 );
-HolidayMaster.sync();
+// HolidayMaster.sync();
 
 export default HolidayMaster;

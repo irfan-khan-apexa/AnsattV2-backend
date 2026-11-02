@@ -237,6 +237,6 @@ DepartmentPolicy.init(
     ],
   },
 );
-DepartmentPolicy.sync();
+// DepartmentPolicy.sync();
 
 export default DepartmentPolicy;

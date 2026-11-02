@@ -119,5 +119,5 @@ WFHRequest.init(
     ],
   },
 );
-WFHRequest.sync();
+// WFHRequest.sync();
 export { WFHRequest };

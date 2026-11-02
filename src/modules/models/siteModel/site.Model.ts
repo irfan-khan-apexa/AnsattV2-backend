@@ -98,6 +98,6 @@ Site.init(
     ],
   },
 );
-Site.sync();
+// Site.sync();
 
 export default Site;
