@@ -210,6 +210,9 @@ import {
   getSingleEmployeeAttendance,
   punchController,
   getMonthlyAttendanceSummary,
+  exportAttendances,
+  upload,
+  importAttendances,
 } from "./attendanceController/attendanceController";
 import {
   createHoliday,
@@ -394,6 +397,9 @@ export {
   getSingleEmployeeAttendance,
   punchController,
   getMonthlyAttendanceSummary,
+  exportAttendances,
+  upload,
+  importAttendances,
   createHoliday,
   getHolidaysByYear,
   getHolidayById,

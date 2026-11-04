@@ -20,7 +20,7 @@ export const PERMISSION_REGISTRY = {
   hrAnnouncement: ["read", "create", "update", "delete"],
   site: ["read", "create", "update", "delete"],
   shift: ["read", "create", "update", "delete"],
-  attendance: ["read", "create", "update", "delete"],
+  attendance: ["read", "create", "update", "delete", "export", "import"],
   holidays: ["read", "create", "update", "delete"],
   departmentPolicy: ["read", "create", "update", "delete"],
   authorizePermission: ["read", "create", "update", "delete"],

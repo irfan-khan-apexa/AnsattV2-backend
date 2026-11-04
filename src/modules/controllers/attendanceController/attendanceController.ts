@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize";
+import fs from "fs";
+import path from "path";
+import csvParser from "csv-parser";
+import * as XLSX from "xlsx";
+import { writeToStream } from "fast-csv";
+import multer from "multer";
 import {
   Attendance,
   Calendar,
@@ -1328,6 +1334,562 @@ const getMonthlyAttendanceSummary = async (req: Request, res: Response) => {
     });
   }
 };
+
+// ================= EXPORT ATTENDANCES =================
+
+const exportAttendances = async (req: Request, res: Response) => {
+  let filePath: string | null = null;
+
+  try {
+    const companyCode = getCompanyCode(req);
+
+    if (!companyCode) {
+      return res.status(401).json({
+        message: "Company code missing from authentication token",
+      });
+    }
+
+    // Fetch company attendance records
+    const attendances = await Attendance.findAll({
+      where: {
+        company_code: companyCode,
+      },
+      order: [["inTime", "DESC"]],
+    });
+
+    if (!attendances.length) {
+      return res.status(404).json({
+        message: "No attendance records found for this company",
+      });
+    }
+
+    // Fetch employee details
+    const employeeIds = [
+      ...new Set(attendances.map((attendance) => attendance.employee_id)),
+    ];
+
+    const employees = await Onboarding.findAll({
+      where: {
+        id: { [Op.in]: employeeIds },
+        company_code: companyCode,
+      },
+      attributes: ["id", "name", "email"],
+    });
+
+    const employeeMap = new Map(
+      employees.map((employee: any) => [Number(employee.id), employee]),
+    );
+
+    // Prepare export directory
+    const exportDir = path.join(__dirname, "../../exports");
+
+    if (!fs.existsSync(exportDir)) {
+      fs.mkdirSync(exportDir, { recursive: true });
+    }
+
+    // Unique filename to avoid conflicts during simultaneous exports
+    const fileName = `attendance-${companyCode}-${Date.now()}.csv`;
+
+    filePath = path.join(exportDir, fileName);
+
+    const ws = fs.createWriteStream(filePath);
+
+    // UTF-8 BOM for proper Excel compatibility
+    ws.write("\uFEFF");
+
+    const exportData = attendances.map((attendance) => {
+      const employee: any = employeeMap.get(attendance.employee_id);
+
+      return {
+        employee_id: attendance.employee_id,
+        employeeName: employee?.name ?? "",
+        employeeEmail: employee?.email ?? "",
+        company_code: attendance.company_code,
+
+        inTime: toIST(attendance.inTime) ?? "",
+        outTime: toIST(attendance.outTime) ?? "",
+
+        durationHours: formatHoursToHMS(attendance.durationHours) ?? "",
+
+        overtimeHours: formatHoursToHMS(attendance.overtimeHours) ?? "",
+
+        note: attendance.note ?? "",
+        status: attendance.status,
+        isManual: attendance.isManual,
+        isWFH: attendance.isWFH,
+
+        latitude: attendance.latitude ?? "",
+        longitude: attendance.longitude ?? "",
+        distance: attendance.distance ?? "",
+
+        isInsideGeofence:
+          attendance.isInsideGeofence == null
+            ? ""
+            : attendance.isInsideGeofence,
+
+        createdAt: toIST(attendance.createdAt) ?? "",
+        updatedAt: toIST(attendance.updatedAt) ?? "",
+      };
+    });
+
+    // Write CSV
+    await new Promise<void>((resolve, reject) => {
+      const csvStream = writeToStream(ws, exportData, {
+        headers: true,
+      });
+
+      csvStream.on("error", reject);
+      ws.on("error", reject);
+      ws.on("finish", resolve);
+    });
+
+    // Download CSV
+    return res.download(filePath, `attendance-${companyCode}.csv`, (err) => {
+      if (err) {
+        console.error("Attendance export download error:", err);
+
+        if (!res.headersSent) {
+          res.status(500).json({
+            message: "Failed to download attendance export",
+          });
+        }
+      }
+
+      if (filePath && fs.existsSync(filePath)) {
+        fs.unlink(filePath, (unlinkError) => {
+          if (unlinkError) {
+            console.error("Export file cleanup error:", unlinkError);
+          }
+        });
+      }
+    });
+  } catch (error: any) {
+    console.error("Attendance export error:", error);
+
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlink(filePath, () => {});
+    }
+
+    return res.status(500).json({
+      message: "Failed to export attendance",
+      error: error.message,
+    });
+  }
+};
+
+// ================= MULTER STORAGE =================
+
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+});
+
+// ================= IMPORT ATTENDANCES =================
+
+const importAttendances = async (req: Request, res: Response) => {
+  try {
+    const companyCode = getCompanyCode(req);
+
+    if (!companyCode) {
+      return res.status(401).json({
+        message: "Company code missing from authentication token",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Attendance CSV or Excel file is required",
+      });
+    }
+
+    const ext = path.extname(req.file.originalname).toLowerCase();
+
+    let records: any[] = [];
+
+    // ================= READ CSV =================
+
+    if (ext === ".csv") {
+      records = await new Promise((resolve, reject) => {
+        const results: any[] = [];
+
+        const { Readable } = require("stream");
+
+        const readable = Readable.from([req.file!.buffer]);
+
+        readable
+          .pipe(
+            csvParser({
+              mapHeaders: ({ header }: any) =>
+                header.replace(/^\uFEFF/, "").trim(),
+            }),
+          )
+          .on("data", (data: any) => results.push(data))
+          .on("end", () => resolve(results))
+          .on("error", reject);
+      });
+    }
+
+    // ================= READ EXCEL =================
+    else if (ext === ".xlsx" || ext === ".xls") {
+      const workbook = XLSX.read(req.file.buffer, {
+        type: "buffer",
+        cellDates: true,
+      });
+
+      const sheetName = workbook.SheetNames[0];
+
+      if (!sheetName) {
+        return res.status(400).json({
+          message: "Excel file does not contain any worksheet",
+        });
+      }
+
+      records = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+        defval: null,
+        raw: true,
+      });
+    } else {
+      return res.status(400).json({
+        message: "Only CSV, XLS and XLSX files are allowed",
+      });
+    }
+
+    if (!records.length) {
+      return res.status(400).json({
+        message: "No attendance records found in the uploaded file",
+      });
+    }
+
+    // ================= NORMALIZATION HELPERS =================
+
+    const cleanValue = (value: any): any => {
+      if (value === null || value === undefined) {
+        return null;
+      }
+
+      if (typeof value === "string") {
+        const cleaned = value.replace(/"/g, "").trim();
+
+        return cleaned === "" ? null : cleaned;
+      }
+
+      return value;
+    };
+
+    // Convert HH:mm:ss into decimal hours
+    const toHours = (value: any): number | null => {
+      value = cleanValue(value);
+
+      if (value === null) {
+        return null;
+      }
+
+      // Excel may provide numeric values
+      if (typeof value === "number") {
+        return Number.isFinite(value) && value >= 0
+          ? Number(value.toFixed(2))
+          : null;
+      }
+
+      const parts = String(value).split(":");
+
+      if (parts.length !== 3) {
+        return null;
+      }
+
+      const [hours, minutes, seconds] = parts.map(Number);
+
+      if (
+        !Number.isFinite(hours) ||
+        !Number.isFinite(minutes) ||
+        !Number.isFinite(seconds) ||
+        hours < 0 ||
+        minutes < 0 ||
+        minutes > 59 ||
+        seconds < 0 ||
+        seconds > 59
+      ) {
+        return null;
+      }
+
+      return Number((hours + minutes / 60 + seconds / 3600).toFixed(2));
+    };
+
+    // Parse date values.
+    // Exported IST date strings are interpreted as Asia/Kolkata time.
+    const parseAttendanceDate = (value: any): Date | null => {
+      value = cleanValue(value);
+
+      if (value === null) {
+        return null;
+      }
+
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+
+      // Excel serial date support
+      if (typeof value === "number") {
+        const parsed = XLSX.SSF.parse_date_code(value);
+
+        if (!parsed) {
+          return null;
+        }
+
+        const dateString =
+          `${String(parsed.y).padStart(4, "0")}-` +
+          `${String(parsed.m).padStart(2, "0")}-` +
+          `${String(parsed.d).padStart(2, "0")} ` +
+          `${String(parsed.H).padStart(2, "0")}:` +
+          `${String(parsed.M).padStart(2, "0")}:` +
+          `${String(Math.floor(parsed.S)).padStart(2, "0")}`;
+
+        return parseAttendanceDate(dateString);
+      }
+
+      const dateString = String(value);
+
+      // Date strings without timezone are treated as IST
+      const istDateString = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(
+        dateString,
+      )
+        ? `${dateString.replace(" ", "T")}${dateString.length === 16 ? ":00" : ""}+05:30`
+        : dateString;
+
+      const date = new Date(istDateString);
+
+      return Number.isNaN(date.getTime()) ? null : date;
+    };
+
+    const toBoolean = (
+      value: any,
+      defaultValue: boolean | null = false,
+    ): boolean | null => {
+      value = cleanValue(value);
+
+      if (value === null) {
+        return defaultValue;
+      }
+
+      if (typeof value === "boolean") {
+        return value;
+      }
+
+      const normalized = String(value).toLowerCase();
+
+      if (["true", "1", "yes"].includes(normalized)) {
+        return true;
+      }
+
+      if (["false", "0", "no"].includes(normalized)) {
+        return false;
+      }
+
+      return null;
+    };
+
+    // ================= VALIDATE EMPLOYEES =================
+
+    const employeeIds = [
+      ...new Set(
+        records
+          .map((record: any) => Number(cleanValue(record.employee_id)))
+          .filter((id: number) => Number.isInteger(id) && id > 0),
+      ),
+    ];
+
+    const employees = employeeIds.length
+      ? await Onboarding.findAll({
+          where: {
+            id: { [Op.in]: employeeIds },
+            company_code: companyCode,
+            status: true,
+          },
+          attributes: ["id", "name"],
+        })
+      : [];
+
+    const validEmployeeIds = new Set(
+      employees.map((employee: any) => Number(employee.id)),
+    );
+
+    // ================= NORMALIZE RECORDS =================
+
+    const normalized: any[] = [];
+    const errors: string[] = [];
+
+    records.forEach((record: any, index: number) => {
+      const rowNumber = index + 2;
+
+      const employeeId = Number(cleanValue(record.employee_id));
+
+      if (!Number.isInteger(employeeId) || employeeId <= 0) {
+        errors.push(`Row ${rowNumber}: Valid employee_id is required`);
+        return;
+      }
+
+      if (!validEmployeeIds.has(employeeId)) {
+        errors.push(
+          `Row ${rowNumber}: Employee ${employeeId} does not exist or is inactive in this company`,
+        );
+        return;
+      }
+
+      const inTime = parseAttendanceDate(record.inTime);
+      const outTime = parseAttendanceDate(record.outTime);
+
+      if (!inTime) {
+        errors.push(`Row ${rowNumber}: Valid inTime is required`);
+        return;
+      }
+
+      if (record.outTime && !outTime) {
+        errors.push(`Row ${rowNumber}: Invalid outTime`);
+        return;
+      }
+
+      if (outTime && outTime.getTime() < inTime.getTime()) {
+        errors.push(`Row ${rowNumber}: outTime cannot be earlier than inTime`);
+        return;
+      }
+
+      const durationValue = cleanValue(record.durationHours);
+      const overtimeValue = cleanValue(record.overtimeHours);
+
+      const durationHours = outTime
+        ? durationValue !== null
+          ? toHours(durationValue)
+          : calculateDurationHours(inTime, outTime)
+        : null;
+
+      const overtimeHours = overtimeValue !== null ? toHours(overtimeValue) : 0;
+
+      if (outTime && durationValue !== null && durationHours === null) {
+        errors.push(
+          `Row ${rowNumber}: Invalid durationHours. Use HH:mm:ss or decimal hours`,
+        );
+        return;
+      }
+
+      if (overtimeValue !== null && overtimeHours === null) {
+        errors.push(
+          `Row ${rowNumber}: Invalid overtimeHours. Use HH:mm:ss or decimal hours`,
+        );
+        return;
+      }
+
+      const isManual = toBoolean(record.isManual, true);
+      const isWFH = toBoolean(record.isWFH, false);
+
+      const isInsideGeofence = toBoolean(record.isInsideGeofence, null);
+
+      if (
+        isManual === null ||
+        isWFH === null ||
+        (isInsideGeofence === null &&
+          cleanValue(record.isInsideGeofence) !== null)
+      ) {
+        errors.push(`Row ${rowNumber}: Invalid boolean value`);
+        return;
+      }
+
+      const latitude =
+        cleanValue(record.latitude) !== null
+          ? Number(cleanValue(record.latitude))
+          : null;
+
+      const longitude =
+        cleanValue(record.longitude) !== null
+          ? Number(cleanValue(record.longitude))
+          : null;
+
+      const distance =
+        cleanValue(record.distance) !== null
+          ? Number(cleanValue(record.distance))
+          : null;
+
+      if (
+        (latitude !== null &&
+          (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) ||
+        (longitude !== null &&
+          (!Number.isFinite(longitude) ||
+            longitude < -180 ||
+            longitude > 180)) ||
+        (distance !== null && (!Number.isFinite(distance) || distance < 0))
+      ) {
+        errors.push(
+          `Row ${rowNumber}: Invalid latitude, longitude or distance`,
+        );
+        return;
+      }
+
+      normalized.push({
+        employee_id: employeeId,
+
+        // Always use authenticated company code
+        company_code: companyCode,
+
+        inTime,
+        outTime,
+
+        durationHours,
+        overtimeHours: overtimeHours ?? 0,
+
+        note: cleanValue(record.note),
+
+        // Status is derived from punch times
+        status: outTime ? "PUNCH_OUT" : "PUNCH_IN",
+
+        isManual,
+        isWFH,
+
+        latitude,
+        longitude,
+        distance,
+        isInsideGeofence,
+      });
+    });
+
+    // Do not insert partial data if any row is invalid
+    if (errors.length) {
+      return res.status(400).json({
+        message: "Attendance import validation failed",
+        totalRows: records.length,
+        invalidRows: errors.length,
+        errors,
+      });
+    }
+
+    if (!normalized.length) {
+      return res.status(400).json({
+        message: "No valid attendance records available for import",
+      });
+    }
+
+    // ================= BULK INSERT =================
+
+    const inserted = await Attendance.bulkCreate(normalized, {
+      validate: true,
+    });
+
+    return res.status(200).json({
+      message: "Attendance imported successfully",
+      totalRows: records.length,
+      imported: inserted.length,
+      company_code: companyCode,
+      ids: inserted.map((attendance) => attendance.id),
+    });
+  } catch (error: any) {
+    console.error("Attendance import error:", error);
+
+    return res.status(500).json({
+      message: "Failed to import attendance",
+      error: error.message,
+    });
+  }
+};
+
 export {
   punch,
   manualAdd,
@@ -1336,4 +1898,7 @@ export {
   getSingleEmployeeAttendance,
   punchController,
   getMonthlyAttendanceSummary,
+  exportAttendances,
+  upload,
+  importAttendances,
 };

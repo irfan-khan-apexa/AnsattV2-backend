@@ -8,6 +8,9 @@ import {
   getSingleEmployeeAttendance,
   punchController,
   getMonthlyAttendanceSummary,
+  exportAttendances,
+  upload,
+  importAttendances,
 } from "../../controllers/index";
 
 import { authenticateUser } from "../../../middlewares/authMiddleware";
@@ -71,4 +74,18 @@ attendanceRouter.get(
   getMonthlyAttendanceSummary,
 );
 
+attendanceRouter.get(
+  "/attendance/export",
+  authenticateUser,
+  //   authorizePermission("attendance", "export"),
+  exportAttendances,
+);
+
+attendanceRouter.post(
+  "/attendance/import",
+  authenticateUser,
+  //   authorizePermission("attendance","import"),
+  upload.single("file"),
+  importAttendances,
+);
 export { attendanceRouter };
