@@ -1431,6 +1431,7 @@ const exportAttendances = async (req: Request, res: Response) => {
     };
 
     const hasDateRange = fromDate !== undefined || toDate !== undefined;
+
     const hasMonthFilter = month !== undefined || year !== undefined;
 
     // Date range takes priority over month/year.
@@ -1458,6 +1459,7 @@ const exportAttendances = async (req: Request, res: Response) => {
 
       // IST day boundaries converted to UTC.
       const startIST = new Date(`${startDate}T00:00:00+05:30`);
+
       const endIST = new Date(`${endDate}T23:59:59.999+05:30`);
 
       where.inTime = {
@@ -1585,6 +1587,7 @@ const exportAttendances = async (req: Request, res: Response) => {
 
     try {
       manualFilter = parseBooleanFilter(isManual, "isManual");
+
       wfhFilter = parseBooleanFilter(isWFH, "isWFH");
     } catch (error: any) {
       return res.status(400).json({
@@ -1632,7 +1635,9 @@ const exportAttendances = async (req: Request, res: Response) => {
 
     const employees = await Onboarding.findAll({
       where: {
-        id: { [Op.in]: employeeIds },
+        id: {
+          [Op.in]: employeeIds,
+        },
         company_code: companyCode,
       },
       attributes: ["id", "name", "email", "department"],
@@ -1645,7 +1650,7 @@ const exportAttendances = async (req: Request, res: Response) => {
     // ================= PREPARE EXCEL DATA =================
 
     const exportData = attendances.map((attendance) => {
-      const employee: any = employeeMap.get(attendance.employee_id);
+      const employee: any = employeeMap.get(Number(attendance.employee_id));
 
       return {
         "Employee ID": attendance.employee_id,
@@ -1659,12 +1664,14 @@ const exportAttendances = async (req: Request, res: Response) => {
         "Punch Out": toIST(attendance.outTime) ?? "",
 
         Duration: formatHoursToHMS(attendance.durationHours) ?? "",
+
         Overtime: formatHoursToHMS(attendance.overtimeHours) ?? "",
 
         Note: attendance.note ?? "",
         Status: attendance.status,
 
         "Manual Attendance": attendance.isManual ? "Yes" : "No",
+
         "Work From Home": attendance.isWFH ? "Yes" : "No",
 
         Latitude: attendance.latitude ?? "",
@@ -1683,7 +1690,7 @@ const exportAttendances = async (req: Request, res: Response) => {
       };
     });
 
-    // ================= CREATE EXCEL WORKBOOK =================
+    // ================= CREATE EXCEL WORKSHEET =================
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
 
@@ -1717,6 +1724,8 @@ const exportAttendances = async (req: Request, res: Response) => {
       };
     }
 
+    // ================= CREATE EXCEL WORKBOOK =================
+
     const workbook = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
@@ -1732,25 +1741,39 @@ const exportAttendances = async (req: Request, res: Response) => {
 
     const fileName = `attendance-${companyCode}-${Date.now()}.xlsx`;
 
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    );
+    const finalExcelBuffer = Buffer.isBuffer(excelBuffer)
+      ? excelBuffer
+      : Buffer.from(excelBuffer);
 
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.status(200);
 
-    res.setHeader("Content-Length", excelBuffer.length);
+    res.set({
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 
-    // Direct buffer response.
-    // No physical file or exports directory is created.
-    return res.status(200).send(excelBuffer);
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+
+      "Content-Length": String(finalExcelBuffer.length),
+
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+
+      Pragma: "no-cache",
+
+      "X-Content-Type-Options": "nosniff",
+    });
+
+    return res.attachment(fileName).send(finalExcelBuffer);
   } catch (error: any) {
     console.error("Attendance export error:", error);
 
-    return res.status(500).json({
-      message: "Failed to export attendance",
-      error: error.message,
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({
+        message: "Failed to export attendance",
+        error: error.message,
+      });
+    }
+
+    return;
   }
 };
 
