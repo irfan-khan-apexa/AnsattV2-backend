@@ -1338,10 +1338,9 @@ const getMonthlyAttendanceSummary = async (req: Request, res: Response) => {
 // ================= EXPORT ATTENDANCES =================
 
 const exportAttendances = async (req: Request, res: Response) => {
-  let filePath: string | null = null;
-
   try {
     const companyCode = getCompanyCode(req);
+    const user = getUser(req);
 
     if (!companyCode) {
       return res.status(401).json({
@@ -1349,21 +1348,284 @@ const exportAttendances = async (req: Request, res: Response) => {
       });
     }
 
-    // Fetch company attendance records
+    // ================= READ FILTERS =================
+
+    const {
+      fromDate,
+      toDate,
+      month,
+      year,
+      employeeId,
+      department,
+      status,
+      isManual,
+      isWFH,
+    } = req.query;
+
+    const where: any = {
+      company_code: companyCode,
+    };
+
+    // ================= EMPLOYEE ACCESS =================
+
+    // Employee role can export only their own attendance.
+    if (user?.role === "employee") {
+      const loggedInEmployeeId = getTargetEmployeeId(req);
+
+      if (!loggedInEmployeeId) {
+        return res.status(400).json({
+          message: "Employee ID missing from authentication token",
+        });
+      }
+
+      if (
+        employeeId !== undefined &&
+        Number(employeeId) !== loggedInEmployeeId
+      ) {
+        return res.status(403).json({
+          message: "You can export only your own attendance",
+        });
+      }
+
+      where.employee_id = loggedInEmployeeId;
+    } else if (employeeId !== undefined) {
+      const parsedEmployeeId = Number(employeeId);
+
+      if (!Number.isInteger(parsedEmployeeId) || parsedEmployeeId <= 0) {
+        return res.status(400).json({
+          message: "Invalid employeeId",
+        });
+      }
+
+      const employee = await Onboarding.findOne({
+        where: {
+          id: parsedEmployeeId,
+          company_code: companyCode,
+          status: true,
+        },
+        attributes: ["id"],
+      });
+
+      if (!employee) {
+        return res.status(404).json({
+          message: "Employee not found or inactive in this company",
+        });
+      }
+
+      where.employee_id = parsedEmployeeId;
+    }
+
+    // ================= DATE VALIDATION =================
+
+    const isValidDate = (value: string): boolean => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return false;
+      }
+
+      const date = new Date(`${value}T00:00:00.000Z`);
+
+      return (
+        !Number.isNaN(date.getTime()) &&
+        date.toISOString().slice(0, 10) === value
+      );
+    };
+
+    const hasDateRange = fromDate !== undefined || toDate !== undefined;
+    const hasMonthFilter = month !== undefined || year !== undefined;
+
+    // Date range takes priority over month/year.
+    if (hasDateRange) {
+      if (!fromDate || !toDate) {
+        return res.status(400).json({
+          message: "Both fromDate and toDate are required",
+        });
+      }
+
+      const startDate = String(fromDate);
+      const endDate = String(toDate);
+
+      if (!isValidDate(startDate) || !isValidDate(endDate)) {
+        return res.status(400).json({
+          message: "Invalid date format. Use YYYY-MM-DD",
+        });
+      }
+
+      if (startDate > endDate) {
+        return res.status(400).json({
+          message: "fromDate cannot be greater than toDate",
+        });
+      }
+
+      // IST day boundaries converted to UTC.
+      const startIST = new Date(`${startDate}T00:00:00+05:30`);
+      const endIST = new Date(`${endDate}T23:59:59.999+05:30`);
+
+      where.inTime = {
+        [Op.between]: [startIST, endIST],
+      };
+    } else if (hasMonthFilter) {
+      if (month === undefined || year === undefined) {
+        return res.status(400).json({
+          message: "Both month and year are required",
+        });
+      }
+
+      const parsedMonth = Number(month);
+      const parsedYear = Number(year);
+
+      if (
+        !Number.isInteger(parsedMonth) ||
+        parsedMonth < 1 ||
+        parsedMonth > 12 ||
+        !Number.isInteger(parsedYear) ||
+        parsedYear < 2000 ||
+        parsedYear > 2100
+      ) {
+        return res.status(400).json({
+          message: "Invalid month or year",
+        });
+      }
+
+      const monthStart = new Date(
+        `${parsedYear}-${String(parsedMonth).padStart(2, "0")}-01T00:00:00+05:30`,
+      );
+
+      const nextMonthStart =
+        parsedMonth === 12
+          ? new Date(`${parsedYear + 1}-01-01T00:00:00+05:30`)
+          : new Date(
+              `${parsedYear}-${String(parsedMonth + 1).padStart(2, "0")}-01T00:00:00+05:30`,
+            );
+
+      where.inTime = {
+        [Op.gte]: monthStart,
+        [Op.lt]: nextMonthStart,
+      };
+    }
+
+    // ================= DEPARTMENT FILTER =================
+
+    let departmentEmployeeIds: number[] | null = null;
+
+    if (department !== undefined) {
+      const departmentId = Number(department);
+
+      if (!Number.isInteger(departmentId) || departmentId <= 0) {
+        return res.status(400).json({
+          message: "Invalid department ID",
+        });
+      }
+
+      const departmentEmployees = await Onboarding.findAll({
+        where: {
+          company_code: companyCode,
+          department: departmentId,
+          status: true,
+        },
+        attributes: ["id"],
+      });
+
+      departmentEmployeeIds = departmentEmployees.map((employee: any) =>
+        Number(employee.id),
+      );
+
+      if (!departmentEmployeeIds.length) {
+        return res.status(404).json({
+          message: "No active employees found in this department",
+        });
+      }
+
+      if (
+        where.employee_id &&
+        !departmentEmployeeIds.includes(Number(where.employee_id))
+      ) {
+        return res.status(404).json({
+          message: "Employee does not belong to this department",
+        });
+      }
+
+      where.employee_id = {
+        [Op.in]: departmentEmployeeIds,
+      };
+    }
+
+    // ================= STATUS FILTER =================
+
+    if (status !== undefined) {
+      const allowedStatuses = ["PUNCH_IN", "PUNCH_OUT"];
+      const parsedStatus = String(status).toUpperCase();
+
+      if (!allowedStatuses.includes(parsedStatus)) {
+        return res.status(400).json({
+          message: "Invalid status. Use PUNCH_IN or PUNCH_OUT",
+        });
+      }
+
+      where.status = parsedStatus;
+    }
+
+    // ================= BOOLEAN FILTERS =================
+
+    const parseBooleanFilter = (
+      value: any,
+      fieldName: string,
+    ): boolean | null => {
+      if (value === undefined) return null;
+
+      const normalized = String(value).toLowerCase();
+
+      if (normalized === "true") return true;
+      if (normalized === "false") return false;
+
+      throw new Error(`Invalid ${fieldName}. Use true or false`);
+    };
+
+    let manualFilter: boolean | null;
+    let wfhFilter: boolean | null;
+
+    try {
+      manualFilter = parseBooleanFilter(isManual, "isManual");
+      wfhFilter = parseBooleanFilter(isWFH, "isWFH");
+    } catch (error: any) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+
+    if (manualFilter !== null) {
+      where.isManual = manualFilter;
+    }
+
+    if (wfhFilter !== null) {
+      where.isWFH = wfhFilter;
+    }
+
+    // ================= FETCH ATTENDANCE =================
+
     const attendances = await Attendance.findAll({
-      where: {
-        company_code: companyCode,
-      },
+      where,
       order: [["inTime", "DESC"]],
     });
 
     if (!attendances.length) {
       return res.status(404).json({
-        message: "No attendance records found for this company",
+        message: "No attendance records found for the selected filters",
+        filters: {
+          fromDate: fromDate ?? null,
+          toDate: toDate ?? null,
+          month: month ?? null,
+          year: year ?? null,
+          employeeId: employeeId ?? null,
+          department: department ?? null,
+          status: status ?? null,
+          isManual: isManual ?? null,
+          isWFH: isWFH ?? null,
+        },
       });
     }
 
-    // Fetch employee details
+    // ================= FETCH EMPLOYEES =================
+
     const employeeIds = [
       ...new Set(attendances.map((attendance) => attendance.employee_id)),
     ];
@@ -1373,102 +1635,117 @@ const exportAttendances = async (req: Request, res: Response) => {
         id: { [Op.in]: employeeIds },
         company_code: companyCode,
       },
-      attributes: ["id", "name", "email"],
+      attributes: ["id", "name", "email", "department"],
     });
 
     const employeeMap = new Map(
       employees.map((employee: any) => [Number(employee.id), employee]),
     );
 
-    // Prepare export directory
-    const exportDir = path.join(__dirname, "../../exports");
-
-    if (!fs.existsSync(exportDir)) {
-      fs.mkdirSync(exportDir, { recursive: true });
-    }
-
-    // Unique filename to avoid conflicts during simultaneous exports
-    const fileName = `attendance-${companyCode}-${Date.now()}.csv`;
-
-    filePath = path.join(exportDir, fileName);
-
-    const ws = fs.createWriteStream(filePath);
-
-    // UTF-8 BOM for proper Excel compatibility
-    ws.write("\uFEFF");
+    // ================= PREPARE EXCEL DATA =================
 
     const exportData = attendances.map((attendance) => {
       const employee: any = employeeMap.get(attendance.employee_id);
 
       return {
-        employee_id: attendance.employee_id,
-        employeeName: employee?.name ?? "",
-        employeeEmail: employee?.email ?? "",
-        company_code: attendance.company_code,
+        "Employee ID": attendance.employee_id,
+        "Employee Name": employee?.name ?? "",
+        "Employee Email": employee?.email ?? "",
+        Department: employee?.department ?? "",
 
-        inTime: toIST(attendance.inTime) ?? "",
-        outTime: toIST(attendance.outTime) ?? "",
+        "Company Code": attendance.company_code,
 
-        durationHours: formatHoursToHMS(attendance.durationHours) ?? "",
+        "Punch In": toIST(attendance.inTime) ?? "",
+        "Punch Out": toIST(attendance.outTime) ?? "",
 
-        overtimeHours: formatHoursToHMS(attendance.overtimeHours) ?? "",
+        Duration: formatHoursToHMS(attendance.durationHours) ?? "",
+        Overtime: formatHoursToHMS(attendance.overtimeHours) ?? "",
 
-        note: attendance.note ?? "",
-        status: attendance.status,
-        isManual: attendance.isManual,
-        isWFH: attendance.isWFH,
+        Note: attendance.note ?? "",
+        Status: attendance.status,
 
-        latitude: attendance.latitude ?? "",
-        longitude: attendance.longitude ?? "",
-        distance: attendance.distance ?? "",
+        "Manual Attendance": attendance.isManual ? "Yes" : "No",
+        "Work From Home": attendance.isWFH ? "Yes" : "No",
 
-        isInsideGeofence:
+        Latitude: attendance.latitude ?? "",
+        Longitude: attendance.longitude ?? "",
+        Distance: attendance.distance ?? "",
+
+        "Inside Geofence":
           attendance.isInsideGeofence == null
             ? ""
-            : attendance.isInsideGeofence,
+            : attendance.isInsideGeofence
+              ? "Yes"
+              : "No",
 
-        createdAt: toIST(attendance.createdAt) ?? "",
-        updatedAt: toIST(attendance.updatedAt) ?? "",
+        "Created At": toIST(attendance.createdAt) ?? "",
+        "Updated At": toIST(attendance.updatedAt) ?? "",
       };
     });
 
-    // Write CSV
-    await new Promise<void>((resolve, reject) => {
-      const csvStream = writeToStream(ws, exportData, {
-        headers: true,
-      });
+    // ================= CREATE EXCEL WORKBOOK =================
 
-      csvStream.on("error", reject);
-      ws.on("error", reject);
-      ws.on("finish", resolve);
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    // Set Excel column widths
+    worksheet["!cols"] = [
+      { wch: 14 }, // Employee ID
+      { wch: 24 }, // Employee Name
+      { wch: 30 }, // Email
+      { wch: 20 }, // Department
+      { wch: 25 }, // Company Code
+      { wch: 22 }, // Punch In
+      { wch: 22 }, // Punch Out
+      { wch: 15 }, // Duration
+      { wch: 15 }, // Overtime
+      { wch: 30 }, // Note
+      { wch: 15 }, // Status
+      { wch: 20 }, // Manual
+      { wch: 20 }, // WFH
+      { wch: 15 }, // Latitude
+      { wch: 15 }, // Longitude
+      { wch: 15 }, // Distance
+      { wch: 18 }, // Geofence
+      { wch: 22 }, // Created At
+      { wch: 22 }, // Updated At
+    ];
+
+    // Enable filters on Excel header row
+    if (worksheet["!ref"]) {
+      worksheet["!autofilter"] = {
+        ref: worksheet["!ref"],
+      };
+    }
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+
+    // ================= GENERATE XLSX BUFFER =================
+
+    const excelBuffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
     });
 
-    // Download CSV
-    return res.download(filePath, `attendance-${companyCode}.csv`, (err) => {
-      if (err) {
-        console.error("Attendance export download error:", err);
+    // ================= DOWNLOAD EXCEL =================
 
-        if (!res.headersSent) {
-          res.status(500).json({
-            message: "Failed to download attendance export",
-          });
-        }
-      }
+    const fileName = `attendance-${companyCode}-${Date.now()}.xlsx`;
 
-      if (filePath && fs.existsSync(filePath)) {
-        fs.unlink(filePath, (unlinkError) => {
-          if (unlinkError) {
-            console.error("Export file cleanup error:", unlinkError);
-          }
-        });
-      }
-    });
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    res.setHeader("Content-Length", excelBuffer.length);
+
+    // Direct buffer response.
+    // No physical file or exports directory is created.
+    return res.status(200).send(excelBuffer);
   } catch (error: any) {
     console.error("Attendance export error:", error);
-
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlink(filePath, () => {});
-    }
 
     return res.status(500).json({
       message: "Failed to export attendance",
