@@ -43,7 +43,7 @@ module.exports = {
     });
 
     //  index for lookup
-    await queryInterface.addIndex("companies", ["company_code"]);
+    // await queryInterface.addIndex("companies", ["company_code"]);
   },
 
   async down(queryInterface) {
