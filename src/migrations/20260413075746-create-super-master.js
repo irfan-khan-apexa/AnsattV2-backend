@@ -34,7 +34,7 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex("super_masters", ["email"]);
+    // await queryInterface.addIndex("super_masters", ["email"]);
   },
 
   async down(queryInterface) {

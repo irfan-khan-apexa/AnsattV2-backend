@@ -43,4 +43,5 @@ EXPOSE 5000
 USER node
 
 # Run migrations then start server
-CMD ["sh", "-c", "npm run migrate && node dist/server.js"]
+# CMD ["sh", "-c", "npm run migrate && node dist/server.js"]
+CMD ["npm", "start"]
