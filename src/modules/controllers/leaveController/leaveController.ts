@@ -1,12 +1,22 @@
 import { Request, Response } from "express";
-import { Leave ,LeaveMaster,LeaveTransaction,LeaveExtraField,FinancialYear,Onboarding,Department,LeaveActionToken} from "../../models";
+import {
+  Leave,
+  LeaveMaster,
+  LeaveTransaction,
+  LeaveExtraField,
+  FinancialYear,
+  Onboarding,
+  Department,
+  LeaveActionToken,
+} from "../../models";
 import { Op } from "sequelize";
-import { calculateAllEmployeesLeaveBalance, calculateLeaveBalance } from "../../../utils/leaveUtils";
+import {
+  calculateAllEmployeesLeaveBalance,
+  calculateLeaveBalance,
+} from "../../../utils/leaveUtils";
 import { sendMail } from "../../../utils/mailer";
 import * as crypto from "crypto";
 import { audit } from "../../../helpers/audit.helper";
-
-
 
 //  Apply for Leave (Employee)
 // controllers/leaveController.ts
@@ -55,9 +65,9 @@ import { audit } from "../../../helpers/audit.helper";
 //   try {
 //     // token-derived
 //     const employeeId = (req as any).user?.id;
-    
+
 //     const companyCode = (req as any).user?.company_code || (req as any).user?.companyCode;
-    
+
 //     // console.log("employeeId",employeeId,"companyCode",companyCode);
 //     const { category, startDate, endDate, reason } = req.body;
 
@@ -171,16 +181,18 @@ import { audit } from "../../../helpers/audit.helper";
 //     return res.status(500).json({ message: "Error applying leave", error: err.message });
 //   }
 // };
-const applyLeave = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+const applyLeave = async (req: Request, res: Response): Promise<any> => {
   try {
+    // Only employees can apply for leave
+    if ((req as any).user?.role !== "employee") {
+      return res.status(403).json({
+        message: "Only employees can apply for leave",
+      });
+    }
     const employeeId = (req as any).user?.id;
 
     const companyCode =
-      (req as any).user?.company_code ||
-      (req as any).user?.companyCode;
+      (req as any).user?.company_code || (req as any).user?.companyCode;
 
     const { category, startDate, endDate, reason } = req.body;
 
@@ -208,21 +220,14 @@ const applyLeave = async (
     }
 
     const calculatedDays =
-      Math.ceil(
-        (ed.getTime() - sd.getTime()) /
-          (1000 * 60 * 60 * 24)
-      ) + 1;
+      Math.ceil((ed.getTime() - sd.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     // Leave Balance
-    const balanceData = await calculateLeaveBalance(
-      employeeId,
-      companyCode
-    );
+    const balanceData = await calculateLeaveBalance(employeeId, companyCode);
 
     const leaveCategory = balanceData.leaves.find(
       (item: any) =>
-        item.category.trim().toLowerCase() ===
-        category.trim().toLowerCase()
+        item.category.trim().toLowerCase() === category.trim().toLowerCase(),
     );
 
     if (!leaveCategory) {
@@ -233,15 +238,9 @@ const applyLeave = async (
 
     const availableBalance = leaveCategory.balance;
 
-    const paidDays = Math.min(
-      calculatedDays,
-      availableBalance
-    );
+    const paidDays = Math.min(calculatedDays, availableBalance);
 
-    const lwpDays = Math.max(
-      calculatedDays - availableBalance,
-      0
-    );
+    const lwpDays = Math.max(calculatedDays - availableBalance, 0);
 
     const leave = await LeaveTransaction.create({
       companyCode,
@@ -289,10 +288,13 @@ const applyLeave = async (
 const getMyLeaves = async (req: Request, res: Response): Promise<any> => {
   try {
     const employeeId = (req as any).user.id;
-    const companyCode = (req as any).user.company_code || (req as any).user.companyCode;
+    const companyCode =
+      (req as any).user.company_code || (req as any).user.companyCode;
 
     if (!companyCode) {
-      return res.status(401).json({ message: "Invalid token: company_code missing" });
+      return res
+        .status(401)
+        .json({ message: "Invalid token: company_code missing" });
     }
 
     const leaves = await LeaveTransaction.findAll({
@@ -307,22 +309,29 @@ const getMyLeaves = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-
-
-
 //  Get All Leaves (HR/Manager)
 // --- getAllLeaves (updated) ---
 const getAllLeaves = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { page = "1", limit = "10", search, status, category, start, end } = req.query;
+    const {
+      page = "1",
+      limit = "10",
+      search,
+      status,
+      category,
+      start,
+      end,
+    } = req.query;
 
     const user = (req as any).user;
     console.log();
-    
+
     const companyCode = user?.company_code || user?.companyCode;
 
     if (!companyCode && !user?.isSuperAdmin) {
-      return res.status(401).json({ message: "Invalid token: company_code missing" });
+      return res
+        .status(401)
+        .json({ message: "Invalid token: company_code missing" });
     }
 
     const whereClause: any = {};
@@ -341,12 +350,13 @@ const getAllLeaves = async (req: Request, res: Response): Promise<any> => {
     const limitNum = parseInt(limit as string);
     const offset = (pageNum - 1) * limitNum;
 
-    const { rows: leaves, count: total } = await LeaveTransaction.findAndCountAll({
-      where: whereClause,
-      offset,
-      limit: limitNum,
-      order: [["createdAt", "DESC"]],
-    });
+    const { rows: leaves, count: total } =
+      await LeaveTransaction.findAndCountAll({
+        where: whereClause,
+        offset,
+        limit: limitNum,
+        order: [["createdAt", "DESC"]],
+      });
 
     res.status(200).json({ total, page: pageNum, pageSize: limitNum, leaves });
   } catch (err) {
@@ -381,7 +391,9 @@ const handleLeaveAction = async (req: Request, res: Response): Promise<any> => {
     }
 
     // 🔹 Find approver by email
-    const approver = await Onboarding.findOne({ where: { email: actionToken.email } });
+    const approver = await Onboarding.findOne({
+      where: { email: actionToken.email },
+    });
     if (!approver) {
       await actionToken.destroy(); // 👤 approver not found → delete
       return res.status(404).send("Approver not found");
@@ -409,20 +421,19 @@ const handleLeaveAction = async (req: Request, res: Response): Promise<any> => {
     // ✅ Approve / Reject
     leave.status = type === "approve" ? "Approved" : "Rejected";
     leave.actionBy = approver.id;
-    leave.actionReason = type === "reject" ? (reason as string || "No reason provided") : null;
+    leave.actionReason =
+      type === "reject" ? (reason as string) || "No reason provided" : null;
 
     await leave.save();
-const oldData = leave?.toJSON();
-await audit(req,{
-    module:"leave",
-    action:type === "approve"
-        ? "approve"
-        : "reject",
-    record_id:leave.id,
-    old_value:oldData,
-    new_value:leave.toJSON()
-});
-       // 🗑️ Delete ALL tokens for this leave (including other recipients’)
+    const oldData = leave?.toJSON();
+    await audit(req, {
+      module: "leave",
+      action: type === "approve" ? "approve" : "reject",
+      record_id: leave.id,
+      old_value: oldData,
+      new_value: leave.toJSON(),
+    });
+    // 🗑️ Delete ALL tokens for this leave (including other recipients’)
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
     return res.send(`
@@ -438,13 +449,7 @@ await audit(req,{
   }
 };
 
-
-
-
-
-
 //  Approve Leave
-
 
 // // Approve Leave (from App)
 // const approveLeave = async (req: Request, res: Response): Promise<any> => {
@@ -512,7 +517,6 @@ await audit(req,{
 //   }
 // };
 
-
 // Approve Leave (Updated)
 const approveLeave = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -525,37 +529,33 @@ const approveLeave = async (req: Request, res: Response): Promise<any> => {
 
     leave.status = "Approved";
     await leave.save();
-const oldData = leave.toJSON();
+    const oldData = leave.toJSON();
 
-await audit(req,{
-    module:"leave",
-    action:"approve",
-    record_id:leave.id,
-    old_value:oldData,
-    new_value:leave.toJSON()
-});
+    await audit(req, {
+      module: "leave",
+      action: "approve",
+      record_id: leave.id,
+      old_value: oldData,
+      new_value: leave.toJSON(),
+    });
     // Delete all action tokens
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
-   
     const employee = await Onboarding.findByPk(leave.employeeId);
     if (employee?.email) {
       sendMail(
         employee.email,
         "Leave Approved",
-        `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>approved</b>.</p>`
+        `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>approved</b>.</p>`,
       ).catch((err) => console.log("Mail send failed:", err));
     }
 
     return res.status(200).json({ message: "Leave approved", leave });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Error approving leave" });
   }
 };
-
-
 
 const rejectLeave = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -569,37 +569,32 @@ const rejectLeave = async (req: Request, res: Response): Promise<any> => {
     leave.status = "Rejected";
     await leave.save();
 
-   const oldData = leave.toJSON();
+    const oldData = leave.toJSON();
 
-await audit(req,{
-    module:"leave",
-    action:"reject",
-    record_id:leave.id,
-    old_value:oldData,
-    new_value:leave.toJSON()
-});
+    await audit(req, {
+      module: "leave",
+      action: "reject",
+      record_id: leave.id,
+      old_value: oldData,
+      new_value: leave.toJSON(),
+    });
     await LeaveActionToken.destroy({ where: { leaveId: leave.id } });
 
-   
     const employee = await Onboarding.findByPk(leave.employeeId);
     if (employee?.email) {
       sendMail(
         employee.email,
         "Leave Rejected",
-        `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>rejected</b>.</p>`
+        `<p>Your leave request from ${leave.startDate} to ${leave.endDate} has been <b>rejected</b>.</p>`,
       ).catch((err) => console.log("Mail send failed:", err));
     }
 
     return res.status(200).json({ message: "Leave rejected", leave });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Error rejecting leave" });
   }
 };
-
-
-
 
 ///////////
 
@@ -630,12 +625,12 @@ const addNewCategory = async (req: Request, res: Response): Promise<any> => {
       name,
       allowedLeaves: allowedLeaves || 0,
     });
-await audit(req,{
-    module:"leave",
-    action:"create",
-    record_id:record.id,
-    new_value:record.toJSON()
-});
+    await audit(req, {
+      module: "leave",
+      action: "create",
+      record_id: record.id,
+      new_value: record.toJSON(),
+    });
     res.status(201).json({
       message: "Category created successfully",
       data: record,
@@ -645,7 +640,6 @@ await audit(req,{
     res.status(500).json({ message: "Error creating category" });
   }
 };
-
 
 // Get Categories by type (optional filter)
 // const getLeaveCategory = async (req: Request, res: Response): Promise<any> => {
@@ -671,7 +665,9 @@ const getLeaveCategory = async (req: Request, res: Response): Promise<any> => {
     const user = (req as any).user;
 
     if (!user?.company_code) {
-      return res.status(401).json({ message: "Invalid token: company_code missing" });
+      return res
+        .status(401)
+        .json({ message: "Invalid token: company_code missing" });
     }
 
     const whereClause: any = { companyCode: user.company_code };
@@ -687,7 +683,10 @@ const getLeaveCategory = async (req: Request, res: Response): Promise<any> => {
 };
 
 // Rename/Update Category Name
-const updateLeaveCategory = async (req: Request, res: Response): Promise<any> => {
+const updateLeaveCategory = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
   try {
     const { id } = req.params;
     const { newName, newType, allowedLeaves } = req.body;
@@ -703,7 +702,9 @@ const updateLeaveCategory = async (req: Request, res: Response): Promise<any> =>
         where: { companyCode, name: newName, id: { [Op.ne]: id } },
       });
       if (duplicate) {
-        return res.status(400).json({ message: "Category name already exists" });
+        return res
+          .status(400)
+          .json({ message: "Category name already exists" });
       }
       record.name = newName;
     }
@@ -712,16 +713,15 @@ const updateLeaveCategory = async (req: Request, res: Response): Promise<any> =>
     if (allowedLeaves !== undefined) record.allowedLeaves = allowedLeaves;
 
     await record.save();
-const oldData=record.toJSON();
+    const oldData = record.toJSON();
 
-
-await audit(req,{
-    module:"leave",
-    action:"update",
-    record_id:record.id,
-    old_value:oldData,
-    new_value:record.toJSON()
-});
+    await audit(req, {
+      module: "leave",
+      action: "update",
+      record_id: record.id,
+      old_value: oldData,
+      new_value: record.toJSON(),
+    });
     res.status(200).json({
       message: "Category updated successfully",
       data: record,
@@ -732,9 +732,11 @@ await audit(req,{
   }
 };
 
-
 //  Delete Category
-const deleteLeavecategory = async (req: Request, res: Response): Promise<any> => {
+const deleteLeavecategory = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
   try {
     const companyCode = (req as any).user.company_code;
     const record = await LeaveMaster.findOne({
@@ -744,16 +746,16 @@ const deleteLeavecategory = async (req: Request, res: Response): Promise<any> =>
     if (!record) return res.status(404).json({ message: "Category not found" });
 
     // await record.destroy();
-    const oldData=record.toJSON();
+    const oldData = record.toJSON();
 
-await record.destroy();
+    await record.destroy();
 
-await audit(req,{
-    module:"leave",
-    action:"delete",
-    record_id:oldData.id,
-    old_value:oldData
-});
+    await audit(req, {
+      module: "leave",
+      action: "delete",
+      record_id: oldData.id,
+      old_value: oldData,
+    });
     res.status(200).json({ message: "Category deleted successfully" });
   } catch (err) {
     console.error("Error in deleteLeavecategory:", err);
@@ -761,31 +763,33 @@ await audit(req,{
   }
 };
 
-
-
-
-
 // Add/Update Extra Fields
-
 
 const addExtraField = async (req: Request, res: Response): Promise<any> => {
   try {
     const { name } = req.body;
-    const companyCode = (req as any).user.company_code; 
+    const companyCode = (req as any).user.company_code;
 
-    if (!name) return res.status(400).json({ message: "Field name is required" });
-    if (!companyCode) return res.status(400).json({ message: "Company code missing from token" });
+    if (!name)
+      return res.status(400).json({ message: "Field name is required" });
+    if (!companyCode)
+      return res
+        .status(400)
+        .json({ message: "Company code missing from token" });
 
-    const exists = await LeaveExtraField.findOne({ where: { companyCode, name } });
-    if (exists) return res.status(400).json({ message: "Field already exists" });
+    const exists = await LeaveExtraField.findOne({
+      where: { companyCode, name },
+    });
+    if (exists)
+      return res.status(400).json({ message: "Field already exists" });
 
     const field = await LeaveExtraField.create({ companyCode, name });
-    await audit(req,{
-    module:"leave",
-    action:"create",
-    record_id:field.id,
-    new_value:field.toJSON()
-});
+    await audit(req, {
+      module: "leave",
+      action: "create",
+      record_id: field.id,
+      new_value: field.toJSON(),
+    });
     res.status(201).json({ message: "Field added", field });
   } catch (err) {
     console.error("Error in addExtraField:", err);
@@ -808,10 +812,14 @@ const getExtraFields = async (req: Request, res: Response): Promise<any> => {
     const user = (req as any).user;
 
     if (!user?.company_code) {
-      return res.status(401).json({ message: "Invalid token: company_code missing" });
+      return res
+        .status(401)
+        .json({ message: "Invalid token: company_code missing" });
     }
 
-    const fields = await LeaveExtraField.findAll({ where: { companyCode: user.company_code } });
+    const fields = await LeaveExtraField.findAll({
+      where: { companyCode: user.company_code },
+    });
     res.status(200).json({ fields });
   } catch (err) {
     console.error("Error in getExtraFields:", err);
@@ -819,8 +827,7 @@ const getExtraFields = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-
- const getExtraFieldById = async (req: Request, res: Response): Promise<any>  => {
+const getExtraFieldById = async (req: Request, res: Response): Promise<any> => {
   try {
     const field = await LeaveExtraField.findByPk(req.params.id);
     if (!field) return res.status(404).json({ message: "Field not found" });
@@ -830,30 +837,32 @@ const getExtraFields = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-
 const renameExtraField = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { newName } = req.body; 
+    const { newName } = req.body;
     const companyCode = (req as any).user.company_code;
 
-    if (!newName) return res.status(400).json({ message: "New field name is required" });
+    if (!newName)
+      return res.status(400).json({ message: "New field name is required" });
 
-    const field = await LeaveExtraField.findOne({ where: { id: req.params.id, companyCode } });
+    const field = await LeaveExtraField.findOne({
+      where: { id: req.params.id, companyCode },
+    });
     if (!field) return res.status(404).json({ message: "Field not found" });
 
     field.name = newName;
     // await field.save();
-const oldData=field.toJSON();
+    const oldData = field.toJSON();
 
-await field.save();
+    await field.save();
 
-await audit(req,{
-    module:"leave",
-    action:"update",
-    record_id:field.id,
-    old_value:oldData,
-    new_value:field.toJSON()
-});
+    await audit(req, {
+      module: "leave",
+      action: "update",
+      record_id: field.id,
+      old_value: oldData,
+      new_value: field.toJSON(),
+    });
     res.status(200).json({ message: "Field renamed", field });
   } catch (err) {
     console.error("Error renaming field:", err);
@@ -861,27 +870,26 @@ await audit(req,{
   }
 };
 
-
-
-
- const deleteExtraField = async (req: Request, res: Response): Promise<any> => {
+const deleteExtraField = async (req: Request, res: Response): Promise<any> => {
   try {
-    const companyCode = (req as any).user.company_code; 
+    const companyCode = (req as any).user.company_code;
 
-    const field = await LeaveExtraField.findOne({ where: { id: req.params.id, companyCode } });
+    const field = await LeaveExtraField.findOne({
+      where: { id: req.params.id, companyCode },
+    });
     if (!field) return res.status(404).json({ message: "Field not found" });
 
     // await field.destroy();
-    const oldData=field.toJSON();
+    const oldData = field.toJSON();
 
-await field.destroy();
+    await field.destroy();
 
-await audit(req,{
-    module:"leave",
-    action:"delete",
-    record_id:oldData.id,
-    old_value:oldData
-});
+    await audit(req, {
+      module: "leave",
+      action: "delete",
+      record_id: oldData.id,
+      old_value: oldData,
+    });
     res.status(200).json({ message: "Field deleted" });
   } catch (err) {
     console.error("Error deleting field:", err);
@@ -889,14 +897,12 @@ await audit(req,{
   }
 };
 
-
-
 const getLeaveBalance = async (req: any, res: any): Promise<any> => {
   try {
     // console.log("req.user =>", req.user);
 
     const employeeId = req.user.id;
-    const companyCode = req.user.company_code || req.user.companyCode; 
+    const companyCode = req.user.company_code || req.user.companyCode;
 
     const balance = await calculateLeaveBalance(employeeId, companyCode);
 
@@ -909,24 +915,22 @@ const getLeaveBalance = async (req: any, res: any): Promise<any> => {
 
 // const getAllEmployeesLeaveBalance = async (req: any, res: Response): Promise<any> => {
 //   try {
-  
+
 //     const companyCode = req.user.company_code || req.user.companyCode;
 
 //     if (!companyCode) {
 //       return res.status(400).json({ message: "Company code missing in token" });
 //     }
 
-   
 //     const employees = await Onboarding.findAll({
 //       where: { company_code: companyCode },
-//       attributes: ["id", "name", "email", "designation", "department"], 
+//       attributes: ["id", "name", "email", "designation", "department"],
 //     });
 
 //     if (!employees.length) {
 //       return res.status(404).json({ message: "No employees found for this company" });
 //     }
 
-  
 //     const balances = await Promise.all(
 //       employees.map(async (emp) => {
 //         const balance = await calculateLeaveBalance(emp.id, companyCode);
@@ -955,15 +959,12 @@ const getLeaveBalance = async (req: any, res: any): Promise<any> => {
 
 const getAllEmployeesLeaveBalance = async (
   req: any,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
-    const companyCode =
-      req.user.company_code || req.user.companyCode;
+    const companyCode = req.user.company_code || req.user.companyCode;
 
-    const data = await calculateAllEmployeesLeaveBalance(
-      companyCode
-    );
+    const data = await calculateAllEmployeesLeaveBalance(companyCode);
 
     return res.status(200).json({
       message: "Leave balances fetched successfully",
@@ -977,7 +978,6 @@ const getAllEmployeesLeaveBalance = async (
     });
   }
 };
-
 
 // const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
 //   try {
@@ -1003,12 +1003,10 @@ const getAllEmployeesLeaveBalance = async (
 //   });
 // }
 
-  
 //     await FinancialYear.update(
 //       { isActive: false },
 //       { where: { companyCode } }
 //     );
-
 
 //     const fy = await FinancialYear.create({
 //       companyCode,
@@ -1016,7 +1014,6 @@ const getAllEmployeesLeaveBalance = async (
 //       endDate,
 //       isActive: true,
 //     });
-    
 
 //     return res.status(201).json({
 //       message: "Financial Year created successfully",
@@ -1033,7 +1030,9 @@ const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
     const companyCode = (req as any).user.company_code;
 
     if (!startDate || !endDate) {
-      return res.status(400).json({ message: "Start and End Date are required" });
+      return res
+        .status(400)
+        .json({ message: "Start and End Date are required" });
     }
 
     const duplicate = await FinancialYear.findOne({
@@ -1046,7 +1045,8 @@ const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
 
     if (duplicate) {
       return res.status(400).json({
-        message: "A financial year with the same dates already exists for this company",
+        message:
+          "A financial year with the same dates already exists for this company",
         financialYear: duplicate,
       });
     }
@@ -1061,10 +1061,7 @@ const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
 
     const oldFinancialYear = activeFinancialYear?.toJSON();
 
-    await FinancialYear.update(
-      { isActive: false },
-      { where: { companyCode } }
-    );
+    await FinancialYear.update({ isActive: false }, { where: { companyCode } });
 
     // Audit previous Financial Year deactivation
     if (activeFinancialYear) {
@@ -1104,9 +1101,6 @@ const setFinancialYear = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-
-
-
 const getFinancialYear = async (req: Request, res: Response): Promise<any> => {
   try {
     const companyCode = (req as any).user.company_code;
@@ -1116,7 +1110,9 @@ const getFinancialYear = async (req: Request, res: Response): Promise<any> => {
     });
 
     if (!fy) {
-      return res.status(404).json({ message: "Active Financial Year not found" });
+      return res
+        .status(404)
+        .json({ message: "Active Financial Year not found" });
     }
 
     res.status(200).json(fy);
@@ -1125,8 +1121,10 @@ const getFinancialYear = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-
-const getAllFinancialYears = async (req: Request, res: Response): Promise<any> => {
+const getAllFinancialYears = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
   try {
     const companyCode = (req as any).user.company_code;
 
@@ -1140,7 +1138,6 @@ const getAllFinancialYears = async (req: Request, res: Response): Promise<any> =
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // const deleteFinancialYear = async (req: Request, res: Response): Promise<any> => {
 //   try {
@@ -1166,7 +1163,10 @@ const getAllFinancialYears = async (req: Request, res: Response): Promise<any> =
 //   }
 // };
 
-const deleteFinancialYear = async (req: Request, res: Response): Promise<any> => {
+const deleteFinancialYear = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
   try {
     const companyCode = (req as any).user.company_code;
 
@@ -1206,10 +1206,29 @@ const deleteFinancialYear = async (req: Request, res: Response): Promise<any> =>
   }
 };
 
-export { applyLeave, getMyLeaves, getAllLeaves,handleLeaveAction, approveLeave, 
-  rejectLeave, addNewCategory, getLeaveCategory,updateLeaveCategory
-  , deleteLeavecategory, addExtraField,getExtraFields,getExtraFieldById, renameExtraField, deleteExtraField ,getLeaveBalance ,
-getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYears,deleteFinancialYear};
+export {
+  applyLeave,
+  getMyLeaves,
+  getAllLeaves,
+  handleLeaveAction,
+  approveLeave,
+  rejectLeave,
+  addNewCategory,
+  getLeaveCategory,
+  updateLeaveCategory,
+  deleteLeavecategory,
+  addExtraField,
+  getExtraFields,
+  getExtraFieldById,
+  renameExtraField,
+  deleteExtraField,
+  getLeaveBalance,
+  getAllEmployeesLeaveBalance,
+  setFinancialYear,
+  getFinancialYear,
+  getAllFinancialYears,
+  deleteFinancialYear,
+};
 
 // import { Request, Response } from "express";
 // import {
@@ -1549,7 +1568,6 @@ getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYea
 //   }
 // };
 
-
 // // Get Categories by type (optional filter)
 // // const getLeaveCategory = async (req: Request, res: Response): Promise<any> => {
 // //   try {
@@ -1626,7 +1644,6 @@ getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYea
 //   }
 // };
 
-
 // //  Delete Category
 // const deleteLeavecategory = async (req: Request, res: Response): Promise<any> => {
 //   try {
@@ -1644,8 +1661,6 @@ getAllEmployeesLeaveBalance,setFinancialYear,getFinancialYear,getAllFinancialYea
 //     res.status(500).json({ message: "Error deleting category" });
 //   }
 // };
-
-
 
 // // ================= EXTRA =================
 // const addExtraField = async (

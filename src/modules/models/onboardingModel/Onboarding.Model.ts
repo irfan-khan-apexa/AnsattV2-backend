@@ -26,6 +26,9 @@ export interface OnboardingAttributes {
   reportingManagerEmail?: string | null;
   reportingHrEmail?: string | null;
 
+  // Address Fields
+  permanent_address?: string | null;
+  current_address?: string | null;
   // KYC Fields
   pan_card?: string;
   aadhar_card?: string;
@@ -78,7 +81,9 @@ export class Onboarding
   public shiftType!: number | null;
   public reportingManagerEmail!: string | null;
   public reportingHrEmail!: string | null;
-
+  // Address Fields
+  public permanent_address!: string | null;
+  public current_address!: string | null;
   // KYC Fields
   public pan_card!: string;
   public aadhar_card!: string;
@@ -152,6 +157,15 @@ Onboarding.init(
       allowNull: false,
     },
 
+    permanent_address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    current_address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

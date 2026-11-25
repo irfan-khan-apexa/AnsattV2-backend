@@ -81,6 +81,8 @@ const createOnboarding = async (
       probation_period,
       pan_card,
       aadhar_card,
+      permanent_address,
+      current_address,
     } = req.body;
 
     const company_code = req.user.company_code;
@@ -158,7 +160,8 @@ const createOnboarding = async (
       auto_password,
       pan_card,
       aadhar_card,
-
+      permanent_address,
+      current_address,
       status: true,
       passport_photo,
       aadhar_photo,
@@ -885,6 +888,7 @@ const employeeLogin = async (req: Request, res: Response): Promise<any> => {
       {
         id: user.id,
         company_code: user.company_code,
+        role: "employee",
         role_id: role.id,
         permissions,
       },
